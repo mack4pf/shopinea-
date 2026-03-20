@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    /* F9FAFB */
+    --foreground: 222 47% 11%;
+    /* 1F2937 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 224 64% 33%;
+    /* 1e3a8a - Navy Blue */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 151 55% 41%;
+    /* 10B981 - Emerald Green (Growth) */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 38 92% 50%;
+    /* F59E0B - Amber/Burnt Orange */
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 224 64% 33%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47.1% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  input,
+  textarea,
+  select {
+    color: #18181b;
+    /* zinc-900 */
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select {
+    color: #f4f4f5;
+    /* zinc-100 */
+  }
+
+  label {
+    color: #3f3f46;
+    /* zinc-700 */
+  }
+
+  .dark label {
+    color: #d4d4d8;
+    /* zinc-300 */
+  }
+}
+
+@layer utilities {
+  .animate-flow-left {
+    animation: flow 3s linear infinite;
+  }
+
+  .animate-flow-mid {
+    animation: flow 3s linear infinite;
+    animation-delay: 1s;
+  }
+
+  .animate-flow-right {
+    animation: flow 3s linear infinite;
+    animation-delay: 2s;
+  }
+
+  @keyframes flow {
+    0% {
+      opacity: 0;
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+
+    50% {
+      opacity: 1;
+      transform: scaleX(1);
+      transform-origin: left;
+    }
+
+    51% {
+      transform-origin: right;
+    }
+
+    100% {
+      opacity: 0;
+      transform: scaleX(0);
+      transform-origin: right;
+    }
+  }
+}
