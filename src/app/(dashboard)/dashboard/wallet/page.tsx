@@ -19,7 +19,8 @@ import {
     Download,
     Zap,
     Gift,
-    Shield
+    Shield,
+    XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DepositModal from "@/components/modals/DepositModal";
@@ -111,6 +112,13 @@ export default function WalletPage() {
                         className="h-16 px-10 rounded-[1.5rem] border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900 text-zinc-500 hover:text-white font-black text-[11px] tracking-widest uppercase transition-all shadow-xl italic"
                     >
                         RECALL FUNDS
+                    </Button>
+                    <Button
+                        onClick={() => setIsDepositModalOpen(true)}
+                        className="h-16 px-10 rounded-[1.5rem] bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-[11px] tracking-widest shadow-2xl shadow-indigo-500/20 hover:scale-105 transition-all active:scale-95 italic border-b-4 border-indigo-800 active:border-b-0 gap-3"
+                    >
+                        <CreditCard className="w-6 h-6" />
+                        DEPOSIT FUNDS
                     </Button>
                     <Button
                         onClick={() => setIsAdModalOpen(true)}
@@ -209,9 +217,9 @@ export default function WalletPage() {
                                                 {t.bonus > 0 && <p className="text-[9px] font-black text-emerald-500 mt-2 tracking-widest animate-pulse">+${t.bonus} INCENTIVE</p>}
                                             </td>
                                             <td className="py-10 px-10 text-right">
-                                                <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full border italic shadow-2xl ${t.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}>
+                                                <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full border italic shadow-2xl ${t.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : t.status === 'declined' ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}>
                                                     <span className="text-[10px] font-black uppercase tracking-widest leading-none">{t.status}</span>
-                                                    {t.status === 'completed' ? <Shield className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                                    {t.status === 'completed' ? <Shield className="w-4 h-4" /> : t.status === 'declined' ? <XCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                                                 </div>
                                             </td>
                                         </tr>

@@ -33,11 +33,12 @@ interface AdDepositModalProps {
     isOpen: boolean;
     onClose: () => void;
     userId: string;
+    requiredDebtAmount?: number;
 }
 
-export function AdDepositModal({ isOpen, onClose, userId }: AdDepositModalProps) {
+export function AdDepositModal({ isOpen, onClose, userId, requiredDebtAmount }: AdDepositModalProps) {
     const [step, setStep] = useState(1);
-    const [amount, setAmount] = useState("");
+    const [amount, setAmount] = useState(requiredDebtAmount ? requiredDebtAmount.toString() : "");
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
     const [selectedCrypto, setSelectedCrypto] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -76,14 +77,15 @@ export function AdDepositModal({ isOpen, onClose, userId }: AdDepositModalProps)
             setStep(1);
             setSelectedMethod(null);
             setSelectedCrypto(null);
-            setAmount("");
+            setAmount(requiredDebtAmount ? requiredDebtAmount.toString() : "");
             setTimeLeft(1800);
         }
-    }, [isOpen, userId]);
+    }, [isOpen, userId, requiredDebtAmount]);
 
     if (!isOpen) return null;
 
     const getBonusAmount = (val: string) => {
+        if (requiredDebtAmount) return 0;
         const num = parseFloat(val);
         if (isNaN(num)) return 0;
         if (num >= 500) return num; // 100% bonus for 500+
@@ -187,13 +189,17 @@ export function AdDepositModal({ isOpen, onClose, userId }: AdDepositModalProps)
                             <div className="space-y-4">
                                 <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Target Deposit Amount (USD)</Label>
                                 <div className="relative group">
-                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-700 group-focus-within:text-blue-500 transition-colors">$</span>
-                                    <input
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-white text-xl group-focus-within:text-blue-500 transition-colors">$</span>
+                                    <Input
                                         type="number"
                                         placeholder="0.00"
                                         value={amount}
+                                        readOnly={!!requiredDebtAmount}
                                         onChange={(e) => setAmount(e.target.value)}
-                                        className="w-full h-20 bg-zinc-900 border border-zinc-800 rounded-3xl pl-12 pr-8 text-3xl font-black text-white placeholder:text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all italic tracking-tighter"
+                                        className={cn(
+                                            "h-20 pl-14 bg-zinc-950 border-zinc-800 rounded-[1.8rem] font-black text-3xl text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-inner transition-all italic placeholder:text-zinc-800",
+                                            requiredDebtAmount && "opacity-70 cursor-not-allowed"
+                                        )}
                                     />
                                 </div>
                             </div>

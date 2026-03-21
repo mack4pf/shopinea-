@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function BuyerOrdersPage() {
     const [user, setUser] = useState<any>(null);
@@ -132,9 +133,20 @@ export default function BuyerOrdersPage() {
                                 <div className="p-8 md:p-10 space-y-8">
                                     {/* Order Top Bar */}
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Order #{order.id.slice(-8).toUpperCase()}</p>
-                                            <h3 className="text-xl font-black text-gray-900 dark:text-white">{order.productName}</h3>
+                                        <div className="flex flex-row items-center gap-4">
+                                            {order.productImage ? (
+                                                <div className="w-16 h-16 rounded-xl overflow-hidden relative border border-gray-100 dark:border-zinc-800 shrink-0">
+                                                    <Image src={order.productImage} alt={order.productName} fill className="object-cover" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-gray-100 dark:border-zinc-800">
+                                                    <ShoppingBag className="w-6 h-6 text-gray-400 dark:text-zinc-600" />
+                                                </div>
+                                            )}
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em]">Order #{order.id.slice(-8).toUpperCase()}</p>
+                                                <h3 className="text-xl font-black text-gray-900 dark:text-white">{order.productName}</h3>
+                                            </div>
                                         </div>
                                         <div className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest ${getStatusStyles(order.status)}`}>
                                             {order.status.replace(/_/g, ' ')}

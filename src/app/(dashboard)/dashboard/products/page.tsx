@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Image from "next/image";
 
 export default function ProductsPage() {
     const [user, setUser] = useState<any>(null);
@@ -171,9 +172,18 @@ export default function ProductsPage() {
                                     
                                     {/* Asset Header */}
                                     <div className="aspect-[4/3] bg-zinc-950 relative overflow-hidden group-hover:bg-zinc-900 transition-colors duration-700 p-12">
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-10 filter grayscale group-hover:scale-110 group-hover:opacity-20 transition-all duration-1000">
-                                            <Package className="w-40 h-40 text-zinc-500" />
-                                        </div>
+                                        {product.image ? (
+                                            <Image 
+                                                src={product.image} 
+                                                alt={product.name} 
+                                                fill 
+                                                className="object-cover absolute inset-0 opacity-40 group-hover:scale-110 group-hover:opacity-80 transition-transform duration-1000 mix-blend-overlay"
+                                            />
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-10 filter grayscale group-hover:scale-110 group-hover:opacity-20 transition-all duration-1000">
+                                                <Package className="w-40 h-40 text-zinc-500" />
+                                            </div>
+                                        )}
                                         
                                         <div className="relative z-10 flex flex-col justify-between h-full">
                                             <div className="flex justify-between items-start">

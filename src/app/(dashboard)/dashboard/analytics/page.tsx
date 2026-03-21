@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, limit, orderBy } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
     TrendingUp,
@@ -14,7 +14,11 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Loader2,
-    Smartphone
+    Smartphone,
+    History,
+    Activity,
+    ShieldCheck,
+    ArrowRight
 } from "lucide-react";
 import {
     Chart as ChartJS,
@@ -30,6 +34,9 @@ import {
     Filler
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 ChartJS.register(
     CategoryScale,
@@ -57,7 +64,8 @@ export default function AnalyticsPage() {
         bounceRate: 0,
         salesTrends: [0, 0, 0, 0, 0, 0, 0],
         topProducts: [] as any[],
-        categoryDistribution: {} as Record<string, number>
+        categoryDistribution: {} as Record<string, number>,
+        recentOrders: [] as any[]
     });
 
     const getCurrencySymbol = (code: string = "USD") => {
@@ -79,12 +87,17 @@ export default function AnalyticsPage() {
                     const uData = userDoc.data();
                     setUserData(uData);
 
+                    // Fetch All Orders for calculations
                     const ordersQuery = query(
                         collection(db, "orders"),
-                        where("resellerId", "==", firebaseUser.uid)
+                        where("resellerId", "==", firebaseUser.uid),
+                        orderBy("createdAt", "desc")
                     );
                     const ordersSnap = await getDocs(ordersQuery);
                     const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+
+                    // Use first 5 for "Recent Orders"
+                    const recentOrders = orders.slice(0, 5);
 
                     // Calculate Summary Stats
                     const totalRev = orders.reduce((acc, curr) => acc + (curr.resellPrice || 0), 0);
@@ -132,7 +145,8 @@ export default function AnalyticsPage() {
                         bounceRate: uData?.stats?.bounceRate || 0,
                         salesTrends: trends,
                         topProducts: topProds,
-                        categoryDistribution: catMap
+                        categoryDistribution: catMap,
+                        recentOrders
                     });
                 } catch (e) {
                     console.error("Error fetching analytics data:", e);
@@ -155,22 +169,27 @@ export default function AnalyticsPage() {
                 borderColor: '#27272a',
                 borderWidth: 1,
                 padding: 12,
+                titleFont: { weight: 'bold', size: 14 },
+                bodyFont: { size: 12 }
             }
         },
         scales: {
-            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#71717a' } },
-            x: { grid: { display: false }, ticks: { color: '#71717a' } }
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { color: '#71717a', font: { weight: '900', size: 10 } } },
+            x: { grid: { display: false }, border: { display: false }, ticks: { color: '#71717a', font: { weight: '900', size: 10 } } }
         }
     };
 
     const salesData = {
-        labels: ['6d ago', '5d ago', '4d ago', '3d ago', '2d ago', 'Yesterday', 'Today'],
+        labels: ['6D_AGO', '5D_AGO', '4D_AGO', '3D_AGO', '2D_AGO', 'YESTERDAY', 'TODAY'],
         datasets: [{
             data: stats.salesTrends,
             borderColor: '#3b82f6',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: true,
             tension: 0.4,
+            pointBackgroundColor: '#3b82f6',
+            pointRadius: 4,
+            pointHoverRadius: 6
         }]
     };
 
@@ -183,14 +202,14 @@ export default function AnalyticsPage() {
             data: categoryValues.length > 0 ? categoryValues : [1],
             backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'],
             borderWidth: 0,
-            hoverOffset: 10
+            hoverOffset: 15
         }]
     };
 
     if (loading) {
         return (
             <div className="h-[80vh] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
             </div>
         );
     }
@@ -201,22 +220,27 @@ export default function AnalyticsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                            <TrendingUp className="w-5 h-5 text-blue-400" />
+                        <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20 shadow-2xl shadow-blue-500/10">
+                            <Activity className="w-5 h-5 text-blue-400" />
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-400">Growth Intelligence</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-400">Node Performance Analytics</span>
                     </div>
-                    <h1 className="text-5xl font-black text-white tracking-tighter italic leading-none">Performance Matrix</h1>
-                    <p className="text-zinc-500 font-extrabold text-sm uppercase tracking-widest leading-relaxed opacity-80 max-w-xl">
-                        Monitor recursive data streams and identify top-performing revenue nodes.
+                    <h1 className="text-6xl font-black text-white tracking-tighter italic leading-none uppercase">Quantum Core</h1>
+                    <p className="text-zinc-600 font-extrabold text-sm uppercase tracking-widest leading-relaxed opacity-80 max-w-xl">
+                        Recursive data visualization of your nodal growth streams and revenue vectors.
                     </p>
                 </div>
-                <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-[1.8rem] border border-zinc-800 shadow-inner">
-                    {['7 Days', '30 Days', 'All Time'].map(t => (
+                <div className="flex items-center gap-4 bg-zinc-950/50 p-2 rounded-[2rem] border border-zinc-900 shadow-inner">
+                    {['7 Days', '30 Days', 'Historic'].map(t => (
                         <button
                             key={t}
                             onClick={() => setTimeframe(t)}
-                            className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all italic ${timeframe === t ? 'bg-blue-600 text-white shadow-2xl shadow-blue-500/20 scale-105' : 'text-zinc-600 hover:text-zinc-400'}`}
+                            className={cn(
+                                "px-10 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all italic",
+                                timeframe === t 
+                                    ? "bg-blue-600 text-white shadow-2xl shadow-blue-500/20 scale-105" 
+                                    : "text-zinc-600 hover:text-zinc-400"
+                            )}
                         >
                             {t}
                         </button>
@@ -224,73 +248,88 @@ export default function AnalyticsPage() {
                 </div>
             </div>
 
-            {/* Core Metrics */}
+            {/* Core Metrics Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                 {[
-                    { label: "Total Visitors", value: stats.totalVisitors.toLocaleString(), icon: Users, color: "blue" },
-                    { label: "Conversion Rate", value: `${stats.conversionRate.toFixed(1)}%`, icon: Target, color: "emerald" },
-                    { label: "Avg Order Value", value: `${currencySymbol}${stats.avgOrderValue.toFixed(0).toLocaleString()}`, icon: ShoppingCart, color: "indigo" },
-                    { label: "Bounce Rate", value: `${stats.bounceRate}%`, icon: Globe, color: "amber" },
+                    { label: "Reach Intensity", value: stats.totalVisitors.toLocaleString(), icon: Users, color: "blue", prefix: "" },
+                    { label: "Yield Factor", value: `${stats.conversionRate.toFixed(1)}%`, icon: Target, color: "emerald", prefix: "" },
+                    { label: "Alpha Ticket", value: `${stats.avgOrderValue.toFixed(0).toLocaleString()}`, icon: ShoppingCart, color: "indigo", prefix: currencySymbol },
+                    { label: "Exit Stream", value: `${stats.bounceRate}%`, icon: Globe, color: "amber", prefix: "" },
                 ].map((item, i) => (
-                    <div key={i} className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3.5rem] space-y-6 group hover:border-zinc-700 transition-all shadow-2xl relative overflow-hidden">
-                        <div className={`absolute top-0 right-0 w-32 h-32 bg-${item.color}-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-${item.color}-500/10 transition-colors`} />
+                    <div key={i} className="bg-zinc-900 border border-zinc-800 p-8 rounded-[3.5rem] space-y-8 group hover:border-zinc-700 transition-all shadow-2xl relative overflow-hidden">
+                        <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full blur-[80px] -mr-16 -mt-16 group-hover:scale-125 transition-transform", 
+                            item.color === 'blue' ? 'bg-blue-600/10' : 
+                            item.color === 'emerald' ? 'bg-emerald-600/10' : 
+                            item.color === 'indigo' ? 'bg-indigo-600/10' : 'bg-amber-600/10'
+                        )} />
                         <div className="flex justify-between items-start relative z-10">
-                            <div className={`w-12 h-12 rounded-2xl bg-${item.color}-500/10 flex items-center justify-center border border-${item.color}-500/20 shadow-2xl shadow-${item.color}-500/10`}>
-                                <item.icon className={`w-6 h-6 text-${item.color}-500`} />
+                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border shadow-2xl transition-transform group-hover:rotate-12", 
+                                item.color === 'blue' ? 'bg-blue-600/10 border-blue-600/20 text-blue-500 shadow-blue-600/10' : 
+                                item.color === 'emerald' ? 'bg-emerald-600/10 border-emerald-600/20 text-emerald-500 shadow-emerald-600/10' : 
+                                item.color === 'indigo' ? 'bg-indigo-600/10 border-indigo-600/20 text-indigo-500 shadow-indigo-600/10' : 
+                                'bg-amber-600/10 border-amber-600/20 text-amber-500 shadow-amber-600/10'
+                            )}>
+                                <item.icon className="w-7 h-7" />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                                <span className="text-[10px] font-black text-blue-500 italic tracking-widest">LIVE_CORE</span>
-                            </div>
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mt-1" />
                         </div>
                         <div className="relative z-10">
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-2 leading-none">{item.label}</p>
-                            <h3 className="text-3xl font-black text-white italic tracking-tighter leading-none">{item.value}</h3>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-3 leading-none italic">{item.label}</p>
+                            <h3 className="text-4xl font-black text-white italic tracking-tighter leading-none">{item.prefix}{item.value}</h3>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Strategic Visualization */}
+            {/* Visual Stream Matrix */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl overflow-hidden group">
-                    <div className="p-10 border-b border-zinc-800/50 bg-zinc-950/20 backdrop-blur-3xl flex items-center justify-between">
-                        <h3 className="text-xl font-black text-white uppercase tracking-widest flex items-center gap-4 italic leading-none">
-                            <TrendingUp className="w-6 h-6 text-blue-500" />
-                            Revenue Projection (7D)
-                        </h3>
-                        <div className="px-4 py-2 bg-blue-600/10 rounded-xl border border-blue-600/20">
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest italic animate-pulse">Synchronizing...</span>
-                        </div>
+                <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl overflow-hidden relative group">
+                    <div className="p-12 border-b border-zinc-900 bg-zinc-950/20 backdrop-blur-3xl flex items-center justify-between">
+                         <div className="space-y-1">
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-4 italic leading-none group-hover:translate-x-1 transition-transform">
+                                <TrendingUp className="w-7 h-7 text-blue-500" />
+                                Revenue Spectrum
+                            </h3>
+                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest pl-11">7-DAY QUANTUM TRAJECTORY</p>
+                         </div>
+                         <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-blue-600" />
+                                <span className="text-[10px] font-black text-zinc-500">LIQUID_REV</span>
+                            </div>
+                         </div>
                     </div>
-                    <div className="p-10 h-[450px] w-full relative">
+                    <div className="p-12 h-[500px] w-full relative">
                         <Line data={salesData} options={chartOptions} />
                     </div>
                 </div>
 
-                <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl flex flex-col group">
-                    <div className="p-10 border-b border-zinc-800/50 bg-zinc-950/20 backdrop-blur-3xl">
-                         <h3 className="text-xl font-black text-white uppercase tracking-widest flex items-center gap-4 italic leading-none">
-                            <Zap className="w-6 h-6 text-amber-500" />
-                            Category Yield
+                <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl flex flex-col group relative overflow-hidden">
+                    <div className="p-12 border-b border-zinc-900 bg-zinc-950/20 backdrop-blur-3xl">
+                         <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-4 italic leading-none">
+                            <Zap className="w-7 h-7 text-amber-500" />
+                            Segment Yield
                         </h3>
                     </div>
-                    <div className="p-10 flex-1 space-y-10">
-                        <div className="h-[250px] w-full relative flex items-center justify-center">
-                            <Doughnut data={categoryData} options={{ ...chartOptions, cutout: '75%' }} />
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <p className="text-[10px] font-black uppercase text-zinc-600 tracking-[0.2em] mb-1">Total</p>
-                                <h4 className="text-3xl font-black text-white italic leading-none">{categoryValues.reduce((a, b) => a + b, 0)}</h4>
+                    <div className="p-12 flex-1 space-y-12">
+                        <div className="h-[280px] w-full relative flex items-center justify-center group/chart">
+                            <Doughnut data={categoryData} options={{ ...chartOptions, cutout: '80%' }} />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none group-hover:scale-110 transition-transform">
+                                <p className="text-[10px] font-black uppercase text-zinc-600 tracking-[0.2em] mb-1">AGGREGATE</p>
+                                <h4 className="text-4xl font-black text-white italic leading-none">{categoryValues.reduce((a, b) => a + b, 0)}</h4>
                             </div>
                         </div>
-                        <div className="space-y-4">
+                        <div className="space-y-5">
                             {categoryLabels.map((cat, i) => (
-                                <div key={cat} className="flex justify-between items-center group/item p-4 hover:bg-zinc-800/30 rounded-2xl transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-3 h-3 rounded-full shadow-lg`} style={{ backgroundColor: categoryData.datasets[0].backgroundColor[i] }} />
+                                <div key={cat} className="flex justify-between items-center group/item p-5 bg-zinc-950/50 rounded-2xl border border-zinc-800 transition-all hover:border-zinc-700 hover:translate-x-2">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-3 h-3 rounded-full shadow-lg" style={{ backgroundColor: categoryData.datasets[0].backgroundColor[i] }} />
                                         <span className="text-[11px] font-black text-zinc-500 uppercase tracking-widest italic group-hover/item:text-white transition-colors">{cat}</span>
                                     </div>
-                                    <span className="text-sm font-black text-white italic">{stats.categoryDistribution[cat]}</span>
+                                    <div className="flex items-center gap-3">
+                                         <span className="text-sm font-black text-white italic">{stats.categoryDistribution[cat]}</span>
+                                         <span className="text-[9px] font-black text-zinc-700">UNITS</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -298,36 +337,38 @@ export default function AnalyticsPage() {
                 </div>
             </div>
 
-            {/* Tactical Assets & Engagement */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 pb-12">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl flex flex-col group">
-                    <div className="p-10 border-b border-zinc-800/50 bg-zinc-950/20 backdrop-blur-3xl flex items-center justify-between">
-                        <h3 className="text-xl font-black text-white uppercase tracking-widest italic leading-none">Top Alpha Assets</h3>
-                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">Ranked by Revenue</span>
+            {/* Operations Log Section (New) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                 {/* Top Products */}
+                 <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl flex flex-col group relative overflow-hidden">
+                    <div className="p-12 border-b border-zinc-900 bg-zinc-950/20 backdrop-blur-3xl flex items-center justify-between">
+                         <div className="space-y-1">
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic leading-none">Alpha Assets</h3>
+                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">TOP VELOCITY NODES</p>
+                         </div>
                     </div>
-                    <div className="p-10 space-y-6">
+                    <div className="p-12 space-y-6">
                         {stats.topProducts.length === 0 ? (
                             <div className="py-24 text-center opacity-30 grayscale flex flex-col items-center">
-                                <ShoppingCart className="w-16 h-16 text-zinc-700 mb-6" />
-                                <p className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.5em] italic">No Asset Tractions</p>
+                                <ShoppingCart className="w-16 h-16 text-zinc-800 mb-6" />
+                                <p className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.4em] italic leading-none">NO DATA TRACES</p>
                             </div>
                         ) : (
                             stats.topProducts.map((p, i) => (
-                                <div key={i} className="flex items-center gap-8 p-6 bg-zinc-950/50 rounded-[2.5rem] border border-zinc-800 hover:border-blue-500/30 transition-all shadow-inner relative overflow-hidden group/asset">
-                                    <div className="absolute inset-0 bg-blue-600/[0.01] pointer-events-none" />
-                                    <div className="w-16 h-16 rounded-[1.2rem] bg-zinc-900 flex items-center justify-center font-black text-blue-500 border border-zinc-700 shadow-2xl text-lg italic">
+                                <div key={i} className="flex items-center gap-8 p-6 bg-zinc-950/50 rounded-[2.5rem] border border-zinc-900 hover:border-blue-500/20 transition-all shadow-inner relative overflow-hidden group/product">
+                                    <div className="w-16 h-16 rounded-[1.5rem] bg-zinc-900 flex items-center justify-center font-black text-blue-500 border border-zinc-800 shadow-2xl text-xl italic shrink-0">
                                         #{i + 1}
                                     </div>
-                                    <div className="flex-1 min-w-0 space-y-1">
-                                        <p className="text-lg font-black text-white truncate italic uppercase tracking-tighter group-active:text-blue-400 transition-colors">{p.name}</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-lg font-black text-white truncate italic uppercase tracking-tighter mb-1.5">{p.name}</p>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">VOLUME:</span>
-                                            <span className="text-[10px] font-black text-zinc-400 font-mono tracking-widest italic">{p.sales} UNITS</span>
+                                            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">NET_VOLUME:</span>
+                                            <span className="text-[10px] font-black text-zinc-400 tracking-widest italic">{p.sales} AUTHORIZATIONS</span>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-2xl font-black text-white italic tracking-tighter">{currencySymbol}{p.revenue.toLocaleString()}</p>
-                                        <p className="text-[9px] font-black text-emerald-500 tracking-widest uppercase mt-1 italic">Settled</p>
+                                        <p className="text-[9px] font-black text-emerald-500 tracking-widest uppercase mt-1 italic">SETTLED</p>
                                     </div>
                                 </div>
                             ))
@@ -335,46 +376,74 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
 
-                <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl flex flex-col group">
-                    <div className="p-10 border-b border-zinc-800/50 bg-zinc-950/20 backdrop-blur-3xl flex items-center justify-between">
-                         <h3 className="text-xl font-black text-white uppercase tracking-widest italic leading-none">Core Engagement</h3>
-                         <div className="flex items-center gap-2">
-                            <Smartphone className="w-5 h-5 text-zinc-600" />
-                            <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">Live Stream</span>
+                {/* Recent Orders List */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] shadow-2xl flex flex-col group relative overflow-hidden">
+                    <div className="p-12 border-b border-zinc-900 bg-zinc-950/20 backdrop-blur-3xl flex items-center justify-between">
+                         <div className="space-y-1">
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic leading-none">Tactical Stream</h3>
+                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">LIVE TRANSMISSION FEED</p>
                          </div>
+                         <Link href="/dashboard/history?active=orders">
+                            <Button variant="ghost" className="text-[10px] font-black text-blue-500 tracking-widest uppercase italic gap-2 hover:bg-blue-600/10">
+                                FULL LOG <ArrowRight className="w-4 h-4" />
+                            </Button>
+                         </Link>
                     </div>
-                    <div className="p-10 space-y-10">
-                        <div className="p-10 bg-blue-600/5 rounded-[3rem] border border-blue-600/10 shadow-inner group/views relative overflow-hidden">
-                             <div className="absolute top-0 right-0 w-40 h-40 bg-blue-600/[0.03] blur-[40px] rounded-full" />
-                            <div className="flex justify-between items-center mb-6 relative">
-                                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-blue-600 italic">Platform Visibility</p>
-                                <span className="text-[10px] font-black text-blue-400 italic font-mono uppercase">Node_ID: VIEW_01</span>
+                    <div className="p-12 space-y-6">
+                        {stats.recentOrders.length === 0 ? (
+                            <div className="py-24 text-center opacity-30 grayscale flex flex-col items-center">
+                                <History className="w-16 h-16 text-zinc-800 mb-6" />
+                                <p className="text-[11px] font-black text-zinc-600 uppercase tracking-[0.4em] italic leading-none">NULL ORDER BUFFER</p>
                             </div>
-                            <h4 className="text-4xl font-black text-white mb-8 italic tracking-tighter relative">{stats.totalVisitors.toLocaleString()} <span className="text-lg text-zinc-600 not-italic uppercase tracking-widest ml-2 italic">Impressions</span></h4>
-                            <div className="h-4 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800 p-1 shadow-inner relative">
-                                <div className="h-full bg-blue-600 rounded-full w-[65%] shadow-[0_0_20px_rgba(59,130,246,0.5)] animate-shimmer relative overflow-hidden">
-                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+                        ) : (
+                            stats.recentOrders.map((o) => (
+                                <div key={o.id} className="flex items-center gap-6 p-6 bg-zinc-950/50 rounded-[2.5rem] border border-zinc-800 hover:border-zinc-700 transition-all shadow-inner relative overflow-hidden group/order">
+                                    <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 shadow-xl group-hover/order:scale-110 transition-transform">
+                                        <ShoppingCart className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <p className="text-base font-black text-white italic tracking-tighter uppercase">ORD-{o.id.slice(-6).toUpperCase()}</p>
+                                            <span className="text-[10px] font-black text-white italic">{currencySymbol}{o.resellPrice?.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest italic">{o.productName?.slice(0, 20)}...</p>
+                                            <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest italic border", 
+                                                o.status === 'delivered' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' :
+                                                o.status === 'cancelled' ? 'bg-rose-500/10 text-rose-500 border-rose-500/10' :
+                                                'bg-blue-500/10 text-blue-500 border-blue-500/10'
+                                            )}>
+                                                {o.status}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="p-8 bg-emerald-600/5 rounded-[2.5rem] border border-emerald-600/10 shadow-inner group/orders relative overflow-hidden">
-                                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-600 mb-2 italic leading-none">Authorizations</p>
-                                <h4 className="text-3xl font-black text-white italic tracking-tighter leading-none">{categoryValues.reduce((a, b) => a + b, 0)}</h4>
-                                <div className="absolute -bottom-6 -right-6 opacity-5 rotate-12 group-hover/orders:scale-110 transition-transform">
-                                    <ShoppingCart className="w-24 h-24" />
-                                </div>
-                            </div>
-                            <div className="p-8 bg-amber-600/5 rounded-[2.5rem] border border-amber-600/10 shadow-inner group/bounce relative overflow-hidden">
-                                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-600 mb-2 italic leading-none">Bounce Matrix</p>
-                                <h4 className="text-3xl font-black text-white italic tracking-tighter leading-none">{stats.bounceRate}%</h4>
-                                <div className="absolute -bottom-6 -right-6 opacity-5 -rotate-12 group-hover/bounce:scale-110 transition-transform">
-                                    <Globe className="w-24 h-24" />
-                                </div>
-                            </div>
-                        </div>
+                            ))
+                        )}
                     </div>
                 </div>
+            </div>
+
+            {/* Action Footer */}
+            <div className="p-12 bg-blue-600 rounded-[3.5rem] flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] -mr-32 -mt-32 transition-transform group-hover:scale-125 duration-1000" />
+                 <div className="flex items-center gap-10 relative">
+                    <div className="w-24 h-24 bg-white/10 rounded-[2.5rem] flex items-center justify-center text-white backdrop-blur-xl border border-white/20 shadow-2xl transition-transform group-hover:rotate-12">
+                        <ShieldCheck className="w-12 h-12" />
+                    </div>
+                    <div className="space-y-4">
+                        <h4 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Intelligence Stream Finalized</h4>
+                        <p className="text-blue-100/60 font-black text-[10px] uppercase tracking-[0.3em] italic max-w-lg leading-relaxed">
+                            Quantum core visualization is derived from real-time nodal transactions. All streams are encrypted and anchored for audit verification.
+                        </p>
+                    </div>
+                 </div>
+                 <Link href="/dashboard/history" className="relative group/btn">
+                    <Button className="h-20 px-12 bg-white text-blue-600 font-black italic rounded-[2rem] gap-4 hover:scale-105 active:scale-95 transition-all text-xs uppercase tracking-widest border-b-4 border-zinc-200 active:border-b-0">
+                        AUDIT SETTLEMENT LOG
+                        <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-2 transition-transform" />
+                    </Button>
+                 </Link>
             </div>
         </div>
     );

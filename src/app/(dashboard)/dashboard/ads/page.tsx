@@ -224,15 +224,34 @@ export default function AdsPage() {
                 endDate,
                 startTime: scheduleMode === 'later' ? startTime : new Date().toTimeString().slice(0, 5),
                 scheduleMode,
-                status: scheduleMode === 'now' ? "active" : "scheduled",
+                status: "reviewing",
                 impressions: 0,
                 clicks: 0,
                 spend: 0,
                 isPostpaid: paymentMode === 'later',
+                countryReach: [],
                 createdAt: serverTimestamp()
             });
 
-            toast.success(`🚀 ${selectedPlatform.toUpperCase()} Campaign Launched!`);
+            await fetch("/api/send-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: "custom",
+                    to: user.email,
+                    data: {
+                        subject: `Ad Campaign Protocol - ${selectedPlatform.toUpperCase()}`,
+                        html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <h2 style="color: #111827; margin-bottom: 16px;">Campaign Initialization Queued</h2>
+                            <p style="color: #4b5563; line-height: 1.6;">Your ad is currently being reviewed by <strong>${selectedPlatform.toUpperCase()}</strong>.</p>
+                            <p style="color: #4b5563; line-height: 1.6;">Please note that you are using our ad manager accounts to run your ads, ensuring all operations are fully connected within our ecosystem.</p>
+                            <p style="color: #4b5563; line-height: 1.6;">Our compliance nodes will notify you once the traffic protocol is approved and active.</p>
+                        </div>`
+                    }
+                })
+            });
+
+            toast.success(`Your ad is currently being reviewed by ${selectedPlatform.toUpperCase()}`);
             setShowCampaignModal(false);
         } catch (error) {
             console.error(error);
@@ -248,7 +267,6 @@ export default function AdsPage() {
         </div>
     );
 
-    return (
     return (
         <div className="space-y-12 pb-16 animate-in fade-in duration-700">
             {/* Ad Wallet & Header Section */}
@@ -345,7 +363,10 @@ export default function AdsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800">
-                                {campaigns.map((camp) => (
+                                {campaigns.map((camp) => {
+                                    const isExpired = camp.endDate && camp.endDate < todayStr;
+                                    const displayStatus = isExpired ? 'completed' : camp.status;
+                                    return (
                                     <tr key={camp.id} className="hover:bg-zinc-800/30 transition-all group">
                                         <td className="px-12 py-10">
                                             <div className="flex items-center gap-6">
@@ -363,6 +384,13 @@ export default function AdsPage() {
                                         <td className="px-12 py-10">
                                             <p className="text-sm font-black text-white italic tracking-tighter">${camp.dailyBudget?.toLocaleString()}/cycle</p>
                                             <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mt-1 opacity-60">{camp.startDate?.slice(5)} → {camp.endDate?.slice(5)}</p>
+                                            {camp.countryReach && camp.countryReach.length > 0 && (
+                                                <div className="mt-3 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl inline-block">
+                                                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">
+                                                        📍 {Array.isArray(camp.countryReach) ? camp.countryReach.join(', ') : camp.countryReach}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-12 py-10 text-right font-black text-zinc-500 group-hover:text-blue-500 transition-colors italic text-lg tracking-tighter">
                                             {(camp.impressions || 0).toLocaleString()}
@@ -378,15 +406,17 @@ export default function AdsPage() {
                                         </td>
                                         <td className="px-12 py-10 text-center">
                                             <span className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] italic
-                                                ${camp.status === "active"
+                                                ${displayStatus === "active"
                                                     ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+                                                    : displayStatus === "completed"
+                                                    ? "bg-blue-500/10 text-blue-500 border border-blue-500/20"
                                                     : "bg-zinc-800 text-zinc-500 border border-zinc-700"
                                                 }`}>
-                                                {camp.status}
+                                                {displayStatus}
                                             </span>
                                         </td>
                                     </tr>
-                                ))}
+                                )})}
                             </tbody>
                         </table>
                     </div>

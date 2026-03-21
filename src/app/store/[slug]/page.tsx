@@ -16,7 +16,8 @@ import {
     Eye,
     User,
     LogOut,
-    Package
+    Package,
+    ArrowUpRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InquiryModal from "@/components/modals/InquiryModal";
@@ -24,6 +25,7 @@ import CheckoutModal from "@/components/modals/CheckoutModal";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function StorePage() {
     const { slug } = useParams();
@@ -96,58 +98,58 @@ export default function StorePage() {
     );
 
     return (
-        <div className="min-h-screen bg-white dark:bg-zinc-950">
+        <div className="min-h-screen bg-[#050505] text-white selection:bg-blue-500/30 font-sans">
             {/* Store Header */}
-            <header className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-zinc-800">
-                <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black">
+            <header className="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-2xl border-b border-white/5">
+                <div className="container mx-auto px-6 h-24 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <div className="w-12 h-12 bg-gradient-to-br from-zinc-800 to-zinc-950 rounded-2xl flex items-center justify-center text-white font-black text-xl border border-white/10 shadow-2xl">
                             {storeUser.storeName?.[0] || "S"}
                         </div>
                         <div>
-                            <h1 className="font-black text-gray-900 dark:text-white leading-none">{storeUser.storeName}</h1>
-                            <div className="flex items-center gap-1.5 mt-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Verified Vendor</span>
+                            <h1 className="text-2xl font-black tracking-tighter sm:text-3xl text-white leading-none mb-1">{storeUser.storeName}</h1>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/80">Authorized Merchant</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="hidden md:flex flex-1 max-w-md mx-12">
-                        <div className="relative w-full">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <div className="hidden lg:flex flex-1 max-w-xl mx-16">
+                        <div className="relative w-full group">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-blue-500 transition-colors duration-300" />
                             <input
                                 type="text"
-                                placeholder="Search this store..."
-                                className="w-full pl-12 h-10 rounded-xl bg-gray-100 dark:bg-zinc-800 border-none text-sm font-medium focus:ring-2 focus:ring-blue-500/20"
+                                placeholder="Search premium collection..."
+                                className="w-full pl-14 h-14 rounded-full bg-white/5 border border-white/5 text-sm font-bold placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all outline-none"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         {user ? (
                             <>
                                 <Link href="/buyer-orders">
-                                    <Button variant="outline" className="rounded-xl font-bold h-10 px-6 gap-2 border-gray-100 hidden sm:flex">
-                                        <Package className="w-4 h-4" />
-                                        My Orders
+                                    <Button variant="outline" className="rounded-full font-black h-12 px-8 gap-3 bg-white/5 border-white/10 hover:bg-white/10 text-white transition-all hidden sm:flex">
+                                        <Package className="w-5 h-5" />
+                                        MY ORDERS
                                     </Button>
                                 </Link>
                                 <Button
                                     onClick={() => signOut(auth)}
                                     variant="ghost"
-                                    className="rounded-xl font-bold h-10 px-4 gap-2 text-zinc-500 hover:text-red-500"
+                                    className="rounded-full font-black h-12 w-12 p-0 flex items-center justify-center bg-white/5 hover:bg-red-500/20 text-zinc-400 hover:text-red-500 transition-all"
                                 >
-                                    <LogOut className="w-4 h-4" />
+                                    <LogOut className="w-5 h-5" />
                                 </Button>
                             </>
                         ) : (
                             <Link href="/">
-                                <Button variant="outline" className="rounded-xl font-bold h-10 px-6 gap-2 border-gray-100">
-                                    <User className="w-4 h-4" />
-                                    Sign In
+                                <Button variant="outline" className="rounded-full font-black h-12 px-8 gap-3 bg-white text-black hover:bg-zinc-200 border-none transition-all">
+                                    <User className="w-5 h-5" />
+                                    SIGN IN
                                 </Button>
                             </Link>
                         )}
@@ -155,70 +157,101 @@ export default function StorePage() {
                 </div>
             </header>
 
-            <main className="container mx-auto px-6 py-12 space-y-16">
-                {/* Hero / Banner */}
-                <section className="bg-zinc-950 rounded-[3rem] p-8 md:p-16 text-white overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/30 rounded-full blur-[100px] -mr-48 -mt-48" />
-                    <div className="relative z-10 max-w-2xl space-y-6">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/5">
-                            <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Top Rated Storefront</span>
+            <main className="container mx-auto px-6 py-12 space-y-24">
+                {/* Elite Hero Banner */}
+                <section className="relative rounded-[3rem] overflow-hidden bg-zinc-900 border border-white/10 flex flex-col items-center text-center py-32 px-4 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                    {/* Background glow and texture */}
+                    <div className="absolute inset-0 z-0">
+                        <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[120px]" />
+                        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-80" />
+                    </div>
+                    
+                    <div className="relative z-10 max-w-3xl space-y-8 flex flex-col items-center">
+                        <div className="inline-flex items-center gap-3 px-5 py-2 bg-zinc-950/80 backdrop-blur-md rounded-full border border-white/5 shadow-2xl">
+                            <Star className="w-4 h-4 text-emerald-400 fill-emerald-400" />
+                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-zinc-300">Elite Curated Collection</span>
                         </div>
-                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter leading-[0.9]">Premium Products, <br /><span className="text-blue-500">Fast Shipping.</span></h2>
-                        <p className="text-gray-400 font-medium md:text-lg">Discover curated essential items directly from the source. 100% Quality Guaranteed.</p>
-                        <div className="flex flex-wrap gap-8 pt-4">
+                        <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.05]">
+                            Exceptional Quality.<br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-300 to-zinc-600">Zero Compromise.</span>
+                        </h2>
+                        <p className="text-zinc-400 font-medium md:text-xl max-w-xl mx-auto leading-relaxed">
+                            Discover world-class essentials sourced directly from verified global suppliers. Premium tier products, expedited processing.
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-10 pt-8 opacity-70">
                             <div className="flex items-center gap-3">
-                                <Truck className="w-5 h-5 text-blue-400" />
-                                <span className="text-xs font-bold text-gray-300">Free Express Delivery</span>
+                                <Truck className="w-6 h-6 text-zinc-300" />
+                                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Global Priority</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 text-blue-400" />
-                                <span className="text-xs font-bold text-gray-300">24/7 Support</span>
+                                <Clock className="w-6 h-6 text-zinc-300" />
+                                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">24/7 Verified Support</span>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 {/* Products Grid */}
-                <div className="space-y-8">
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">Store Catalog</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-24">
+                <div className="space-y-12 pb-24">
+                    <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/10 pb-6">
+                        <div>
+                            <h3 className="text-4xl font-black tracking-tighter text-white">The Collection</h3>
+                            <p className="text-sm font-bold text-zinc-500 uppercase tracking-[0.2em] mt-2">Showing {filteredProducts.length} Items</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {filteredProducts.length === 0 ? (
-                            <div className="col-span-full py-24 text-center bg-gray-50 dark:bg-zinc-900/30 rounded-[3rem] border-2 border-dashed border-gray-100 dark:border-zinc-800">
-                                <Package className="w-16 h-16 text-gray-200 dark:text-zinc-800 mx-auto mb-6" />
-                                <h4 className="text-xl font-black text-gray-900 dark:text-white">No Products Yet</h4>
-                                <p className="text-gray-500 font-medium mt-2">Check back soon for latest arrivals.</p>
+                            <div className="col-span-full py-40 text-center bg-zinc-900/50 rounded-[3rem] border border-white/5">
+                                <Package className="w-20 h-20 text-zinc-800 mx-auto mb-8" />
+                                <h4 className="text-2xl font-black tracking-tight text-white mb-2">Inventory Updating</h4>
+                                <p className="text-zinc-500 font-medium max-w-sm mx-auto">This merchant is currently curating new products. Check back shortly.</p>
                             </div>
                         ) : (
                             filteredProducts.map((product: any) => (
-                                <div key={product.id} className="group flex flex-col bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-[2rem] overflow-hidden hover:shadow-2xl transition-all duration-500">
-                                    <div className="aspect-[4/5] bg-gray-50 dark:bg-zinc-800 relative overflow-hidden">
-                                        <div className="absolute top-4 left-4 z-20">
-                                            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
-                                                <Eye className="w-3 h-3 text-white" />
-                                                <span className="text-[10px] font-black text-white">
+                                <div key={product.id} className="group flex flex-col bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden hover:border-white/10 transition-all duration-700 hover:-translate-y-2 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+                                    <div className="aspect-[4/5] bg-zinc-900 relative overflow-hidden">
+                                        <div className="absolute top-5 left-5 z-20">
+                                            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-xl px-4 py-2 rounded-full border border-white/10 shadow-2xl">
+                                                <Eye className="w-4 h-4 text-zinc-300" />
+                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">
                                                     {(product.engagementViews || 0).toLocaleString()} Views
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="absolute inset-0 flex items-center justify-center text-gray-200 opacity-20 group-hover:scale-110 transition-transform duration-700">
-                                            <ShoppingBag className="w-24 h-24" />
-                                        </div>
-                                        <div className="absolute bottom-4 left-4 right-4 translate-y-12 group-hover:translate-y-0 transition-transform">
+                                        {product.image ? (
+                                            <>
+                                                <Image
+                                                    src={product.image}
+                                                    alt={product.name}
+                                                    fill
+                                                    className="object-cover transition-transform duration-1000 group-hover:scale-110 group-hover:opacity-60"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                                            </>
+                                        ) : (
+                                            <div className="absolute inset-0 flex items-center justify-center text-zinc-800 opacity-30 group-hover:scale-110 transition-transform duration-1000">
+                                                <ShoppingBag className="w-32 h-32" />
+                                            </div>
+                                        )}
+                                        <div className="absolute bottom-6 left-6 right-6 translate-y-24 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out z-30">
                                             <Button
                                                 onClick={() => setInquiryProduct(product)}
-                                                className="w-full h-11 bg-white dark:bg-zinc-800 dark:text-white text-black font-black rounded-xl shadow-xl hover:bg-blue-600 hover:text-white"
+                                                className="w-full h-14 bg-white text-[#050505] font-black rounded-full shadow-2xl hover:bg-zinc-200 text-xs tracking-[0.2em] uppercase"
                                             >
-                                                PURCHASE PRODUCT
+                                                SECURE PURCHASE
                                             </Button>
                                         </div>
                                     </div>
-                                    <div className="p-6 flex flex-col flex-1">
-                                        <h4 className="font-bold text-gray-900 dark:text-white line-clamp-2 leading-tight mb-2 h-10">{product.name}</h4>
-                                        <div className="flex justify-between items-end mt-auto">
+                                    <div className="p-8 flex flex-col flex-1 relative z-10 bg-[#0a0a0a]">
+                                        <h4 className="font-bold text-lg text-white line-clamp-2 leading-snug mb-4">{product.name}</h4>
+                                        <div className="flex justify-between items-end mt-auto pt-4 border-t border-white/5">
                                             <div>
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-1">Sale Price</p>
-                                                <p className="text-2xl font-black text-gray-900 dark:text-white">${product.resellPrice.toLocaleString()}</p>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">Available Now</p>
+                                                <p className="text-3xl font-black tracking-tighter text-white">${product.resellPrice.toLocaleString()}</p>
+                                            </div>
+                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white group-hover:text-black transition-colors">
+                                                <ArrowUpRight className="w-5 h-5" />
                                             </div>
                                         </div>
                                     </div>
@@ -229,16 +262,22 @@ export default function StorePage() {
                 </div>
 
                 {/* Trust Footer */}
-                <section className="bg-gray-50 dark:bg-zinc-900/50 p-12 rounded-[3.5rem] border border-gray-100 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-12">
-                    <div className="text-center md:text-left space-y-4 max-w-lg">
-                        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto md:mx-0">
-                            <ShieldCheck className="w-8 h-8 text-blue-600" />
+                <section className="relative overflow-hidden bg-zinc-900 border border-white/5 p-16 rounded-[4rem] flex flex-col lg:flex-row items-center justify-between gap-16 text-center lg:text-left">
+                    <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5" />
+                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px] -mt-[300px] -mr-[300px]" />
+                    
+                    <div className="relative z-10 space-y-6 max-w-2xl">
+                        <div className="w-20 h-20 bg-black/50 border border-white/10 rounded-[2rem] flex items-center justify-center mx-auto lg:mx-0 shadow-2xl backdrop-blur-xl">
+                            <ShieldCheck className="w-10 h-10 text-emerald-400" />
                         </div>
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none">Safe Shopping, Shoplinea.shop Verified</h3>
-                        <p className="text-gray-500 font-medium">All orders are managed via our central logistics network. 100% money-back guarantee on all verified storefront purchases.</p>
+                        <h3 className="text-4xl font-black tracking-tighter text-white">Guaranteed Integrity.</h3>
+                        <p className="text-zinc-400 font-medium text-lg leading-relaxed">
+                            This storefront is monitored by Shoplinea.shop's central logistics network. 
+                            Your payment is held securely in escrow until successful delivery confirmation.
+                        </p>
                     </div>
-                    <Button className="h-14 px-8 rounded-2xl font-black bg-blue-600 text-white shadow-xl shadow-blue-500/20 shrink-0">
-                        View Refund Policy
+                    <Button className="relative z-10 h-16 px-10 rounded-full font-black text-xs uppercase tracking-[0.2em] bg-white text-black hover:bg-zinc-200 transition-all shadow-2xl shrink-0">
+                        View Network Policy
                     </Button>
                 </section>
             </main>
@@ -262,8 +301,8 @@ export default function StorePage() {
                 storeUser={storeUser}
             />
 
-            <footer className="container mx-auto px-6 py-12 text-center text-gray-400 font-bold text-xs uppercase tracking-[0.3em]">
-                &copy; 2026 {storeUser.storeName}. Powered by Shoplinea.shop.
+            <footer className="border-t border-white/5 py-12 text-center text-zinc-600 font-black text-[10px] uppercase tracking-[0.4em]">
+                &copy; 2026 {storeUser.storeName}. Powered by the premium Shoplinea.shop network.
             </footer>
         </div>
     );

@@ -110,6 +110,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
             const orderData = {
                 productId: product.id,
                 productName: product.name,
+                productImage: product.image || null,
                 category: product.category || "General",
                 initialPrice: product.price,
                 resellPrice: paymentMethod === "crypto" ? product.resellPrice * 0.95 : product.resellPrice,
@@ -136,6 +137,23 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
                 "stats.revenue": increment(orderData.resellPrice),
                 pendingPayout: increment(orderData.resellerProfit) // Initially locked
             });
+
+            if (storeUser.email) {
+                await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'purchase',
+                        to: storeUser.email,
+                        data: {
+                            storeName: storeUser.storeName || storeUser.displayName || "Merchant",
+                            buyerName: formData.name,
+                            orderTotal: orderData.resellPrice,
+                            itemNames: product.name
+                        }
+                    })
+                }).catch(e => console.error("Email err", e));
+            }
 
             // Send Notification Email (simulated via Firestore collection)
             await addDoc(collection(db, "notifications"), {

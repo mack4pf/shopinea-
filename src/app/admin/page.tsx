@@ -30,7 +30,8 @@ import {
     TrendingUp,
     Megaphone,
     Target,
-    BarChart3
+    BarChart3,
+    UserCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,7 @@ export default function AdminDashboard() {
     const [simProductId, setSimProductId] = useState("");
     const [simCount, setSimCount] = useState("20");
     const [simPaymentSplit, setSimPaymentSplit] = useState("60");
+    const [simCountry, setSimCountry] = useState("USA");
     const [runningSim, setRunningSim] = useState(false);
 
     const [selectedKyc, setSelectedKyc] = useState<any>(null);
@@ -163,10 +165,18 @@ export default function AdminDashboard() {
     };
 
     const FAKE_BUYERS = [
-        { name: "Amara Osei", country: "Ghana" }, { name: "Fatou Diallo", country: "Senegal" }, { name: "Kwame Mensah", country: "Ghana" },
-        { name: "Nadia Bouazza", country: "Morocco" }, { name: "Ibrahim Traoré", country: "Burkina Faso" }, { name: "Chisom Eze", country: "Nigeria" },
-        { name: "Yemi Adeyemi", country: "Nigeria" }, { name: "Lina Al-Rashid", country: "UAE" }, { name: "Priya Nair", country: "India" },
-        { name: "Carlos Mendoza", country: "Mexico" }, { name: "Aiko Tanaka", country: "Japan" }, { name: "Blessing Okafor", country: "Nigeria" },
+        { name: "Liam Smith", country: "USA" }, 
+        { name: "Emma Wilson", country: "United Kingdom" }, 
+        { name: "Oliver Brown", country: "Australia" },
+        { name: "Sophia Muller", country: "Germany" }, 
+        { name: "Noah Johnson", country: "USA" }, 
+        { name: "Mia Davies", country: "Australia" },
+        { name: "Lucas Dubois", country: "France" }, 
+        { name: "Isabella Rossi", country: "Italy" }, 
+        { name: "Ethan White", country: "Canada" },
+        { name: "Charlotte Taylor", country: "USA" }, 
+        { name: "Max Schmidt", country: "Germany" }, 
+        { name: "Ava Thompson", country: "Australia" },
     ];
 
     const handleRunSimulator = async () => {
@@ -191,7 +201,7 @@ export default function AdminDashboard() {
                 const orderRef = await addDoc(collection(db, "orders"), {
                     resellerId: simTargetUserId,
                     customerName: buyer.name,
-                    customerCountry: buyer.country,
+                    customerCountry: simCountry || buyer.country,
                     productId: simProductId,
                     productName: product.name || product.productName,
                     resellPrice: product.resellPrice || product.price,
@@ -352,6 +362,27 @@ export default function AdminDashboard() {
                                     </select>
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest pl-1">Injection Origin (Country)</Label>
+                                    <Input 
+                                        className="w-full bg-zinc-950 border border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white px-4"
+                                        placeholder="USA"
+                                        value={simCountry}
+                                        onChange={(e) => setSimCountry(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest pl-1">Volume Count</Label>
+                                    <Input 
+                                        className="w-full bg-zinc-950 border border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white px-4"
+                                        placeholder="20"
+                                        type="number"
+                                        value={simCount}
+                                        onChange={(e) => setSimCount(e.target.value)}
+                                    />
+                                </div>
+                            </div>
                             <Button 
                                 onClick={handleRunSimulator}
                                 disabled={runningSim}
@@ -417,21 +448,21 @@ export default function AdminDashboard() {
                     <div className="space-y-8 py-6">
                         <div className="grid grid-cols-2 gap-8">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500">Identity Name</Label>
-                                <p className="text-xl font-black italic text-white uppercase">{selectedKyc.displayName || 'Unnamed Merchant'}</p>
+                                <Label className="text-[10px] font-black uppercase text-slate-500">Identity Name</Label>
+                                <p className="text-xl font-black italic text-slate-900 uppercase">{selectedKyc.identification?.fullName || selectedKyc.displayName || 'Unnamed Merchant'}</p>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500">Global ID</Label>
-                                <p className="text-xl font-black italic text-white uppercase font-mono">{selectedKyc.id.slice(0,12)}</p>
+                                <Label className="text-[10px] font-black uppercase text-slate-500">Global ID</Label>
+                                <p className="text-xl font-black italic text-slate-900 uppercase font-mono">{selectedKyc.identification?.idNumber || selectedKyc.id.slice(0,12)}</p>
                             </div>
                         </div>
 
-                        <div className="aspect-[16/9] bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden relative group">
-                            {selectedKyc.kycDocUrl ? (
-                                <img src={selectedKyc.kycDocUrl} alt="KYC Document" className="w-full h-full object-contain" />
+                        <div className="aspect-[16/9] bg-slate-50 border border-slate-200 rounded-3xl overflow-hidden relative group">
+                            {selectedKyc.identification?.documentImage || selectedKyc.kycDocUrl ? (
+                                <img src={selectedKyc.identification?.documentImage || selectedKyc.kycDocUrl} alt="KYC Document" className="w-full h-full object-contain" />
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <p className="text-[10px] font-black uppercase text-zinc-700 tracking-widest">No document attachment found</p>
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">No document attachment found</p>
                                 </div>
                             )}
                         </div>

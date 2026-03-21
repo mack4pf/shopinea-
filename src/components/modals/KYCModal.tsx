@@ -130,16 +130,16 @@ export function KYCModal({ isOpen, onClose, userId }: KYCModalProps) {
         return (
             <Modal isOpen={isOpen} onClose={handleClose} title="Submission Received">
                 <div className="flex flex-col items-center justify-center py-12 text-center space-y-8 animate-in zoom-in duration-500">
-                    <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center border-4 border-emerald-500 text-emerald-500 shadow-xl shadow-emerald-500/10">
+                    <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center border-4 border-emerald-500/30 text-emerald-500 shadow-xl shadow-emerald-500/10">
                         <CheckCircle2 className="w-12 h-12" />
                     </div>
                     <div className="space-y-3">
-                        <h3 className="text-3xl font-black text-slate-900 tracking-tight italic">Documents Submitted!</h3>
-                        <p className="text-sm font-bold text-slate-600 max-w-sm mx-auto leading-relaxed">
-                            Our compliance team is reviewing your documents. Once verified, you'll unlock <span className="font-black text-blue-600">Postpaid Ads</span>. You won't need to verify again after approval.
+                        <h3 className="text-3xl font-black text-white tracking-tight italic">Documents Submitted!</h3>
+                        <p className="text-sm font-bold text-zinc-500 max-w-sm mx-auto leading-relaxed">
+                            Our compliance team is reviewing your documents. Once verified, you'll unlock <span className="font-black text-blue-500">Postpaid Ads</span>. You won't need to verify again after approval.
                         </p>
                     </div>
-                    <Button onClick={handleClose} className="w-full h-14 bg-slate-900 text-white font-black rounded-2xl shadow-xl transition-all active:scale-95">
+                    <Button onClick={handleClose} className="w-full h-14 bg-white text-black font-black rounded-2xl shadow-xl transition-all active:scale-95">
                         RETURN TO PLATFORM
                     </Button>
                 </div>
@@ -159,7 +159,7 @@ export function KYCModal({ isOpen, onClose, userId }: KYCModalProps) {
         preview: string;
     }) => (
         <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1 leading-none">{label}</Label>
+            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1 leading-none">{label}</Label>
             <label className="relative block cursor-pointer group">
                 <input
                     type="file"
@@ -168,17 +168,17 @@ export function KYCModal({ isOpen, onClose, userId }: KYCModalProps) {
                     onChange={(e) => handleFileChange(field, e)}
                 />
                 <div className={`h-28 rounded-2xl border-2 border-dashed transition-all overflow-hidden flex items-center justify-center
-                    ${preview ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-slate-50 group-hover:border-blue-400 group-hover:bg-blue-50"}`}
+                    ${preview ? "border-emerald-500/40 bg-emerald-500/10" : "border-zinc-700 bg-zinc-950 group-hover:border-blue-500/40 group-hover:bg-blue-500/5"}`}
                 >
                     {preview ? (
                         <div className="relative w-full h-full">
                             <img src={preview} alt={label} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center gap-2 text-slate-400 group-hover:text-blue-500 transition-colors">
+                        <div className="flex flex-col items-center gap-2 text-zinc-600 group-hover:text-blue-500 transition-colors">
                             <Icon className="w-6 h-6" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Upload Image</span>
                         </div>
@@ -201,26 +201,26 @@ export function KYCModal({ isOpen, onClose, userId }: KYCModalProps) {
             description="Upload your ID and a selfie to unlock Postpaid Ads."
         >
             <div className="space-y-6">
-                <div className="bg-blue-50 border border-blue-100 p-5 rounded-3xl flex gap-4 items-start">
-                    <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                    <p className="text-[11px] font-bold text-blue-800 leading-relaxed">
+                <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-3xl flex gap-4 items-start">
+                    <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] font-bold text-blue-400/80 leading-relaxed">
                         Verified once — you'll never need to re-verify. Failure to pay postpaid ad debts within 48h of campaign end will result in legal reporting.
                     </p>
                 </div>
 
                 {/* Step 1: ID Number */}
                 <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1 leading-none flex items-center gap-2">
+                    <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1 leading-none flex items-center gap-2">
                         <Hash className="w-3 h-3" /> Government ID Number
                     </Label>
                     <div className="relative">
                         <Input
                             placeholder="e.g. NIN-123456789 or Passport No."
-                            className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-bold text-slate-900 pr-12"
+                            className="h-14 bg-zinc-950 border-zinc-800 rounded-2xl font-bold text-white pr-12 placeholder:text-zinc-700 focus:border-blue-500 transition-colors"
                             value={idNumber}
                             onChange={(e) => setIdNumber(e.target.value)}
                         />
-                        <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                        <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-600" />
                     </div>
                 </div>
 
@@ -250,7 +250,7 @@ export function KYCModal({ isOpen, onClose, userId }: KYCModalProps) {
 
                 {/* Progress indicator */}
                 {(files.selfie || files.idFront || files.idBack || idNumber) && (
-                    <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-2 p-3 bg-zinc-950 rounded-2xl border border-zinc-800">
                         {[
                             { done: !!idNumber, label: "ID #" },
                             { done: !!files.selfie, label: "Selfie" },
@@ -258,19 +258,19 @@ export function KYCModal({ isOpen, onClose, userId }: KYCModalProps) {
                             { done: !!files.idBack, label: "ID Back" },
                         ].map((item, i) => (
                             <div key={i} className="flex items-center gap-1.5">
-                                <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.done ? "bg-emerald-500" : "bg-slate-200"}`}>
+                                <div className={`w-4 h-4 rounded-full flex items-center justify-center ${item.done ? "bg-emerald-500" : "bg-zinc-700"}`}>
                                     {item.done && <CheckCircle2 className="w-3 h-3 text-white" />}
                                 </div>
-                                <span className={`text-[9px] font-black uppercase tracking-widest ${item.done ? "text-emerald-600" : "text-slate-400"}`}>{item.label}</span>
-                                {i < 3 && <span className="text-slate-200 ml-1">·</span>}
+                                <span className={`text-[9px] font-black uppercase tracking-widest ${item.done ? "text-emerald-500" : "text-zinc-600"}`}>{item.label}</span>
+                                {i < 3 && <span className="text-zinc-700 ml-1">·</span>}
                             </div>
                         ))}
                     </div>
                 )}
 
-                <div className="bg-slate-50 border border-slate-100 p-5 rounded-[2rem] flex items-center gap-3">
+                <div className="bg-zinc-950 border border-zinc-800 p-5 rounded-[2rem] flex items-center gap-3">
                     <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0" />
-                    <p className="text-[10px] font-bold text-slate-500 leading-relaxed">
+                    <p className="text-[10px] font-bold text-zinc-500 leading-relaxed">
                         Documents stored encrypted. Only accessible by compliance officers. Never shared with 3rd parties.
                     </p>
                 </div>

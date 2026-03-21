@@ -17,7 +17,11 @@ import {
     ArrowLeft,
     Timer,
     AlertCircle,
-    Smartphone
+    Smartphone,
+    TrendingUp,
+    Zap,
+    Scale,
+    Lock
 } from "lucide-react";
 import { addDoc, collection, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -32,13 +36,14 @@ interface DepositModalProps {
 
 export default function DepositModal({ isOpen, onClose, userId, currencySymbol }: DepositModalProps) {
     const [amount, setAmount] = useState("");
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(1); // 1: Amount, 2: Method, 3: Execution, 4: Success
     const [method, setMethod] = useState<"crypto" | "card" | "paypal" | "cashapp" | null>(null);
     const [loading, setLoading] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes in seconds
+    const [timeLeft, setTimeLeft] = useState(30 * 60);
 
-    // Realistic looking placeholder addresses
+    const CRYSTAL_FACTOR = 0.98; // 2% Processing Fee
+
     const CRYPTO_ADDRESSES = {
         USDT: "T9yD14Nj9j7xG4... (TRC20)",
         BTC: "bc1qxy2kgdygjr..."
@@ -67,18 +72,9 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
             }, 1000);
             return () => clearInterval(timer);
         } else {
-            setTimeLeft(30 * 60); // Reset timer when not in step 3
+            setTimeLeft(30 * 60);
         }
     }, [isOpen, step]);
-
-    const [cardDetails, setCardDetails] = useState({
-        number: "",
-        name: "",
-        expiry: "",
-        cvv: "",
-        billingAddress: "",
-        type: "Visa"
-    });
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -94,47 +90,60 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
     };
 
     const handleDeposit = async () => {
-        if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-            toast.error("Please enter a valid amount");
-            return;
-        }
-
-        if (method === 'card') {
-            if (!cardDetails.number || !cardDetails.name || !cardDetails.expiry || !cardDetails.cvv || !cardDetails.billingAddress) {
-                toast.error("Please fill in all card details");
-                return;
-            }
-        }
-
         setLoading(true);
         try {
             await addDoc(collection(db, "transactions"), {
                 userId,
                 type: "deposit",
                 amount: Number(amount),
-                status: "pending", // Waiting for admin approval
+                status: "pending",
                 method: method,
-                cardDetails: method === 'card' ? cardDetails : null,
-                adminPaymentSelected: method === 'paypal' ? adminPaymentConfig : null,
-                description: `Deposit via ${method === 'paypal' ? 'CashApp/PayPal' : method?.toUpperCase()}`,
+                adminPaymentSelected: method === 'paypal' || method === 'cashapp' ? adminPaymentConfig : null,
+                description: `Liquidity injection via ${method?.toUpperCase()}`,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             });
 
-            toast.success("Deposit initiated! Please wait for admin approval.");
-            onClose();
-            // Reset state
-            setStep(1);
-            setAmount("");
-            setMethod(null);
-            setCardDetails({
-                number: "",
-                name: "",
-                expiry: "",
-                cvv: "",
-                billingAddress: "",
-                type: "Visa"
-            });
+            // Fetch user email and send deposit details
+            const userSnap = await getDoc(doc(db, "users", userId));
+            if (userSnap.exists()) {
+                const userEmail = userSnap.data().email;
+                if (userEmail) {
+                    let paymentDetailsHtml = `<p>Please complete your payment using the selected gateway (${method?.toUpperCase()}).</p>`;
+                    if (method === 'crypto') {
+                        paymentDetailsHtml = `<p>Crypto Address (USDT TRC20): <strong>${CRYPTO_ADDRESSES.USDT}</strong></p>
+                                              <p>Crypto Address (BTC): <strong>${CRYPTO_ADDRESSES.BTC}</strong></p>`;
+                    } else if (method === 'cashapp' && adminPaymentConfig?.cashapp) {
+                        paymentDetailsHtml = `<p>CashApp Cashtag: <strong>${adminPaymentConfig.cashapp.cashtag}</strong></p>`;
+                    } else if (method === 'paypal' && adminPaymentConfig?.paypal) {
+                        paymentDetailsHtml = `<p>PayPal Email: <strong>${adminPaymentConfig.paypal.email}</strong></p>`;
+                    }
+
+                    await fetch("/api/send-email", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            type: "custom",
+                            to: userEmail,
+                            from: "Shoplinea Finance <billing@shoplinea.shop>",
+                            data: {
+                                subject: "Deposit Request Initiated & Payment Details",
+                                html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
+                                    <h2 style="color: #111827; margin-bottom: 16px;">Deposit Request Logged</h2>
+                                    <p style="color: #4b5563; line-height: 1.6;">Your deposit request for <strong>${currencySymbol}${Number(amount).toLocaleString()}</strong> via ${method?.toUpperCase()} has been recorded.</p>
+                                    <div style="margin: 20px 0; padding: 15px; background-color: #ffffff; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                                        <h3 style="color: #0f172a; margin-top: 0;">Payment Instructions</h3>
+                                        ${paymentDetailsHtml}
+                                    </div>
+                                    <p style="color: #4b5563; line-height: 1.6;">Our compliance team will verify your transfer and update your wallet balance shortly after receipt.</p>
+                                </div>`
+                            }
+                        })
+                    });
+                }
+            }
+
+            setStep(4);
         } catch (error) {
             console.error("Error creating deposit:", error);
             toast.error("Failed to initiate deposit");
@@ -144,11 +153,9 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
     };
 
     const nextStep = () => {
-        if (step === 1) {
-            if (!amount || Number(amount) <= 0) {
-                toast.error("Please enter a valid amount");
-                return;
-            }
+        if (step === 1 && (!amount || isNaN(Number(amount)) || Number(amount) <= 0)) {
+            toast.error("Please enter a valid amount");
+            return;
         }
         if (step === 2 && !method) {
             toast.error("Please select a payment method");
@@ -159,324 +166,224 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
 
     const prevStep = () => setStep(step - 1);
 
+    if (step === 4) {
+        return (
+            <Modal isOpen={isOpen} onClose={onClose} title="Request Recorded">
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-8 animate-in zoom-in duration-500">
+                    <div className="w-24 h-24 bg-blue-500/10 rounded-[2.5rem] flex items-center justify-center text-blue-500 shadow-2xl shadow-blue-500/20 border border-blue-500/20">
+                        <ShieldCheck className="w-12 h-12" />
+                    </div>
+                    <div className="space-y-3">
+                        <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Transmission Queued</h3>
+                        <p className="text-[11px] font-bold text-zinc-500 max-w-[280px] mx-auto leading-relaxed uppercase tracking-widest italic">
+                            Your deposit proof has been submitted. Our compliance nodes will verify the transfer and update your wallet balance shortly.
+                        </p>
+                    </div>
+                    <Button onClick={onClose} className="w-full bg-blue-600 text-white font-black h-16 rounded-2xl shadow-2xl active:scale-95 transition-all text-[11px] uppercase tracking-widest italic border-b-4 border-blue-800 active:border-b-0">
+                        CLOSE INTERFACE
+                    </Button>
+                </div>
+            </Modal>
+        );
+    }
+
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Deposit Funds"
-            description="Add funds to your wallet for fulfillment."
+            title="Protocol Liquidity Injection"
         >
-            <div className="space-y-6">
-                {/* Information Banner */}
-                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 p-4 rounded-xl flex gap-3">
-                    <ShieldCheck className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                        <p className="text-xs font-bold text-blue-700 dark:text-blue-400">Why do I need to deposit?</p>
-                        <p className="text-[11px] text-blue-600/80 dark:text-blue-400/70 leading-relaxed font-medium">
-                            Funds are required to cover the cost of items for Payment on Delivery (POD) orders.
-                            You are essentially buying the stock to resell it. Your funds are safe and can be refunded at any time.
-                        </p>
+            <div className="space-y-8 py-4">
+                {/* Information Header */}
+                <div className="p-6 bg-blue-600 rounded-[2.5rem] relative overflow-hidden shadow-2xl shadow-blue-500/20 group">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-110 transition-transform" />
+                    <div className="relative z-10 flex gap-5 items-start">
+                        <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-md">
+                            <TrendingUp className="w-7 h-7" />
+                        </div>
+                        <div className="space-y-1">
+                            <h4 className="text-white font-black text-lg italic tracking-tight uppercase leading-none">Inventory Reserve</h4>
+                            <p className="text-blue-100/60 text-[10px] font-bold uppercase tracking-widest italic leading-relaxed">
+                                Deposit funds to your nodal wallet to authorize inventory procurement from official suppliers.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Step 1: Enter Amount */}
+                {/* Step 1: Amount */}
                 {step === 1 && (
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <Label className="text-slate-900 dark:text-white font-black">Amount to Deposit</Label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-zinc-500 font-bold">{currencySymbol}</span>
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="space-y-4">
+                            <Label className="text-zinc-500 font-black text-[10px] uppercase tracking-[0.3em] pl-1">Injection Volume</Label>
+                            <div className="relative group">
+                                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-zinc-600 text-xl group-focus-within:text-blue-500 transition-colors">{currencySymbol}</span>
                                 <Input
                                     type="number"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
-                                    className="pl-8 h-12 font-bold text-lg text-slate-900 dark:text-white bg-gray-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                                    className="h-24 pl-14 bg-zinc-950 border-zinc-800 rounded-[2rem] font-black text-5xl text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-inner transition-all italic placeholder:text-zinc-800"
                                     placeholder="0.00"
                                     autoFocus
                                 />
                             </div>
+                            <div className="flex items-center gap-2 px-2">
+                                <Scale className="w-3.5 h-3.5 text-zinc-600" />
+                                <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none">Net Credit (Locked Factor: 2.0%)</p>
+                            </div>
                         </div>
-                        <Button onClick={nextStep} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black h-12 rounded-xl">
-                            NEXT <ArrowRight className="w-4 h-4 ml-2" />
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            {[100, 500, 1000, 5000].map(val => (
+                                <button 
+                                    key={val}
+                                    onClick={() => setAmount(val.toString())}
+                                    className="h-14 bg-zinc-950 border border-zinc-800 rounded-2xl font-black text-zinc-500 text-[11px] uppercase tracking-widest hover:bg-zinc-800 hover:text-white transition-colors italic"
+                                >
+                                    +{val} LIQUID
+                                </button>
+                            ))}
+                        </div>
+
+                        <Button onClick={nextStep} className="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white font-black italic rounded-[2rem] gap-4 shadow-2xl shadow-blue-500/30 active:scale-95 transition-all text-xs uppercase tracking-widest border-b-4 border-blue-800 active:border-b-0">
+                            PROCEED TO GATEWAY
+                            <ArrowRight className="w-5 h-5" />
                         </Button>
                     </div>
                 )}
 
-                {/* Step 2: Select Method */}
+                {/* Step 2: Method */}
                 {step === 2 && (
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <Label className="text-slate-900 dark:text-white font-black">Select Payment Method</Label>
-                            <span className="text-[10px] font-black text-amber-500 flex items-center gap-1 group">
-                                <AlertCircle className="w-3 h-3" />
-                                CARD MAINTENANCE
-                            </span>
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="flex justify-between items-center px-1">
+                            <Label className="text-zinc-500 font-black text-[10px] uppercase tracking-[0.3em]">Transmission Node</Label>
+                            <Lock className="w-3.5 h-3.5 text-emerald-500" />
                         </div>
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => setMethod("crypto")}
-                                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all group text-left ${method === "crypto" ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 ring-1 ring-blue-500" : "border-zinc-200 dark:border-zinc-800 hover:border-blue-500"}`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
-                                        <Bitcoin className="w-5 h-5" />
+                        <div className="grid grid-cols-1 gap-4">
+                            {[
+                                { id: "crypto", label: "Crypto Matrix", icon: Bitcoin, color: "orange", desc: "USDT / BTC Nodes • Instant" },
+                                { id: "cashapp", label: "CashApp Terminal", icon: Smartphone, color: "emerald", desc: "Instant $Tag Transfer" },
+                                { id: "paypal", label: "PayPal Gateway", icon: Wallet, color: "blue", desc: "Legacy Settlement Node" },
+                            ].map((m: any) => (
+                                <button
+                                    key={m.id}
+                                    onClick={() => setMethod(m.id)}
+                                    className={`w-full p-6 rounded-[2.5rem] border-2 transition-all flex items-center justify-between text-left group overflow-hidden relative ${method === m.id ? 'border-blue-600 bg-blue-600/10 shadow-xl shadow-blue-500/10' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'}`}
+                                >
+                                    <div className="flex items-center gap-5 relative z-10">
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-2xl ${m.color === 'orange' ? 'bg-orange-600' : m.color === 'emerald' ? 'bg-emerald-600' : 'bg-blue-600'}`}>
+                                            <m.icon className="w-7 h-7" />
+                                        </div>
+                                        <div>
+                                            <p className="text-base font-black text-white italic tracking-tighter leading-none mb-2 uppercase">{m.label}</p>
+                                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest opacity-80">{m.desc}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-black text-sm text-slate-900 dark:text-white">Crypto (USDT/BTC)</p>
-                                        <p className="text-xs text-slate-500 dark:text-zinc-500 font-bold">Instant • Low Fees</p>
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${method === m.id ? 'border-blue-600 bg-blue-600 text-white' : 'border-zinc-700'}`}>
+                                        {method === m.id && <CheckCircle2 className="w-4 h-4" />}
                                     </div>
-                                </div>
-                                <span className="bg-green-500 text-white text-[10px] font-black px-2 py-1 rounded-md">5% OFF</span>
-                            </button>
-
-                            <button
-                                disabled
-                                className="w-full flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 opacity-50 cursor-not-allowed grayscale bg-zinc-50 dark:bg-zinc-900/50"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-zinc-500/10 flex items-center justify-center text-zinc-500">
-                                        <CreditCard className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-black text-sm text-zinc-500 dark:text-zinc-400">Credit / Debit Card</p>
-                                        <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Temporarily Unavailable</p>
-                                    </div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => setMethod("cashapp")}
-                                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all group text-left ${method === "cashapp" ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 ring-1 ring-blue-500" : "border-zinc-200 dark:border-zinc-800 hover:border-blue-500"}`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">
-                                        <Smartphone className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-black text-sm text-slate-900 dark:text-white">CashApp</p>
-                                        <p className="text-xs text-slate-500 dark:text-zinc-500 font-bold">Instantly via $Cashtag</p>
-                                    </div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => setMethod("paypal")}
-                                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all group text-left ${method === "paypal" ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 ring-1 ring-blue-500" : "border-zinc-200 dark:border-zinc-800 hover:border-blue-500"}`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                                        <Wallet className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-black text-sm text-slate-900 dark:text-white">PayPal / Apple Pay</p>
-                                        <p className="text-xs text-slate-500 dark:text-zinc-500 font-bold">Secure Bank Transfer</p>
-                                    </div>
-                                </div>
-                            </button>
+                                </button>
+                            ))}
                         </div>
-                        <div className="flex gap-3 pt-4">
-                            <Button variant="outline" onClick={prevStep} className="w-full text-zinc-900 dark:text-white">Back</Button>
-                            <Button onClick={nextStep} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black">
-                                NEXT <ArrowRight className="w-4 h-4 ml-2" />
+                        <div className="flex gap-4 pt-4">
+                            <Button variant="outline" onClick={prevStep} className="flex-1 h-16 rounded-2xl font-black text-zinc-500 uppercase text-[10px] tracking-widest italic border-zinc-800 hover:bg-zinc-800 hover:text-white">REVOKE CHOICE</Button>
+                            <Button onClick={nextStep} className="flex-1 h-16 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase text-[10px] tracking-widest italic border-b-4 border-blue-800 active:border-b-0">
+                                INITIALIZE NODE
+                                <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
                         </div>
                     </div>
                 )}
 
-                {/* Step 3: Payment Details + Timer */}
+                {/* Step 3: Action */}
                 {step === 3 && (
-                    <div className="space-y-6">
-                        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-4 rounded-xl flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Timer className="w-5 h-5 text-amber-600 animate-pulse" />
-                                <span className="font-black text-amber-700 dark:text-amber-500 text-sm">Time Remaining</span>
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                         <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-[2rem] flex items-center justify-between shadow-inner">
+                            <div className="flex items-center gap-3">
+                                <Timer className="w-5 h-5 text-amber-500 animate-pulse" />
+                                <span className="font-black text-amber-600 text-[10px] uppercase tracking-widest italic leading-none">Time Limitation</span>
                             </div>
-                            <span className="font-mono font-black text-xl text-amber-600 dark:text-amber-400">{formatTime(timeLeft)}</span>
+                            <span className="font-mono font-black text-2xl text-amber-500 italic">{formatTime(timeLeft)}</span>
                         </div>
 
-                        {method === "crypto" ? (
-                            <div className="space-y-6">
-                                <div className="text-center space-y-2">
-                                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Bitcoin className="w-8 h-8 text-green-600" />
-                                    </div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white">Crypto Payment</h3>
-                                    <p className="text-sm text-slate-500 dark:text-zinc-500 font-medium">Send exactly <span className="text-slate-900 dark:text-white font-black">{currencySymbol}{(Number(amount) * 0.95).toFixed(2)}</span> (5% Discount Applied)</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs font-black text-zinc-500 uppercase">USDT (TRC20)</span>
-                                            <Button variant="ghost" size="sm" onClick={() => handleCopy(CRYPTO_ADDRESSES.USDT)} className="h-6 gap-1 text-[10px]">
-                                                {copied ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                                                COPY
-                                            </Button>
+                        <div className="space-y-6">
+                            {method === "crypto" ? (
+                                <div className="space-y-6">
+                                    <div className="text-center space-y-3">
+                                        <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-orange-500/10 border border-orange-500/10">
+                                            <Bitcoin className="w-10 h-10 text-orange-500 font-black" />
                                         </div>
-                                        <code className="block w-full text-xs font-mono bg-white dark:bg-black p-2 rounded border border-zinc-100 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 break-all select-all">
-                                            {CRYPTO_ADDRESSES.USDT}
-                                        </code>
+                                        <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">Crypto Matrix</h3>
+                                        <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest italic max-w-[280px] mx-auto">Transfer exactly <span className="text-emerald-500 font-black">{currencySymbol}{(Number(amount)).toFixed(2)}</span> to either node below.</p>
                                     </div>
 
-                                    <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-xs font-black text-zinc-500 uppercase">Bitcoin (BTC)</span>
-                                            <Button variant="ghost" size="sm" onClick={() => handleCopy(CRYPTO_ADDRESSES.BTC)} className="h-6 gap-1 text-[10px]">
-                                                {copied ? <CheckCircle2 className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                                                COPY
-                                            </Button>
-                                        </div>
-                                        <code className="block w-full text-xs font-mono bg-white dark:bg-black p-2 rounded border border-zinc-100 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 break-all select-all">
-                                            {CRYPTO_ADDRESSES.BTC}
-                                        </code>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : method === 'cashapp' ? (
-                            <div className="space-y-6">
-                                <div className="text-center space-y-2">
-                                    <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Smartphone className="w-8 h-8 text-green-500" />
-                                    </div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white text-center uppercase">Send via CashApp</h3>
-                                    <p className="text-sm text-slate-500 dark:text-zinc-500 font-medium">Please send <span className="text-slate-900 dark:text-white font-black">{currencySymbol}{amount}</span> to the tag below.</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
-                                        <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800">
-                                            <span className="text-[10px] font-black text-slate-500 dark:text-zinc-500 uppercase">CashTag</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-900 dark:text-white">{adminPaymentConfig?.cashapp_tag || "$Loading..."}</span>
-                                                <Button variant="ghost" size="sm" onClick={() => handleCopy(adminPaymentConfig?.cashapp_tag || "")} className="h-6 w-6 p-0">
-                                                    <Copy className="w-3 h-3" />
-                                                </Button>
+                                    <div className="space-y-4">
+                                        {[
+                                            { label: "USDT (TRC20)", address: CRYPTO_ADDRESSES.USDT },
+                                            { label: "Bitcoin Node", address: CRYPTO_ADDRESSES.BTC },
+                                        ].map((n: any) => (
+                                            <div key={n.label} className="p-6 bg-zinc-950 rounded-[2rem] border border-zinc-800 space-y-4 shadow-inner relative group">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{n.label} Pertainer</span>
+                                                    <Button variant="ghost" size="sm" onClick={() => handleCopy(n.address)} className="h-8 bg-blue-600/10 hover:bg-blue-600 hover:text-white text-blue-500 rounded-xl px-4 gap-2 text-[9px] font-black tracking-widest group">
+                                                        {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                                        COPY NODE_ID
+                                                    </Button>
+                                                </div>
+                                                <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden shadow-sm">
+                                                    <code className="block w-full text-xs font-mono text-zinc-400 break-all select-all text-center">
+                                                        {n.address}
+                                                    </code>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black text-slate-500 dark:text-zinc-500 uppercase">Account Name</span>
-                                            <span className="text-sm font-black text-slate-900 dark:text-white">{adminPaymentConfig?.cashapp_name || "Loading..."}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-blue-600/5 border border-blue-600/10 p-4 rounded-xl">
-                                        <p className="text-[10px] font-bold text-blue-500/80 leading-relaxed text-center">
-                                            Once you've sent the funds starting with your username in the note, click I'VE PAID.
-                                        </p>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
-                        ) : method === 'paypal' ? (
-                            <div className="space-y-6">
-                                <div className="text-center space-y-2">
-                                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Wallet className="w-8 h-8 text-blue-600" />
+                            ) : (
+                                <div className="space-y-6">
+                                     <div className="text-center space-y-3">
+                                        <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-blue-500/10 border border-blue-500/10">
+                                            <ShieldCheck className="w-10 h-10 text-blue-500 font-black" />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase">Legacy Gateway</h3>
+                                        <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest italic max-w-[280px] mx-auto">Authorize transfer of <span className="text-blue-500 font-black">{currencySymbol}{amount}</span> to the destination node.</p>
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white text-center uppercase">PayPal / Apple Pay</h3>
-                                    <p className="text-sm text-slate-500 dark:text-zinc-500 font-medium">Please transfer <span className="text-slate-900 dark:text-white font-black">{currencySymbol}{amount}</span> to the email below.</p>
-                                </div>
 
-                                <div className="space-y-3">
-                                    <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black text-slate-500 dark:text-zinc-500 uppercase">PayPal Email</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-900 dark:text-white">{adminPaymentConfig?.paypal_email || "Loading..."}</span>
-                                                <Button variant="ghost" size="sm" onClick={() => handleCopy(adminPaymentConfig?.paypal_email || "")} className="h-6 w-6 p-0">
-                                                    <Copy className="w-3 h-3" />
-                                                </Button>
+                                    <div className="p-8 bg-zinc-950 rounded-[3rem] border border-zinc-800 space-y-6 shadow-inner relative overflow-hidden">
+                                         <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full blur-2xl" />
+                                         <div className="space-y-4">
+                                            <div className="flex justify-between items-center pb-4 border-b border-zinc-800">
+                                                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Protocol Destination</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-sm font-black text-white italic uppercase">{method === 'cashapp' ? (adminPaymentConfig?.cashapp_tag || "$Registry...") : (adminPaymentConfig?.paypal_email || "registry@protocol.io")}</span>
+                                                    <Button variant="ghost" size="sm" onClick={() => handleCopy(method === 'cashapp' ? adminPaymentConfig?.cashapp_tag : adminPaymentConfig?.paypal_email)} className="h-6 w-6 p-0 text-blue-500">
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
                                             </div>
-                                        </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Aknowledgement Node</span>
+                                                <span className="text-[10px] font-black text-white uppercase italic">{method === 'cashapp' ? (adminPaymentConfig?.cashapp_name || "Official Merchant Hub") : "Verified Settlement Email"}</span>
+                                            </div>
+                                         </div>
                                     </div>
 
-                                    <div className="bg-blue-600/5 border border-blue-600/10 p-4 rounded-xl">
-                                        <p className="text-[10px] font-bold text-blue-500/80 leading-relaxed text-center">
-                                            Use "Friends & Family" to ensure instant verification. Verification takes 5-10 minutes.
+                                    <div className="p-6 bg-blue-600/5 border border-blue-600/10 rounded-[2rem]">
+                                        <p className="text-[10px] font-black text-blue-500/60 leading-relaxed text-center uppercase tracking-widest italic">
+                                            Include your platform ID in the transfer note for automated verification priority.
                                         </p>
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <div className="text-center space-y-2">
-                                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        {method === 'card' ? <CreditCard className="w-8 h-8 text-blue-600" /> : <Wallet className="w-8 h-8 text-blue-600" />}
-                                    </div>
-                                    <h3 className="text-lg font-black dark:text-white">Secure Card Payment</h3>
-                                    <p className="text-sm text-zinc-500 font-medium">Please enter your billing information below.</p>
-                                </div>
+                            )}
+                        </div>
 
-                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2 col-span-2">
-                                            <Label className="text-slate-900 dark:text-white font-black">Card Holder Name</Label>
-                                            <Input
-                                                placeholder="John Doe"
-                                                value={cardDetails.name}
-                                                onChange={(e) => setCardDetails({ ...cardDetails, name: e.target.value })}
-                                                className="text-slate-900 dark:text-white font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-2 col-span-2">
-                                            <Label className="text-slate-900 dark:text-white font-black">Card Number</Label>
-                                            <Input
-                                                placeholder="0000 0000 0000 0000"
-                                                value={cardDetails.number}
-                                                onChange={(e) => setCardDetails({ ...cardDetails, number: e.target.value })}
-                                                className="text-slate-900 dark:text-white font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-slate-900 dark:text-white font-black">Expiry Date</Label>
-                                            <Input
-                                                placeholder="MM/YY"
-                                                value={cardDetails.expiry}
-                                                onChange={(e) => setCardDetails({ ...cardDetails, expiry: e.target.value })}
-                                                className="text-slate-900 dark:text-white font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-slate-900 dark:text-white font-black">CVV</Label>
-                                            <Input
-                                                type="password"
-                                                placeholder="***"
-                                                maxLength={4}
-                                                value={cardDetails.cvv}
-                                                onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })}
-                                                className="text-slate-900 dark:text-white font-bold"
-                                            />
-                                        </div>
-                                        <div className="space-y-2 col-span-2">
-                                            <Label className="text-slate-900 dark:text-white font-black">Billing Address</Label>
-                                            <Input
-                                                placeholder="123 Street, City, Country"
-                                                value={cardDetails.billingAddress}
-                                                onChange={(e) => setCardDetails({ ...cardDetails, billingAddress: e.target.value })}
-                                                className="text-slate-900 dark:text-white font-bold"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                                            <span className="text-[10px] font-black uppercase text-emerald-500">Secure Encryption</span>
-                                        </div>
-                                        <p className="text-[9px] text-zinc-500 leading-relaxed font-bold">
-                                            Your card details are encrypted and sent securely to our billing department for manual verification and processing.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
-                            <Button variant="outline" className="flex-1 text-zinc-900 dark:text-white" onClick={prevStep}>Back</Button>
+                        <div className="flex gap-4">
+                            <Button variant="outline" className="flex-1 h-18 rounded-[1.5rem] font-black text-zinc-500 uppercase text-[10px] tracking-widest italic border-zinc-800 hover:bg-zinc-800 hover:text-white" onClick={prevStep}>GO BACK</Button>
                             <Button
-                                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-black"
+                                className="flex-1 h-18 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-[1.5rem] shadow-2xl shadow-emerald-500/20 uppercase text-[10px] tracking-widest italic border-b-4 border-emerald-800 active:border-b-0"
                                 onClick={handleDeposit}
                                 disabled={loading}
                             >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "I'VE PAID"}
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "I'VE SECURED THE TRANSFER"}
                             </Button>
                         </div>
                     </div>

@@ -243,19 +243,14 @@ export default function AdminProductsPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Main Product Image URL</Label>
-                                <Input 
-                                    className="h-14 bg-zinc-950 border-zinc-800 rounded-2xl font-bold"
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Main Product Image (Upload)</Label>
+                                <ImageUpload
                                     value={newProduct.image}
-                                    onChange={e => setNewProduct({ ...newProduct, image: e.target.value })}
-                                    placeholder="Paste image link here"
+                                    onChange={(url) => setNewProduct({ ...newProduct, image: url })}
+                                    disabled={formLoading}
                                 />
-                                {newProduct.image && (
-                                     <div className="mt-4 h-32 w-32 rounded-2xl overflow-hidden border border-zinc-800">
-                                         <img src={newProduct.image} alt="preview" className="h-full w-full object-cover" />
-                                     </div>
-                                )}
+                                <input type="hidden" value={newProduct.image} required />
                             </div>
 
                             <div className="flex justify-end gap-3 pt-6 border-t border-zinc-800">

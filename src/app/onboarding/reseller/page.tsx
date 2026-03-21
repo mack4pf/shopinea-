@@ -84,10 +84,26 @@ export default function ResellerOnboarding() {
                     // Fetch newly seeded products
                     const newSnapshot = await getDocs(productsRef);
                     const fetchedProducts = newSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-                    setProducts(fetchedProducts);
+                    
+                    const uniqueMap = new Map();
+                    fetchedProducts.forEach(p => {
+                        if (p.name && !uniqueMap.has(p.name)) {
+                            uniqueMap.set(p.name, p);
+                        }
+                    });
+                    
+                    setProducts(Array.from(uniqueMap.values()));
                 } else {
                     const fetchedProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-                    setProducts(fetchedProducts);
+                    
+                    const uniqueMap = new Map();
+                    fetchedProducts.forEach(p => {
+                        if (p.name && !uniqueMap.has(p.name)) {
+                            uniqueMap.set(p.name, p);
+                        }
+                    });
+                    
+                    setProducts(Array.from(uniqueMap.values()));
                 }
             } catch (error) {
                 console.error("Error initializing products:", error);
@@ -551,11 +567,20 @@ function ProductCard({
                     <Check className={`h-3.5 w-3.5 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
                 </div>
 
-                {/* Simulated Image */}
-                <div className={`aspect-[4/3] relative overflow-hidden ${isHighlight ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10' : 'bg-gray-100 dark:bg-zinc-800'}`}>
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-zinc-600 transition-transform duration-500 group-hover:scale-110">
-                        <ShoppingBag className="h-10 w-10 opacity-20" />
-                    </div>
+                {/* Product Image */}
+                <div className={`aspect-[4/3] relative overflow-hidden ${isHighlight ? 'bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 border-b border-yellow-100 dark:border-yellow-900/30' : 'bg-gray-100 dark:bg-zinc-800 border-b border-gray-100 dark:border-zinc-800'}`}>
+                    {product.image ? (
+                        <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-300 dark:text-zinc-600 transition-transform duration-500 group-hover:scale-110">
+                            <ShoppingBag className="h-10 w-10 opacity-20" />
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-4 space-y-2">

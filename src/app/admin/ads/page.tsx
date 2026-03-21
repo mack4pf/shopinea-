@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db, auth } from "@/lib/firebase/config";
-import { collection, query, getDocs, orderBy, updateDoc, doc, increment, where, serverTimestamp, getDoc } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, updateDoc, doc, increment, where, serverTimestamp, getDoc, arrayUnion, deleteDoc } from "firebase/firestore";
 import { 
     Megaphone, 
     Zap, 
@@ -20,7 +20,8 @@ import {
     AlertCircle,
     UserCircle,
     Calendar,
-    Wallet
+    Wallet,
+    Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -71,17 +72,73 @@ export default function AdCommandPage() {
         return () => unsub();
     }, []);
 
-    const handleApproveCampaign = async (campId: string) => {
-        setProcessingId(campId);
+    const handleApproveCampaign = async (camp: any) => {
+        setProcessingId(camp.id);
         try {
-            await updateDoc(doc(db, "campaigns", campId), {
+            await updateDoc(doc(db, "campaigns", camp.id), {
                 status: "active",
                 approvedAt: serverTimestamp()
             });
-            toast.success("Ad Campaign Propagated!");
+
+            const sellerDoc = await getDoc(doc(db, "users", camp.sellerId));
+            if (sellerDoc.exists() && sellerDoc.data().email) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: sellerDoc.data().email,
+                        data: {
+                            subject: `Ad Campaign Approved - ${camp.platform?.toUpperCase()}`,
+                            html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
+                                <h2 style="color: #111827; margin-bottom: 16px;">Traffic Protocol Active</h2>
+                                <p style="color: #4b5563; line-height: 1.6;">Your <strong>${camp.platform?.toUpperCase() || 'network'}</strong> ad campaign has been approved and is now actively delivering traffic.</p>
+                                <p style="color: #4b5563; line-height: 1.6;">You can track conversions and impressions in your dashboard.</p>
+                            </div>`
+                        }
+                    })
+                });
+            }
+
+            toast.success("Ad Campaign Propagated & Email Sent!");
             fetchData();
         } catch (err) {
             toast.error("Failed to activate campaign.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleBoost = async (campId: string, impressions: number, clicks: number, countryText: string) => {
+        try {
+            const updates: any = {};
+            if (impressions > 0) updates.impressions = increment(impressions);
+            if (clicks > 0) updates.clicks = increment(clicks);
+            
+            // Add countries if supplied
+            if (countryText.trim()) {
+                updates.countryReach = arrayUnion(...countryText.split(',').map((c: string) => c.trim().toUpperCase()));
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await updateDoc(doc(db, "campaigns", campId), updates);
+                toast.success("Campaign performance injected.");
+                fetchData();
+            }
+        } catch (err) {
+            toast.error("Failed to inject performance.");
+        }
+    };
+
+    const handleDeleteCampaign = async (campId: string) => {
+        if (!window.confirm("Permenantly delete this campaign?")) return;
+        setProcessingId(campId);
+        try {
+            await deleteDoc(doc(db, "campaigns", campId));
+            toast.success("Campaign deleted.");
+            fetchData();
+        } catch (e) {
+            toast.error("Failed to delete campaign.");
         } finally {
             setProcessingId(null);
         }
@@ -142,7 +199,7 @@ export default function AdCommandPage() {
                         </div>
                         <div>
                             <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">AI Ad Propagation</h2>
-                            <p className="text-[10px] font-black uppercase text-indigo-500 tracking-[0.2em]">Live Traffic Requests ({campaigns.filter(c => c.status === 'scheduled').length})</p>
+                            <p className="text-[10px] font-black uppercase text-indigo-500 tracking-[0.2em]">Live Traffic Requests ({campaigns.filter(c => c.status === 'scheduled' || c.status === 'reviewing').length})</p>
                         </div>
                     </div>
 
@@ -152,7 +209,11 @@ export default function AdCommandPage() {
                                 <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest italic">No active traffic requests</p>
                             </div>
                         ) : (
-                            campaigns.map((c) => (
+                            campaigns.map((c) => {
+                                const todayStr = new Date().toISOString().split('T')[0];
+                                const isExpired = c.endDate && c.endDate < todayStr;
+                                const dStatus = isExpired ? 'completed' : c.status;
+                                return (
                                 <div key={c.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-[2rem] group hover:border-indigo-500/50 transition-all">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex items-center gap-3">
@@ -164,30 +225,90 @@ export default function AdCommandPage() {
                                                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{c.platform || 'General'} Network • {c.totalBudget ? `$${c.totalBudget.toLocaleString()}` : 'Custom Budget'}</p>
                                             </div>
                                         </div>
-                                        <div className={cn(
-                                            "inline-flex items-center gap-1.5 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full border",
-                                            c.status === 'active' 
-                                                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' 
-                                                : c.status === 'scheduled'
-                                                ? 'bg-amber-500/10 text-amber-500 border-amber-500/10 animate-pulse'
-                                                : 'bg-rose-500/10 text-rose-500 border-rose-500/10'
-                                        )}>
-                                            {c.status?.toUpperCase() || 'QUEUED'}
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className={cn(
+                                                "inline-flex items-center gap-1.5 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full border",
+                                                dStatus === 'active' 
+                                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' 
+                                                    : (dStatus === 'scheduled' || dStatus === 'reviewing')
+                                                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/10 animate-pulse'
+                                                    : dStatus === 'completed'
+                                                    ? 'bg-blue-500/10 text-blue-500 border-blue-500/10'
+                                                    : 'bg-rose-500/10 text-rose-500 border-rose-500/10'
+                                            )}>
+                                                {dStatus?.toUpperCase() || 'QUEUED'}
+                                            </div>
+                                            <button 
+                                                onClick={() => handleDeleteCampaign(c.id)}
+                                                className="text-zinc-600 hover:text-rose-500 transition-colors p-1"
+                                                title="Delete Campaign"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {c.status === 'scheduled' && (
+                                    {(dStatus === 'scheduled' || dStatus === 'reviewing') && (
                                         <Button 
-                                            onClick={() => handleApproveCampaign(c.id)}
+                                            onClick={() => handleApproveCampaign(c)}
                                             disabled={!!processingId}
-                                            className="w-full h-12 bg-white text-black font-black italic rounded-xl gap-2 shadow-xl shadow-white/5 text-[9px] uppercase tracking-widest"
+                                            className="w-full h-12 bg-white text-black font-black italic rounded-xl gap-2 shadow-xl shadow-white/5 text-[9px] uppercase tracking-widest mt-2"
                                         >
                                             {processingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
                                             ACTIVATE CAMPAIGN
                                         </Button>
                                     )}
+
+                                    {dStatus === 'active' && (
+                                        <div className="mt-4 pt-4 border-t border-zinc-800 space-y-3">
+                                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest italic">Inject Performance Metrics</p>
+                                            <form 
+                                                onSubmit={(e) => {
+                                                    e.preventDefault();
+                                                    const form = e.target as any;
+                                                    handleBoost(
+                                                        c.id, 
+                                                        parseInt(form.impressions.value || '0'), 
+                                                        parseInt(form.clicks.value || '0'),
+                                                        form.countries.value || ''
+                                                    );
+                                                    form.reset();
+                                                }}
+                                                className="space-y-3"
+                                            >
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input 
+                                                        type="number" 
+                                                        name="impressions"
+                                                        placeholder="+ Impressions" 
+                                                        className="w-full h-10 bg-zinc-900 border-zinc-800 rounded-lg text-[10px] font-black text-white px-3 focus:border-indigo-500 transition-colors uppercase placeholder:text-zinc-600"
+                                                    />
+                                                    <input 
+                                                        type="number" 
+                                                        name="clicks"
+                                                        placeholder="+ Conversions" 
+                                                        className="w-full h-10 bg-zinc-900 border-zinc-800 rounded-lg text-[10px] font-black text-white px-3 focus:border-indigo-500 transition-colors uppercase placeholder:text-zinc-600"
+                                                    />
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    name="countries"
+                                                    placeholder="Add Countries (e.g. US, UK, CA)" 
+                                                    className="w-full h-10 bg-zinc-900 border-zinc-800 rounded-lg text-[10px] font-black text-white px-3 focus:border-indigo-500 transition-colors uppercase placeholder:text-zinc-600"
+                                                />
+                                                <Button type="submit" variant="secondary" className="w-full h-10 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white font-black text-[9px] uppercase tracking-widest">
+                                                    INJECT DATA PROTOCOL
+                                                </Button>
+                                            </form>
+                                            {c.countryReach && c.countryReach.length > 0 && (
+                                                <div className="mt-2 text-[8px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 p-2 rounded-lg break-words">
+                                                    📍 {Array.isArray(c.countryReach) ? c.countryReach.join(', ') : c.countryReach}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                            ))
+                            )})
                         )}
                     </div>
                 </div>

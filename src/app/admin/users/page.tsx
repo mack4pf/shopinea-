@@ -50,6 +50,13 @@ export default function UserMatrixPage() {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [boostingSales, setBoostingSales] = useState(false);
     const [boostCount, setBoostCount] = useState("10");
+    const [simCountry, setSimCountry] = useState("USA");
+
+    // Email Module
+    const [adminTemplate, setAdminTemplate] = useState("custom");
+    const [adminSubject, setAdminSubject] = useState("");
+    const [adminBody, setAdminBody] = useState("");
+    const [adminSending, setAdminSending] = useState(false);
 
     const fetchUsers = async () => {
         try {
@@ -99,10 +106,18 @@ export default function UserMatrixPage() {
     };
 
     const FAKE_BUYERS = [
-        { name: "Amara Osei", country: "Ghana" }, { name: "Fatou Diallo", country: "Senegal" }, { name: "Kwame Mensah", country: "Ghana" },
-        { name: "Nadia Bouazza", country: "Morocco" }, { name: "Ibrahim Traoré", country: "Burkina Faso" }, { name: "Chisom Eze", country: "Nigeria" },
-        { name: "Yemi Adeyemi", country: "Nigeria" }, { name: "Lina Al-Rashid", country: "UAE" }, { name: "Priya Nair", country: "India" },
-        { name: "Carlos Mendoza", country: "Mexico" }, { name: "Aiko Tanaka", country: "Japan" }, { name: "Blessing Okafor", country: "Nigeria" },
+        { name: "Liam Smith", country: "USA" }, 
+        { name: "Emma Wilson", country: "United Kingdom" }, 
+        { name: "Oliver Brown", country: "Australia" },
+        { name: "Sophia Muller", country: "Germany" }, 
+        { name: "Noah Johnson", country: "USA" }, 
+        { name: "Mia Davies", country: "Australia" },
+        { name: "Lucas Dubois", country: "France" }, 
+        { name: "Isabella Rossi", country: "Italy" }, 
+        { name: "Ethan White", country: "Canada" },
+        { name: "Charlotte Taylor", country: "USA" }, 
+        { name: "Max Schmidt", country: "Germany" }, 
+        { name: "Ava Thompson", country: "Australia" },
     ];
 
     const handleBoostSales = async () => {
@@ -127,7 +142,7 @@ export default function UserMatrixPage() {
                 await addDoc(collection(db, "orders"), {
                     resellerId: selectedUser.id,
                     customerName: buyer.name,
-                    customerCountry: buyer.country,
+                    customerCountry: simCountry || buyer.country,
                     productId: product.id,
                     productName: product.name,
                     resellPrice: pData.resellPrice || pData.price,
@@ -148,6 +163,45 @@ export default function UserMatrixPage() {
             toast.error("Market injection failed.");
         } finally {
             setBoostingSales(false);
+        }
+    };
+
+    const handleSendCustomEmail = async () => {
+        if (!selectedUser || !selectedUser.email) {
+            toast.error("User does not have a valid email.");
+            return;
+        }
+        if (!adminSubject || !adminBody) {
+            toast.error("Please fill in both subject and body.");
+            return;
+        }
+        setAdminSending(true);
+        try {
+            const res = await fetch("/api/send-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: "custom",
+                    to: selectedUser.email,
+                    from: "Shoplinea Support <support@shoplinea.shop>",
+                    data: {
+                        subject: adminSubject,
+                        html: adminBody
+                    }
+                })
+            });
+            if (res.ok) {
+                toast.success("Official Notification dispatched successfully.");
+                setAdminSubject("");
+                setAdminBody("");
+            } else {
+                toast.error("Failed to route mail to user.");
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error("Mail network failure.");
+        } finally {
+            setAdminSending(false);
         }
     };
 
@@ -366,56 +420,56 @@ export default function UserMatrixPage() {
                 {selectedUser && (
                     <div className="space-y-10 py-6 animate-in fade-in zoom-in duration-500">
                         {/* Header Section */}
-                        <div className="flex items-start gap-6 bg-zinc-950 border border-zinc-800 p-8 rounded-[2.5rem] relative overflow-hidden group">
+                        <div className="flex items-start gap-6 bg-slate-50 border border-slate-200 p-8 rounded-[2.5rem] relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-blue-600/5 rounded-full blur-[50px] -mr-20 -mt-20" />
-                            <div className="w-20 h-20 rounded-[1.8rem] bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 overflow-hidden shadow-2xl group-hover:scale-105 transition-all">
+                            <div className="w-20 h-20 rounded-[1.8rem] bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-sm group-hover:scale-105 transition-all">
                                 {selectedUser.photoURL ? (
                                     <img src={selectedUser.photoURL} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <Users className="w-10 h-10 text-zinc-500" />
+                                    <Users className="w-10 h-10 text-slate-400" />
                                 )}
                             </div>
                             <div className="space-y-1 py-1 relative z-10">
-                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] leading-none mb-2">Authenticated Official</p>
-                                <h2 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">{selectedUser.displayName || 'Merchant'}</h2>
+                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] leading-none mb-2">Authenticated Official</p>
+                                <h2 className="text-3xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">{selectedUser.displayName || 'Merchant'}</h2>
                                 <div className="flex items-center gap-3">
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{selectedUser.email}</p>
-                                    <span className="w-1 h-1 rounded-full bg-zinc-800" />
-                                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">ID: {selectedUser.id.slice(0, 10)}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedUser.email}</p>
+                                    <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">ID: {selectedUser.id.slice(0, 10)}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Pending Capital Hub */}
-                            <div className="bg-zinc-900/50 border border-zinc-800 p-8 rounded-[2rem] space-y-6">
+                            <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] space-y-6">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                                        <Clock className="w-5 h-5 text-amber-500" />
+                                        <Clock className="w-5 h-5 text-amber-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-black text-white uppercase tracking-tight italic">Pending Capital</h3>
-                                        <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Awaiting clearing protocol</p>
+                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight italic">Pending Capital</h3>
+                                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Awaiting clearing protocol</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
                                     {loadingDetails ? (
                                         <div className="h-20 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 animate-spin text-zinc-800" />
+                                            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                                         </div>
                                     ) : userTransactions.length === 0 ? (
-                                        <div className="p-6 bg-zinc-950 border border-zinc-800 border-dashed rounded-xl text-center">
-                                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">No pending transactions</p>
+                                        <div className="p-6 bg-white border border-slate-200 border-dashed rounded-xl text-center">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">No pending transactions</p>
                                         </div>
                                     ) : (
                                         userTransactions.map(t => (
-                                            <div key={t.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between group hover:border-amber-500/30 transition-all">
+                                            <div key={t.id} className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between group hover:border-amber-500/30 transition-all shadow-sm">
                                                 <div className="space-y-0.5">
-                                                    <p className="text-[10px] font-black text-white uppercase italic tracking-tight">{t.type?.replace('_', ' ')}</p>
-                                                    <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Recent'}</p>
+                                                    <p className="text-[10px] font-black text-slate-900 uppercase italic tracking-tight">{t.type?.replace('_', ' ')}</p>
+                                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Recent'}</p>
                                                 </div>
-                                                <p className="text-xs font-black text-amber-500 tracking-tighter">${t.amount?.toLocaleString()}</p>
+                                                <p className="text-xs font-black text-amber-600 tracking-tighter">${t.amount?.toLocaleString()}</p>
                                             </div>
                                         ))
                                     )}
@@ -423,36 +477,36 @@ export default function UserMatrixPage() {
                             </div>
 
                             {/* Store Analytics Hub */}
-                            <div className="bg-zinc-900/50 border border-zinc-800 p-8 rounded-[2rem] space-y-6">
+                            <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] space-y-6">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                        <Box className="w-5 h-5 text-blue-500" />
+                                        <Box className="w-5 h-5 text-blue-600" />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-black text-white uppercase tracking-tight italic">Inventory Core</h3>
-                                        <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">Active SKU rotations</p>
+                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight italic">Inventory Core</h3>
+                                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active SKU rotations</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-3">
                                     {loadingDetails ? (
                                         <div className="h-20 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 animate-spin text-zinc-800" />
+                                            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                                         </div>
                                     ) : userProducts.length === 0 ? (
-                                        <div className="p-6 bg-zinc-950 border border-zinc-800 border-dashed rounded-xl text-center">
-                                            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">No active inventory records</p>
+                                        <div className="p-6 bg-white border border-slate-200 border-dashed rounded-xl text-center">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">No active inventory records</p>
                                         </div>
                                     ) : (
                                         userProducts.map(p => (
-                                            <div key={p.id} className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                                            <div key={p.id} className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between group hover:border-blue-500/30 transition-all shadow-sm">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden">
-                                                        <Eye className="w-4 h-4 text-zinc-700" />
+                                                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden">
+                                                        <Eye className="w-4 h-4 text-slate-500" />
                                                     </div>
-                                                    <p className="text-[10px] font-black text-white uppercase italic tracking-tight">{p.name || 'Global SKU'}</p>
+                                                    <p className="text-[10px] font-black text-slate-900 uppercase italic tracking-tight">{p.name || 'Global SKU'}</p>
                                                 </div>
-                                                <ArrowUpRight className="w-3 h-3 text-zinc-700 group-hover:text-blue-500 transition-all" />
+                                                <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-all" />
                                             </div>
                                         ))
                                     )}
@@ -461,33 +515,42 @@ export default function UserMatrixPage() {
                         </div>
 
                         {/* Market Injection Engine */}
-                        <div className="bg-white p-10 rounded-[2.5rem] space-y-8 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-80 h-80 bg-zinc-100 rounded-full blur-[100px] -mr-40 -mt-40 opacity-0 group-hover:opacity-100 transition-all duration-1000" />
+                        <div className="bg-slate-50 border border-slate-200 p-10 rounded-[2.5rem] space-y-8 shadow-sm relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-50 rounded-full blur-[100px] -mr-40 -mt-40 opacity-0 group-hover:opacity-100 transition-all duration-1000" />
                             <div className="flex items-center gap-4 relative z-10">
                                 <div className="w-14 h-14 bg-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-blue-600/20">
                                     <Zap className="w-8 h-8 text-white animate-pulse" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-black text-black italic tracking-tight leading-none mb-1">Market Injection</h2>
+                                    <h2 className="text-2xl font-black text-slate-900 italic tracking-tight leading-none mb-1">Market Injection</h2>
                                     <p className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">Artificial Demand Acceleration</p>
                                 </div>
                             </div>
 
                             <div className="flex flex-col md:flex-row gap-6 items-end relative z-10">
                                 <div className="flex-1 space-y-2 w-full">
-                                    <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest pl-1">Injection Volume (Orders)</Label>
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Injection Origin (Country)</Label>
+                                    <Input
+                                        value={simCountry}
+                                        onChange={e => setSimCountry(e.target.value)}
+                                        className="h-14 bg-white border-slate-200 rounded-2xl font-black text-slate-900 text-xl italic"
+                                        placeholder="USA"
+                                    />
+                                </div>
+                                <div className="flex-1 space-y-2 w-full">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Injection Volume</Label>
                                     <Input
                                         type="number"
                                         value={boostCount}
                                         onChange={e => setBoostCount(e.target.value)}
-                                        className="h-14 bg-zinc-50 border-zinc-200 rounded-2xl font-black text-black text-xl italic"
+                                        className="h-14 bg-white border-slate-200 rounded-2xl font-black text-slate-900 text-xl italic"
                                         placeholder="10"
                                     />
                                 </div>
                                 <Button
                                     onClick={handleBoostSales}
                                     disabled={boostingSales || userProducts.length === 0}
-                                    className="h-14 bg-blue-600 hover:bg-black text-white font-black italic rounded-2xl px-10 gap-3 shadow-xl shadow-blue-600/20 transition-all duration-500 uppercase text-[10px]"
+                                    className="h-14 bg-blue-600 hover:bg-blue-700 text-white font-black italic rounded-2xl px-10 gap-3 shadow-xl shadow-blue-600/20 transition-all duration-500 uppercase text-[10px]"
                                 >
                                     {boostingSales ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5 fill-current" />}
                                     EXECUTE PROTOCOL
@@ -500,12 +563,74 @@ export default function UserMatrixPage() {
                             )}
                         </div>
 
-                        <div className="pt-6 border-t border-zinc-800 flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                                <ShieldAlert className="w-4 h-4 text-zinc-700" />
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Authorized Operations Only • All Injections are Logged</p>
+                        {/* Admin Communications Hub */}
+                        <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                                    <Mail className="w-5 h-5 text-purple-600" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight italic">Direct Transmission</h3>
+                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Send specialized billing or store emails to this merchant</p>
+                                </div>
                             </div>
-                            <Button onClick={() => setSelectedUser(null)} variant="ghost" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-all">Close Terminal</Button>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Template Selection</Label>
+                                    <select 
+                                        className="w-full h-12 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-sm px-4 outline-none focus:border-purple-500/50"
+                                        value={adminTemplate}
+                                        onChange={(e) => {
+                                            setAdminTemplate(e.target.value);
+                                            if (e.target.value === 'billing') {
+                                                setAdminSubject('Action Required: Account Setup Fee / Subscription Phase');
+                                                setAdminBody('Dear Merchant,\n\nTo release your pending funds and activate your payout route, you are required to pay a one-time network clearance fee / subscription. Please contact our support team or use the designated payment portal to complete this transaction.\n\nThank you,\nShoplinea Network Infrastructure');
+                                            } else {
+                                                setAdminSubject('');
+                                                setAdminBody('');
+                                            }
+                                        }}
+                                    >
+                                        <option value="custom">Freeform Custom Transmission</option>
+                                        <option value="billing">Billing/Fee/Subscription Request</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Transmission Subject</Label>
+                                    <Input
+                                        value={adminSubject}
+                                        onChange={e => setAdminSubject(e.target.value)}
+                                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-slate-900 text-sm focus:border-purple-500/50"
+                                        placeholder="E.g. Action Required: Billing Issue"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Secure Message Body</Label>
+                                    <textarea
+                                        value={adminBody}
+                                        onChange={e => setAdminBody(e.target.value)}
+                                        className="w-full h-32 bg-white border border-slate-200 rounded-xl font-medium text-slate-900 text-sm p-4 outline-none focus:border-purple-500/50 focus:ring-4 focus:ring-purple-500/10 transition-all resize-none shadow-sm"
+                                        placeholder="Write your professional message here..."
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleSendCustomEmail}
+                                    disabled={adminSending}
+                                    className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl gap-2 transition-all shadow-lg shadow-purple-600/20"
+                                >
+                                    {adminSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                                    DISPATCH TRANSMISSION
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-slate-200 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <ShieldAlert className="w-4 h-4 text-slate-400" />
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authorized Operations Only • All Injections are Logged</p>
+                            </div>
+                            <Button onClick={() => setSelectedUser(null)} variant="ghost" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-900 hover:bg-slate-100 transition-all">Close Terminal</Button>
                         </div>
                     </div>
                 )}
