@@ -1,6 +1,6 @@
 const https = require('https');
 
-const API_KEY = 're_Gq9gHhn7_B4rMGK1ojkgeseU3Ra2UUJ8d'; // From your .env
+const API_KEY = process.env.RESEND_API_KEY || 'YOUR_API_KEY'; // Replace with a safe method or load from .env
 
 const data = JSON.stringify({
   from: 'noreply@shoplinea.shop',
