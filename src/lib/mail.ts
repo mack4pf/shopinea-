@@ -6,7 +6,7 @@ export async function sendEmail({
     to,
     subject,
     html,
-    from = 'Shoplinea Enterprise <noreply@shoplinea.shop>',
+    from = 'Shoplinea <noreply@shoplinea.shop>',
 }: {
     to: string;
     subject: string;
@@ -59,14 +59,14 @@ const baseTemplate = (content: string) => `
     <div class="container">
         <div class="header">
             <h1>Shoplinea</h1>
-            <p>Enterprise Network</p>
+            <p>Merchant Portal</p>
         </div>
         <div class="content">
             ${content}
         </div>
         <div class="footer">
-            <p><strong>Shoplinea Global Logistics & Infrastructure</strong><br/>
-            This email was sent automatically. Standard encryption protocols applied.<br/>
+            <p><strong>Shoplinea</strong><br/>
+            This email was sent automatically. Secure encryption applied.<br/>
             &copy; 2026 Shoplinea.shop. All rights reserved.</p>
         </div>
     </div>
@@ -75,23 +75,23 @@ const baseTemplate = (content: string) => `
 `;
 
 export const getVerificationEmailHtml = (code: string) => baseTemplate(`
-    <span class="badge" style="margin-bottom: 16px;">Identity Verification</span>
-    <h2>Action Required: Verify Account</h2>
-    <p>We received a request to authorize a new device or session for your Merchant Account. Proceed with the verification hash below to finalize authentication.</p>
+    <span class="badge" style="margin-bottom: 16px;">Security Verification</span>
+    <h2>Verification Code</h2>
+    <p>We received a request to verify your account. Please use the verification code below to proceed.</p>
     
     <div class="box" style="text-align: center; border-color: #2563eb; background-color: #eff6ff;">
-        <p style="text-transform: uppercase; font-size: 11px; font-weight: 700; color: #2563eb; margin-bottom: 8px; letter-spacing: 1px;">Access Code</p>
+        <p style="text-transform: uppercase; font-size: 11px; font-weight: 700; color: #2563eb; margin-bottom: 8px; letter-spacing: 1px;">Verification Code</p>
         <span style="font-size: 42px; font-weight: 800; letter-spacing: 8px; color: #1e3a8a;">${code}</span>
     </div>
     
-    <p style="font-size: 13px; color: #6b7280;">If you did not initiate this request, please contact Shoplinea Support immediately as your security may be compromised.</p>
+    <p style="font-size: 13px; color: #6b7280;">If you did not initiate this request, please contact Shoplinea Support immediately.</p>
 `);
 
 export const getProductAddedEmailHtml = (userName: string, products: any[]) => baseTemplate(`
-    <span class="badge" style="margin-bottom: 16px;">Inventory Provisioned</span>
-    <h2>Products Successfully Deployed</h2>
+    <span class="badge" style="margin-bottom: 16px;">Products Added</span>
+    <h2>Products Successfully Linked</h2>
     <p>Hello ${userName},</p>
-    <p>We have successfully established links with global suppliers and provisioned new products securely to your storefront. Your local inventory reflects the following additions:</p>
+    <p>We have successfully linked new products to your store. Your inventory reflects the following additions:</p>
     
     <div class="box" style="padding: 0;">
         ${products.map((p, i) => `
@@ -101,30 +101,30 @@ export const getProductAddedEmailHtml = (userName: string, products: any[]) => b
                     <div style="color: #6b7280; font-size: 13px; margin-top: 4px;">Cost: <span style="font-family: monospace;">$${p.price}</span></div>
                 </div>
                 <div style="text-align: right;">
-                    <span style="display: inline-block; background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">PROFIT READY</span><br/>
+                    <span style="display: inline-block; background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">READY</span><br/>
                     <strong style="color: #111827; font-size: 15px;">$${p.resellPrice}</strong>
                 </div>
             </div>
         `).join('')}
     </div>
     
-    <p>Your B2B supplier nodes have been updated. When a buyer checks out on your store, fulfillment procedures will initiate automatically.</p>
+    <p>Your supplier connections have been updated. When a buyer checks out on your store, fulfillment will be managed automatically.</p>
     <a href="https://shoplinea.shop/dashboard" style="color: white" class="button">Access Dashboard</a>
 `);
 
 export const getPurchaseDetailsEmailHtml = (storeName: string, buyerName: string, orderTotal: number, itemNames: string) => baseTemplate(`
-    <span class="badge" style="background-color: #dcfce7; color: #166534; margin-bottom: 16px;">Order Incoming</span>
+    <span class="badge" style="background-color: #dcfce7; color: #166534; margin-bottom: 16px;">New Order</span>
     <h2>New Sale Completed!</h2>
     <p>Congratulations, ${storeName}.</p>
-    <p>A buyer (<strong>${buyerName}</strong>) has just completed a transaction on your storefront.</p>
-
+    <p>A buyer (<strong>${buyerName}</strong>) has just completed a transaction on your store.</p>
+    
     <div class="box" style="border-left: 4px solid #10b981;">
-        <p style="margin: 0; font-size: 14px; font-weight: 500; color: #4b5563; margin-bottom: 12px;"><strong>Order Items:</strong> ${itemNames}</p>
-        <p style="margin: 0; font-size: 28px; font-weight: 800; color: #111827;">Gross: $${orderTotal.toLocaleString()}</p>
+        <p style="margin: 0; font-size: 14px; font-weight: 500; color: #4b5563; margin-bottom: 12px;"><strong>Ordered Items:</strong> ${itemNames}</p>
+        <p style="margin: 0; font-size: 28px; font-weight: 800; color: #111827;">Total: $${orderTotal.toLocaleString()}</p>
     </div>
-
-    <p>The funds are being held in escrow and the global fulfillment protocol has been notified. <strong>Log into your dashboard immediately to approve the shipment logic and capture your margin.</strong></p>
-    <a href="https://shoplinea.shop/dashboard/orders" style="color: white" class="button">Capture Order Now</a>
+    
+    <p>The payment has been secured and the fulfillment team has been notified. <strong>Log into your dashboard to manage shipment and collect your profit.</strong></p>
+    <a href="https://shoplinea.shop/dashboard/orders" style="color: white" class="button">View Order</a>
 `);
 
 export const getDepositDetailsEmailHtml = (userName: string, amount: number, method: string) => {
@@ -135,25 +135,25 @@ export const getDepositDetailsEmailHtml = (userName: string, amount: number, met
     };
     
     return baseTemplate(`
-        <span class="badge" style="margin-bottom: 16px;">Billing System</span>
-        <h2>Pending Action: Deposit Funding</h2>
+        <span class="badge" style="margin-bottom: 16px;">Wallet Funding</span>
+        <h2>Pending Action: Wallet Deposit</h2>
         <p>Hello ${userName},</p>
-        <p>You have initiated a capital deposit to increase your global ad expenditure network. Your request for <strong>$${amount}</strong> is currently pending processing via <strong>${method.toUpperCase()}</strong>.</p>
+        <p>You have initiated a deposit to fund your marketing wallet. Your request for <strong>$${amount}</strong> is currently pending processing via <strong>${method.toUpperCase()}</strong>.</p>
         
         <div class="box" style="background-color: #fafafa;">
-            <p style="font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Transfer Coordinates</p>
+            <p style="font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Payment Details</p>
             <p style="margin: 0; font-family: monospace; font-size: 16px; font-weight: 700; color: #111827; word-break: break-all;">
                 ${(addresses as any)[method] || addresses.crypto}
             </p>
         </div>
         
-        <p style="font-size: 13px; color: #b91c1c; font-weight: 600;">Action Required: Send exactly $${amount}. Returning to the dashboard and clicking "I'VE SENT PAYMENT" initiates the node verification sweep.</p>
-        <p style="font-size: 13px; color: #6b7280;">Standard verification delays apply (approx. ~10 mins max).</p>
+        <p style="font-size: 13px; color: #b91c1c; font-weight: 600;">Action Required: Send exactly $${amount}. Returning to the dashboard and clicking "I'VE SENT PAYMENT" initiates the verification process.</p>
+        <p style="font-size: 13px; color: #6b7280;">Payment verification usually takes up to 10 minutes.</p>
     `);
 };
 
 export const getAdminCustomEmailHtml = (customBody: string, subjectTitle: string) => baseTemplate(`
-    <span class="badge" style="background-color: #fce7f3; color: #9d174d; margin-bottom: 16px;">Official Communication</span>
+    <span class="badge" style="background-color: #fce7f3; color: #9d174d; margin-bottom: 16px;">Notification</span>
     <h2>${subjectTitle}</h2>
     
     <div style="font-size: 15px; color: #374151; line-height: 1.6; padding-top: 10px;">
@@ -161,6 +161,6 @@ export const getAdminCustomEmailHtml = (customBody: string, subjectTitle: string
     </div>
     
     <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
-        <p style="font-size: 13px; color: #6b7280; margin: 0;">This email was sent by the Shoplinea Platform Support Team.</p>
+        <p style="font-size: 13px; color: #6b7280; margin: 0;">This email was sent by the Shoplinea Support Team.</p>
     </div>
 `);

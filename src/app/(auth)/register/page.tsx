@@ -54,15 +54,17 @@ export default function RegisterPage() {
         const code = err.code || err.message;
         switch (code) {
             case "auth/email-already-in-use":
-                return "This email is already registered.";
+                return "This email address is already in use.";
             case "auth/invalid-email":
                 return "Please enter a valid email address.";
             case "auth/weak-password":
-                return "Password must be at least 6 characters.";
+                return "Password is too weak. Please use at least 6 characters.";
             case "auth/too-many-requests":
-                return "Too many attempts. Please try again later.";
+                return "Account temporarily disabled due to many failed attempts. Please try later.";
+            case "auth/operation-not-allowed":
+                return "Email/password accounts are not enabled. Contact support.";
             default:
-                return "Registration failed. Please try again.";
+                return "An unexpected error occurred. Please try again.";
         }
     };
 
@@ -175,8 +177,8 @@ export default function RegisterPage() {
                         </div>
                     </Link>
                     <div className="text-center">
-                        <h1 className="text-3xl font-black tracking-tight uppercase">Shoplinea</h1>
-                        <p className="text-[10px] font-bold tracking-[0.4em] text-blue-500 uppercase mt-1">Premium Merchant Hub</p>
+                        <h1 className="text-3xl font-black tracking-tight uppercase leading-none">Shoplinea</h1>
+                        <p className="text-[10px] font-bold tracking-[0.4em] text-blue-500 uppercase mt-2">Digital Commerce Platform</p>
                     </div>
                 </div>
 
@@ -195,7 +197,7 @@ export default function RegisterPage() {
                         <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-black tracking-tight uppercase leading-none">Create Account</h2>
-                                <p className="text-[11px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Global Merchant Registration</p>
+                                <p className="text-[11px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Merchant Account Setup</p>
                             </div>
 
                             {/* Role Selector */}
@@ -232,7 +234,7 @@ export default function RegisterPage() {
                                             required
                                             value={formData.name}
                                             onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="Full Legal Name"
+                                            placeholder="Full Name"
                                             className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
                                         />
                                     </div>
@@ -243,7 +245,7 @@ export default function RegisterPage() {
                                             type="email"
                                             value={formData.email}
                                             onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            placeholder="Business Email"
+                                            placeholder="Email Address"
                                             className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
                                         />
                                     </div>
@@ -254,7 +256,7 @@ export default function RegisterPage() {
                                             type="tel"
                                             value={formData.phone}
                                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                            placeholder="Phone Number (+)"
+                                            placeholder="Phone Number"
                                             className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
                                         />
                                     </div>
@@ -296,7 +298,7 @@ export default function RegisterPage() {
                                             type="password"
                                             value={formData.password}
                                             onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                            placeholder="Secure Password"
+                                            placeholder="Password"
                                             className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
                                         />
                                     </div>
@@ -335,9 +337,9 @@ export default function RegisterPage() {
                                     <Mail className="w-10 h-10 text-emerald-500" />
                                 </div>
                                 <div className="space-y-2">
-                                    <h2 className="text-2xl font-black tracking-tight uppercase text-white">Verify Your Email</h2>
+                                    <h2 className="text-2xl font-black tracking-tight uppercase text-white">Security Verification</h2>
                                     <p className="text-[11px] font-bold text-zinc-600 uppercase tracking-widest leading-loose">
-                                        6-digit secure code sent to: <br/>
+                                        Verification code sent to: <br/>
                                         <span className="text-white bg-white/5 px-4 py-2 rounded-xl inline-block mt-4 tracking-normal lowercase">{formData.email}</span>
                                     </p>
                                 </div>

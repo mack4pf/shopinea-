@@ -2,31 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
-    Package,
-    Plus,
-    Search,
-    Filter,
-    MoreHorizontal,
-    ExternalLink,
-    Copy,
-    Share2,
-    Megaphone,
-    AlertCircle,
-
-    ArrowUpRight,
-    TrendingUp,
-    ShieldCheck,
-    Loader2,
-    ShoppingCart,
-    Eye,
-    Tag
+    Package, Plus, Search, ExternalLink, Copy, Megaphone,
+    TrendingUp, Loader2, Eye, Tag
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import Image from "next/image";
+import { toast } from "sonner";
 
 export default function ProductsPage() {
     const [user, setUser] = useState<any>(null);
@@ -49,9 +32,7 @@ export default function ProductsPage() {
             if (firebaseUser) {
                 setUser(firebaseUser);
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-                if (userDoc.exists()) {
-                    setUserData(userDoc.data());
-                }
+                if (userDoc.exists()) setUserData(userDoc.data());
             }
             setLoading(false);
         });
@@ -60,16 +41,14 @@ export default function ProductsPage() {
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        // Add toast notification here if available
+        toast.success("Link copied to clipboard.");
     };
 
-    if (loading) {
-        return (
-            <div className="h-[80vh] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="h-[80vh] flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+        </div>
+    );
 
     const products = userData?.storeProducts || [];
     const filteredProducts = products.filter((p: any) =>
@@ -79,197 +58,168 @@ export default function ProductsPage() {
     const totalMargin = products.reduce((acc: number, p: any) => acc + ((p.resellPrice || 0) - (p.price || 0)), 0);
     const avgMargin = products.length ? (totalMargin / products.reduce((acc: number, p: any) => acc + (p.price || 0), 0) * 100).toFixed(0) : "0";
 
+    const statCards = [
+        { label: "Products", value: products.length },
+        { label: "Out of Stock", value: "0" },
+        { label: "Orders", value: userData?.stats?.orders || 0 },
+        { label: "Avg Margin", value: `${avgMargin}%` },
+    ];
+
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000 pb-24">
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                            <Package className="w-5 h-5 text-blue-400" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-blue-400">Inventory Control</span>
-                    </div>
-                    <h1 className="text-5xl font-black text-white tracking-tighter italic leading-none">Collection Hub</h1>
-                    <p className="text-zinc-500 font-extrabold text-sm uppercase tracking-widest leading-relaxed opacity-80 max-w-xl">
-                        Monitor and curate your global product catalogue with real-time margin analysis.
-                    </p>
+        <div className="space-y-8 animate-in fade-in duration-500 pb-20">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-white">Products</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Manage your product catalog and pricing.</p>
                 </div>
-                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                     <Button
-                        variant="outline"
-                        className="h-16 px-10 rounded-[1.5rem] border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900 text-white font-black text-[11px] tracking-widest uppercase gap-3 hover:scale-105 transition-all shadow-xl group border-b-4 border-zinc-900 active:border-b-0 italic"
+                <div className="flex items-center gap-3">
+                    <button
                         onClick={() => window.open(`${window.location.origin}/store/${userData?.storeSlug || ''}`, '_blank')}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
                     >
-                        <ExternalLink className="w-5 h-5 group-hover:text-blue-500 transition-colors" />
-                        LIVE ARCHIVE
-                    </Button>
-                    <Button
+                        <ExternalLink className="w-4 h-4" />
+                        View Store
+                    </button>
+                    <button
                         onClick={() => window.location.href = '/onboarding/reseller'}
-                        className="h-16 px-10 rounded-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] tracking-widest shadow-2xl shadow-blue-500/20 hover:scale-105 transition-all active:scale-95 italic border-b-4 border-blue-800 active:border-b-0 gap-3"
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                     >
-                        <Plus className="w-6 h-6" />
-                        ADD PRODUCT
-                    </Button>
+                        <Plus className="w-4 h-4" />
+                        Add Products
+                    </button>
                 </div>
             </div>
 
-            {/* Strategic Search & Stats */}
-            <div className="space-y-10">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div className="lg:col-span-2 relative group">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-700 group-focus-within:text-blue-500 transition-all duration-300" />
-                        <Input
-                            placeholder="SEARCH ENTIRE COLLECTION..."
-                            className="pl-16 h-20 bg-zinc-900 border-zinc-800 rounded-[2rem] text-[11px] font-black tracking-widest uppercase placeholder:text-zinc-700 focus-visible:ring-2 focus-visible:ring-blue-500/20 transition-all shadow-inner"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-6 lg:col-span-2">
-                        {[
-                            { label: "Assets", value: products.length, color: "blue" },
-                            { label: "OOS", value: "0", color: "red" },
-                            { label: "Volume", value: userData?.stats?.orders || 0, color: "emerald" },
-                            { label: "Margin", value: `${avgMargin}%`, color: "indigo" },
-                        ].map((stat, i) => (
-                            <div key={i} className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[2rem] flex items-center justify-between shadow-inner">
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-1 leading-none">{stat.label}</p>
-                                    <h4 className="text-2xl font-black text-white italic tracking-tighter">{stat.value}</h4>
+            {/* Search + Stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="relative lg:col-span-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                    <input
+                        placeholder="Search products..."
+                        className="w-full pl-10 pr-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-600 outline-none focus:border-blue-500/40 transition-colors"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+                <div className="grid grid-cols-4 gap-3 lg:col-span-2">
+                    {statCards.map((stat, i) => (
+                        <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-3 flex flex-col">
+                            <span className="text-[11px] text-zinc-600 mb-1">{stat.label}</span>
+                            <span className="text-lg font-semibold text-white">{stat.value}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Product Grid */}
+            {filteredProducts.length === 0 ? (
+                <div className="text-center py-20 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.08]">
+                    <Package className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
+                    <h2 className="text-lg font-semibold text-white mb-2">No products yet</h2>
+                    <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto">Add products from the marketplace to start selling.</p>
+                    <button
+                        onClick={() => window.location.href = '/onboarding/reseller'}
+                        className="px-5 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
+                    >
+                        Browse Products
+                    </button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                    {filteredProducts.filter((p: any) => typeof p === 'object' && p !== null).map((product: any, idx: number) => {
+                        const profit = (product.resellPrice || 0) - (product.price || 0);
+                        const marginPct = product.price > 0 ? ((profit / product.price) * 100).toFixed(0) : "0";
+
+                        return (
+                            <div key={product.id || idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/[0.12] transition-all group">
+                                {/* Image */}
+                                <div className="aspect-[4/3] bg-zinc-900 relative overflow-hidden">
+                                    {product.image ? (
+                                        <Image
+                                            src={product.image}
+                                            alt={product.name}
+                                            fill
+                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Package className="w-16 h-16 text-zinc-800" />
+                                        </div>
+                                    )}
+                                    {/* Badges */}
+                                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                                        <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-md text-[11px] font-medium text-emerald-400 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                                            Active
+                                        </span>
+                                    </div>
+                                    <div className="absolute top-3 right-3">
+                                        <button
+                                            onClick={() => copyToClipboard(`${window.location.origin}/store/${userData?.storeSlug}/product/${product.id}`)}
+                                            className="w-8 h-8 bg-black/40 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                                        >
+                                            <Copy className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    {product.category && (
+                                        <div className="absolute bottom-3 left-3">
+                                            <span className="px-2.5 py-1 bg-blue-600/80 backdrop-blur-md rounded-md text-[10px] font-medium text-white">
+                                                {product.category}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className={`w-2 h-2 rounded-full bg-${stat.color}-500 shadow-[0_0_10px_rgba(var(--${stat.color}-500),0.5)]`} />
+
+                                {/* Details */}
+                                <div className="p-5 space-y-4">
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-white truncate">{product.name || "Product"}</h3>
+                                        <p className="text-xs text-zinc-600 mt-0.5">SKU: {product.id?.toString().slice(-8).toUpperCase() || idx}</p>
+                                    </div>
+
+                                    {/* Pricing */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-white/[0.04] rounded-lg px-3 py-2.5">
+                                            <p className="text-[10px] text-zinc-600 mb-0.5">Cost</p>
+                                            <p className="text-sm font-semibold text-zinc-300">{currencySymbol}{product.price?.toLocaleString()}</p>
+                                        </div>
+                                        <div className="bg-blue-500/8 border border-blue-500/10 rounded-lg px-3 py-2.5">
+                                            <p className="text-[10px] text-blue-400 mb-0.5">Selling Price</p>
+                                            <p className="text-sm font-semibold text-white">{currencySymbol}{product.resellPrice?.toLocaleString()}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Profit bar */}
+                                    <div className="flex items-center justify-between py-3 border-t border-white/[0.04]">
+                                        <div className="flex items-center gap-2">
+                                            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                                            <span className="text-xs text-zinc-500">Profit</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-sm font-semibold text-emerald-400">{currencySymbol}{profit.toLocaleString()}</span>
+                                            <span className="text-[10px] font-medium text-emerald-500/60 bg-emerald-500/10 px-1.5 py-0.5 rounded">{marginPct}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white/[0.04] text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors">
+                                            <Megaphone className="w-3.5 h-3.5" /> Promote
+                                        </button>
+                                        <button
+                                            onClick={() => window.open(`/store/${userData?.storeSlug}`, '_blank')}
+                                            className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white/[0.04] text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors"
+                                        >
+                                            <Eye className="w-3.5 h-3.5" /> Preview
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        ))}
-                    </div>
+                        );
+                    })}
                 </div>
-
-                {/* Product Inventory */}
-                {filteredProducts.length === 0 ? (
-                    <div className="text-center py-40 bg-zinc-950/50 rounded-[4rem] border-2 border-dashed border-zinc-900 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-blue-600/[0.02] pointer-events-none" />
-                        <Package className="w-32 h-32 text-zinc-900 mx-auto mb-10 group-hover:scale-110 group-hover:text-zinc-800 transition-all duration-1000" />
-                        <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">No Products Found</h2>
-                        <p className="text-zinc-600 font-extrabold text-[11px] uppercase tracking-[0.3em] max-w-sm mx-auto leading-loose opacity-60">
-                            Your product list is currently empty.
-                        </p>
-                        <Button
-                            onClick={() => window.location.href = '/onboarding/reseller'}
-                            variant="outline"
-                            className="mt-10 h-14 px-10 rounded-[1.5rem] border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-white font-black italic uppercase text-[10px] tracking-widest"
-                        >
-                            SOURCE PRODUCTS
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
-                        {filteredProducts.filter((p: any) => typeof p === 'object' && p !== null).map((product: any, idx: number) => {
-                            const profit = (product.resellPrice || 0) - (product.price || 0);
-
-                            return (
-                                <div key={product.id} className="group bg-zinc-900 border border-zinc-800 rounded-[3.5rem] overflow-hidden hover:border-zinc-700 transition-all duration-700 shadow-2xl relative">
-                                    <div className="absolute inset-0 bg-blue-600/[0.01] pointer-events-none" />
-                                    
-                                    <div className="aspect-[4/3] bg-zinc-950 relative overflow-hidden group-hover:bg-zinc-900 transition-colors duration-700 p-12">
-                                        {product.image ? (
-                                            <Image 
-                                                src={product.image} 
-                                                alt={product.name} 
-                                                fill 
-                                                className="object-cover absolute inset-0 opacity-40 group-hover:scale-110 group-hover:opacity-80 transition-transform duration-1000 mix-blend-overlay"
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-10 filter grayscale group-hover:scale-110 group-hover:opacity-20 transition-all duration-1000">
-                                                <Package className="w-40 h-40 text-zinc-500" />
-                                            </div>
-                                        )}
-                                        
-                                        <div className="relative z-10 flex flex-col justify-between h-full">
-                                            <div className="flex justify-between items-start">
-                                                <div className="px-5 py-2.5 bg-zinc-900/80 backdrop-blur-xl rounded-[1.2rem] border border-zinc-800 flex items-center gap-2.5 shadow-2xl">
-                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                                                    <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] italic">ACTIVE LISTING</span>
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <button 
-                                                        onClick={() => copyToClipboard(`${window.location.origin}/store/${userData?.storeSlug}/product/${product.id}`)}
-                                                        className="h-12 w-12 bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white hover:scale-110 transition-all shadow-2xl"
-                                                    >
-                                                        <Copy className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="space-y-4">
-                                                <div className="p-4 bg-blue-600/10 backdrop-blur-xl rounded-2xl border border-blue-600/20 inline-flex items-center gap-3">
-                                                    <Tag className="w-5 h-5 text-blue-500" />
-                                                    <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest italic">{product.category || "General"}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Product Details */}
-                                    <div className="p-10 space-y-8">
-                                        <div className="flex justify-between items-start gap-4">
-                                            <div className="space-y-2">
-                                                <h3 className="text-2xl font-black text-white leading-none italic tracking-tighter uppercase group-hover:text-blue-400 transition-colors duration-500">{product.name || "Product Name"}</h3>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">SKU:</span>
-                                                    <span className="text-[10px] font-black text-zinc-400 font-mono tracking-widest">{product.id?.toString().slice(-8).toUpperCase() || idx}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Pricing Summary */}
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="bg-zinc-950/50 p-6 rounded-[2rem] border border-zinc-800/50 space-y-2 shadow-inner">
-                                                <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest leading-none">Cost Price</p>
-                                                <p className="text-2xl font-black text-white italic tracking-tighter leading-none">{currencySymbol}{product.price?.toLocaleString()}</p>
-                                            </div>
-                                            <div className="bg-blue-600/10 p-6 rounded-[2rem] border border-blue-600/20 space-y-2 shadow-inner group-hover:bg-blue-600/20 transition-colors">
-                                                <p className="text-[10px] font-black uppercase text-blue-500 tracking-widest leading-none">Selling Price</p>
-                                                <p className="text-2xl font-black text-blue-400 italic tracking-tighter leading-none">{currencySymbol}{product.resellPrice?.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Net Profit */}
-                                        <div className="p-6 bg-emerald-500/5 rounded-[2.5rem] border border-emerald-500/10 flex items-center justify-between group-hover:border-emerald-500/30 transition-all shadow-inner relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[50px] rounded-full" />
-                                            <div className="flex items-center gap-5 relative">
-                                                <div className="w-14 h-14 rounded-2xl bg-emerald-600/10 flex items-center justify-center text-emerald-500 shadow-2xl border border-emerald-500/20">
-                                                    <TrendingUp className="w-7 h-7" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[11px] font-black uppercase text-emerald-600 tracking-widest leading-none mb-1">Estimated Profit</p>
-                                                    <p className="text-2xl font-black text-emerald-500 leading-none italic tracking-tighter leading-none">{currencySymbol}{profit.toLocaleString()}</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right relative">
-                                                <p className="text-[11px] font-black uppercase text-emerald-600 tracking-widest leading-none mb-1">Margin</p>
-                                                <p className="font-black text-emerald-500 text-lg leading-none italic tracking-widest">{((profit / product.price) * 100).toFixed(0)}%</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Deployment Actions */}
-                                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-800/50">
-                                            <Button variant="ghost" className="h-16 rounded-[1.5rem] text-zinc-600 font-black uppercase text-[10px] tracking-widest hover:bg-zinc-800 hover:text-white transition-all gap-3 italic">
-                                                <Megaphone className="w-5 h-5" /> ADS
-                                            </Button>
-                                            <Button
-                                                className="h-16 rounded-[1.5rem] bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase text-[10px] tracking-widest transition-all gap-3 italic border-b-4 border-zinc-950 active:border-b-0"
-                                                onClick={() => window.open(`/store/${userData?.storeSlug}`, '_blank')}
-                                            >
-                                                <Eye className="w-5 h-5" /> PREVIEW
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+            )}
         </div>
     );
 }
