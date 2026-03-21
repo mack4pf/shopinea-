@@ -241,12 +241,12 @@ export default function AdsPage() {
                     type: "custom",
                     to: user.email,
                     data: {
-                        subject: `Ad Campaign Protocol - ${selectedPlatform.toUpperCase()}`,
+                        subject: `Ad Campaign Confirmation - ${selectedPlatform.toUpperCase()}`,
                         html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
-                            <h2 style="color: #111827; margin-bottom: 16px;">Campaign Initialization Queued</h2>
-                            <p style="color: #4b5563; line-height: 1.6;">Your ad is currently being reviewed by <strong>${selectedPlatform.toUpperCase()}</strong>.</p>
-                            <p style="color: #4b5563; line-height: 1.6;">Please note that you are using our ad manager accounts to run your ads, ensuring all operations are fully connected within our ecosystem.</p>
-                            <p style="color: #4b5563; line-height: 1.6;">Our compliance nodes will notify you once the traffic protocol is approved and active.</p>
+                            <h2 style="color: #111827; margin-bottom: 16px;">Campaign Successfully Queued</h2>
+                            <p style="color: #4b5563; line-height: 1.6;">Your campaign is currently being reviewed by the <strong>${selectedPlatform.toUpperCase()}</strong> moderation team.</p>
+                            <p style="color: #4b5563; line-height: 1.6;">You are using our managed ad accounts, providing a seamless integration with the marketplace ecosystem.</p>
+                            <p style="color: #4b5563; line-height: 1.6;">We will notify you once your campaign is approved and active.</p>
                         </div>`
                     }
                 })
@@ -295,12 +295,12 @@ export default function AdsPage() {
                             <h3 className="text-3xl font-black text-white tracking-tighter italic">${(userData?.adWalletBalance || 0).toLocaleString()}</h3>
                         </div>
                         <Button onClick={() => setShowDepositModal(true)} size="sm" className="ml-6 bg-blue-600 hover:bg-blue-700 text-white h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest flex gap-2 shadow-2xl shadow-blue-500/30">
-                            <Plus className="w-4 h-4" /> REFUEL
+                            <Plus className="w-4 h-4" /> ADD FUNDS
                         </Button>
                     </div>
                     <Button onClick={() => setShowCampaignModal(true)} className="h-[92px] px-12 rounded-[2.5rem] bg-white text-zinc-950 font-black flex gap-4 hover:scale-105 transition-all shadow-2xl uppercase text-[11px] tracking-[0.1em] italic group">
                         <Zap className="w-6 h-6 fill-zinc-950 group-hover:animate-bounce" />
-                        LAUNCH NEW ADS 🚀
+                        LAUNCH NEW CAMPAIGN 🚀
                     </Button>
                 </div>
             </div>
@@ -347,7 +347,7 @@ export default function AdsPage() {
                             </p>
                         </div>
                         <Button onClick={() => setShowCampaignModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white h-16 px-16 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-blue-500/30 active:scale-95 transition-all">
-                            INITIALIZE DEPLOYMENT 🚀
+                            START CAMPAIGN 🚀
                         </Button>
                     </div>
                 ) : (
@@ -356,11 +356,11 @@ export default function AdsPage() {
                             <thead>
                                 <tr className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.3em] border-b border-zinc-800 bg-zinc-950/30">
                                     <th className="px-12 py-8">Target / Channel</th>
-                                    <th className="px-12 py-8">Capital Flow</th>
+                                    <th className="px-12 py-8">Budget Status</th>
                                     <th className="px-12 py-8 text-right">Reach</th>
-                                    <th className="px-12 py-8 text-right">Conversion</th>
-                                    <th className="px-12 py-8 text-right">Billing</th>
-                                    <th className="px-12 py-8 text-center">Protocol Status</th>
+                                    <th className="px-12 py-8 text-right">Conversions</th>
+                                    <th className="px-12 py-8 text-right">Billing Type</th>
+                                    <th className="px-12 py-8 text-center">Campaign Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800">
@@ -450,15 +450,15 @@ export default function AdsPage() {
                             <div className="absolute inset-0 w-20 h-20 bg-blue-500/30 blur-2xl scale-150 rounded-full" />
                         </div>
                         <div className="text-center space-y-4">
-                            <h3 className="text-3xl font-black text-white italic tracking-tighter">Forging Creative Assets...</h3>
-                            <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.3em] animate-pulse">Neural Engine active for {selectedPlatform}</p>
+                            <h3 className="text-3xl font-black text-white italic tracking-tighter">Creating campaign content...</h3>
+                            <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.3em] animate-pulse">AI Content Engine generating for {selectedPlatform}</p>
                         </div>
                     </div>
                 ) : (
                     <div className="space-y-10">
                         {/* Target Selection */}
                         <div className="space-y-5">
-                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.4em] leading-none pl-1">Targeting Protocol</Label>
+                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.4em] leading-none pl-1">Targeting Type</Label>
                             <div className="grid grid-cols-2 gap-6">
                                 <button
                                     onClick={() => setTargetType('store')}
@@ -467,7 +467,7 @@ export default function AdsPage() {
                                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${targetType === 'store' ? 'bg-blue-600 text-white rotate-6' : 'bg-zinc-900 text-zinc-700 group-hover:text-zinc-500'}`}>
                                         <Globe className="w-8 h-8" />
                                     </div>
-                                    <span className={`text-[11px] font-black uppercase tracking-[0.2em] italic ${targetType === 'store' ? 'text-white' : 'text-zinc-600'}`}>GLOBAL STORE</span>
+                                    <span className={`text-[11px] font-black uppercase tracking-[0.2em] italic ${targetType === 'store' ? 'text-white' : 'text-zinc-600'}`}>STORE WIDE</span>
                                 </button>
                                 <button
                                     onClick={() => setTargetType('products')}
@@ -476,7 +476,7 @@ export default function AdsPage() {
                                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${targetType === 'products' ? 'bg-emerald-600 text-white rotate-6' : 'bg-zinc-900 text-zinc-700 group-hover:text-zinc-500'}`}>
                                         <ShoppingCart className="w-8 h-8" />
                                     </div>
-                                    <span className={`text-[11px] font-black uppercase tracking-[0.2em] italic ${targetType === 'products' ? 'text-white' : 'text-zinc-600'}`}>SPECIFIC ASSETS</span>
+                                    <span className={`text-[11px] font-black uppercase tracking-[0.2em] italic ${targetType === 'products' ? 'text-white' : 'text-zinc-600'}`}>SELECTED PRODUCTS</span>
                                 </button>
                             </div>
                         </div>
@@ -511,7 +511,7 @@ export default function AdsPage() {
                         )}
 
                         <div className="space-y-5">
-                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.4em] leading-none pl-1">Network Deployment</Label>
+                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.4em] leading-none pl-1">Target Platforms</Label>
                             <div className="grid grid-cols-3 gap-4">
                                 {['meta', 'tiktok', 'google'].map((p) => (
                                     <button
@@ -650,7 +650,7 @@ export default function AdsPage() {
 
                         {/* Payment Strategy */}
                         <div className="space-y-5">
-                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.4em] leading-none pl-1">Billing Protocol</Label>
+                            <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.4em] leading-none pl-1">Billing Method</Label>
                             <div className="grid grid-cols-2 gap-6">
                                 <button
                                     onClick={() => setPaymentMode('now')}
@@ -678,7 +678,7 @@ export default function AdsPage() {
                                         <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0" />
                                     </div>
                                     <p className="text-[10px] font-extrabold text-amber-500/80 leading-relaxed italic uppercase tracking-[0.05em]">
-                                        Postpaid ads must be cleared within 48h of completion. Unpaid debts will be attached to your legal profile and reported to Authorities. KYC verification is required.
+                                        Postpaid campaigns must be settled within 48h of completion. Unpaid balances may result in account suspension and reporting. KYC verification is required.
                                     </p>
                                 </div>
                             )}

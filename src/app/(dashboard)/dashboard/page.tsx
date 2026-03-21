@@ -122,10 +122,10 @@ export default function ResellerHome() {
                 </div>
                 <div className="flex gap-4">
                     <Button onClick={() => router.push('/dashboard/subscription')} className="h-14 px-10 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-white font-black text-[11px] uppercase tracking-widest shadow-2xl transition-all">
-                        UPGRADE TIER
+                        Upgrade Plan
                     </Button>
                     <Button onClick={() => router.push('/dashboard/settings')} className="h-14 px-10 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] uppercase tracking-widest shadow-2xl shadow-blue-500/20">
-                        MY IDENTITY
+                        Profile Settings
                     </Button>
                 </div>
             </div>
@@ -162,15 +162,15 @@ export default function ResellerHome() {
                             <Sparkles className="w-16 h-16 text-blue-500 opacity-20 animate-pulse" />
                         </div>
                         <div className="relative z-10">
-                            <h3 className="text-3xl font-black text-white mb-2 tracking-tighter italic">Initialization Checklist</h3>
-                            <p className="text-zinc-500 text-sm font-black mb-12 uppercase tracking-widest opacity-60">Finish setting up your store to start receiving orders.</p>
+                            <h3 className="text-3xl font-black text-white mb-2 tracking-tighter italic">Getting Started</h3>
+                            <p className="text-zinc-500 text-sm font-black mb-12 uppercase tracking-widest opacity-60">Complete these steps to launch your business.</p>
 
                             <div className="space-y-6">
                                 {[
-                                    { title: "Add your first product", desc: "Select from our marketplace to stock your shelves.", done: (userData?.storeProducts?.length > 0) },
-                                    { title: "Refuel your Ads Wallet", desc: "Deposit funds to target buyers on Meta and TikTok.", done: (userData?.adWalletBalance > 0) },
-                                    { title: "Setup Store Branding", desc: "Upload logic and themes to stand out.", done: !!userData?.storeName },
-                                    { title: "Complete KYC Identity", desc: "Submit your legal ID in settings for verification.", done: (userData?.kycStatus === 'verified' || userData?.kycStatus === 'pending') },
+                                    { title: "List your first product", desc: "Select products from the global marketplace.", done: (userData?.storeProducts?.length > 0) },
+                                    { title: "Fund your Ads Wallet", desc: "Start reaching buyers on social media.", done: (userData?.adWalletBalance > 0) },
+                                    { title: "Customize Storefront", desc: "Set your store name and brand identity.", done: !!userData?.storeName },
+                                    { title: "Account Verification", desc: "Verify your identity to enable payouts.", done: (userData?.kycStatus === 'verified' || userData?.kycStatus === 'pending') },
                                 ].map((step, i) => (
                                     <div
                                         key={i}
@@ -204,9 +204,9 @@ export default function ResellerHome() {
                                 <Rocket className="w-16 h-16 text-white fill-white/20" />
                             </div>
                             <div className="space-y-6 text-center md:text-left flex-1">
-                                <h3 className="text-4xl font-black tracking-tighter leading-none italic uppercase">One-Click Growth</h3>
+                                <h3 className="text-4xl font-black tracking-tighter leading-none italic uppercase">Professional Marketing</h3>
                                 <p className="text-md font-black text-blue-100/80 leading-relaxed uppercase text-[11px] tracking-widest">
-                                    Our AI agent handles the creative and targeting for Meta & TikTok. Select a product, set your budget, and watch the inquiries roll in.
+                                    Our automation handles ad creatives and targeting across Meta & TikTok. Set your budget and start scaling your sales.
                                 </p>
                                 <Button onClick={() => window.location.href = '/dashboard/ads'} className="bg-white text-blue-900 font-black px-14 rounded-2xl h-16 shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs tracking-widest uppercase">
                                     LAUNCH CAMPAIGN 🚀
@@ -221,12 +221,12 @@ export default function ResellerHome() {
                     {/* Wallet Status */}
                     <div className="bg-zinc-900 border border-zinc-800 p-12 rounded-[3rem] space-y-10 shadow-2xl">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.3em]">Treasury</h3>
+                            <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.3em]">Business Wallet</h3>
                             <button onClick={() => router.push('/dashboard/history')} className="px-5 py-2 bg-zinc-950 rounded-full text-[9px] font-black text-zinc-400 hover:text-white transition-colors border border-zinc-800">HISTORY</button>
                         </div>
                         <div className="space-y-10">
                             <div className="group cursor-pointer">
-                                <p className="text-[10px] font-black text-zinc-600 uppercase mb-3 tracking-[0.2em] pl-1">Buying Wallet</p>
+                                <p className="text-[10px] font-black text-zinc-600 uppercase mb-3 tracking-[0.2em] pl-1">Primary Balance</p>
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-4xl font-black text-white italic tracking-tighter">{currencySymbol}{(userData?.walletBalance || 0).toLocaleString()}</h4>
                                     <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all shadow-xl">
@@ -237,8 +237,8 @@ export default function ResellerHome() {
                             <div className="w-full h-px bg-zinc-800" />
                             <div className="group cursor-pointer">
                                 <div className="flex items-center gap-3 mb-3">
-                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] pl-1">Ad Wallet</p>
-                                    <span className="text-[8px] font-black bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20 shadow-sm animate-pulse">ACTIVE BONUS</span>
+                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] pl-1">Marketing Budget</p>
+                                    <span className="text-[8px] font-black bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20 shadow-sm">ACTIVE</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-4xl font-black text-white italic tracking-tighter">{currencySymbol}{(userData?.adWalletBalance || 0).toLocaleString()}</h4>
@@ -249,15 +249,15 @@ export default function ResellerHome() {
                             </div>
                         </div>
                         <Button onClick={() => router.push('/dashboard/ads')} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-16 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl shadow-blue-500/20 hover:scale-[1.02] transition-all">
-                            REFUEL ASSETS
+                            ADD FUNDS
                         </Button>
                     </div>
 
                     {/* Recent Orders Snippet */}
                     <div className="bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-12 rounded-[3rem] space-y-10 shadow-2xl">
                         <div className="flex items-center justify-between px-2">
-                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] leading-none">Live Logs</h3>
-                            <button onClick={() => router.push('/dashboard/history')} className="text-[10px] font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest">Global →</button>
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] leading-none">Recent Activity</h3>
+                            <button onClick={() => router.push('/dashboard/history')} className="text-[10px] font-black text-blue-500 hover:text-blue-400 uppercase tracking-widest">See All →</button>
                         </div>
                         <div className="space-y-4">
                             {recentOrders.length === 0 ? (
@@ -265,7 +265,7 @@ export default function ResellerHome() {
                                     <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto shadow-2xl border border-zinc-800/50">
                                         <ShoppingCart className="w-10 h-10 text-zinc-700" />
                                     </div>
-                                    <p className="text-[11px] font-black text-zinc-600 uppercase tracking-widest italic">No transaction records</p>
+                                    <p className="text-[11px] font-black text-zinc-600 uppercase tracking-widest italic">No orders found</p>
                                 </div>
                             ) : (
                                 recentOrders.map((o) => (
@@ -275,7 +275,7 @@ export default function ResellerHome() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-black text-white tracking-tighter uppercase leading-none mb-2">#{o.id.slice(0, 8)}</p>
-                                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">{o.customerName || 'Global Client'}</p>
+                                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">{o.customerName || 'Customer'}</p>
                                         </div>
                                         <p className="font-black text-white text-md italic tracking-tighter">{currencySymbol}{(o.resellPrice || 0).toLocaleString()}</p>
                                     </div>
