@@ -49,6 +49,7 @@ interface Campaign {
     endDate: string;
     dailyBudget: number;
     isPostpaid: boolean;
+    countryReach?: string | string[];
 }
 
 export default function AdsPage() {
