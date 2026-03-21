@@ -24,7 +24,7 @@ export default function MarketplacePage() {
         const fetchProducts = async () => {
             try {
                 const snapshot = await getDocs(collection(db, "products"));
-                const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
                 
                 // Deduplicate by name
                 const uniqueMap = new Map();

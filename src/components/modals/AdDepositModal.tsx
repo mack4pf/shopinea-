@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
