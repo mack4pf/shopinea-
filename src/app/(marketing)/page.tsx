@@ -1,152 +1,184 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Box, Globe, ShieldCheck, Truck, TrendingUp, Zap, ShoppingBag } from "lucide-react";
+import { ArrowRight, Box, Globe, ShieldCheck, Truck, TrendingUp, Zap, ShoppingBag, Check, Plus, Search } from "lucide-react";
 import { ReviewsSection } from "@/components/marketing/ReviewsSection";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col bg-[#050505] text-white font-sans selection:bg-white/20">
+    <main className="flex min-h-screen flex-col bg-[#09090b] text-white font-sans selection:bg-blue-500/30 overflow-hidden">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] w-full flex items-center justify-center overflow-hidden border-b border-white/5">
-        {/* Subtle, elegant background lighting */}
+      <section className="relative min-h-screen w-full flex items-center justify-center pt-32 pb-20 overflow-hidden">
+        {/* Abstract Glow Background */}
         <div className="absolute inset-0 z-0 flex items-center justify-center">
-            <div className="w-[800px] h-[400px] bg-zinc-800/30 rounded-full blur-[150px] absolute top-[-100px]" />
+            <div className="w-[800px] h-[500px] bg-blue-600/10 rounded-full blur-[180px] absolute -top-40" />
+            <div className="w-[600px] h-[400px] bg-indigo-600/5 rounded-full blur-[150px] absolute bottom-0 right-0" />
             <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]" />
         </div>
 
-        <div className="container relative z-10 px-4 md:px-6 flex flex-col items-center text-center mt-16 pb-20">
-          <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold text-zinc-300 backdrop-blur-md mb-8">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 mr-2 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></span>
-            Shoplinea.shop Enterprise Network
+        <div className="container relative z-10 px-6 max-w-7xl mx-auto flex flex-col items-center text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-1.5 text-[11px] font-bold text-zinc-400 backdrop-blur-md mb-10 transition-all hover:bg-white/[0.08] hover:border-white/[0.12] cursor-default">
+            <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            V0.4 Global Merchant Infrastructure
           </div>
           
-          <h1 className="text-5xl md:text-7xl lg:text-[6rem] font-medium tracking-tighter text-white leading-[1.05] max-w-5xl mx-auto">
-            The infrastructure for <br className="hidden md:block"/>
-            <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 pb-2">elite global commerce.</span>
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.05] max-w-5xl mx-auto">
+            The professional <br className="hidden md:block"/>
+            <span className="text-zinc-500">infrastructure for </span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-white to-blue-400 animate-in fade-in duration-1000">global commerce.</span>
           </h1>
           
-          <p className="mt-8 text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed font-light">
-            Deploy a world-class digital storefront instantly. Source verified premium products, define your margins, and let our global logistics network handle fulfillment.
+          <p className="mt-8 text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed font-medium opacity-80">
+            Launch your professional online store in minutes. Access verified products, manage your margins, and ship globally without holding inventory.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-12">
-            <Link href="/register">
-              <Button size="lg" className="w-full sm:w-auto text-sm px-10 h-14 rounded-full bg-white text-black hover:bg-zinc-200 transition-all font-bold shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                Create Merchant Account
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-12 w-full sm:w-auto">
+            <Link href="/register" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto h-14 px-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-2xl shadow-blue-500/20 transition-all active:scale-[0.98]">
+                Get Started for Free
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/marketplace">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto text-sm px-10 h-14 rounded-full bg-transparent border-white/10 text-white font-bold hover:bg-white/5 transition-all">
-                The Marketplace
+            <Link href="/marketplace" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-10 rounded-xl bg-white/[0.04] border-white/[0.08] text-white hover:bg-white/[0.08] font-bold text-base transition-all active:scale-[0.98]">
+                Browse Marketplace
               </Button>
             </Link>
           </div>
 
-          <div className="pt-24 opacity-40">
-              <p className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-500 mb-6">Powering commerce across</p>
-              <div className="flex flex-wrap justify-center items-center gap-10 grayscale opacity-80">
-                  <span className="text-xl font-bold tracking-tighter">North America</span>
-                  <span className="text-xl font-bold tracking-tighter">Europe</span>
-                  <span className="text-xl font-bold tracking-tighter">Asia-Pacific</span>
+          {/* Trusted By */}
+          <div className="pt-24 opacity-60 flex flex-col items-center gap-8">
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-600">Powering merchants across</p>
+              <div className="flex flex-wrap justify-center items-center gap-8 sm:gap-16 opacity-40 grayscale contrast-[1.2]">
+                  {['Shopify', 'WooCommerce', 'BigCommerce', 'Wix', 'Amazon'].map((brand, i) => (
+                      <span key={i} className="text-2xl font-black italic tracking-tighter opacity-80 hover:opacity-100 transition-all cursor-default">{brand}</span>
+                  ))}
               </div>
           </div>
           
-          <div className="mt-20 w-full max-w-6xl mx-auto rounded-[2rem] border border-white/10 p-2 bg-white/5 backdrop-blur-2xl shadow-[0_40px_100px_rgba(0,0,0,0.8)] relative z-20">
-             <div className="relative w-full aspect-[16/9] lg:aspect-[21/9] rounded-2xl overflow-hidden border border-white/10 bg-zinc-950">
-                 <div className="absolute inset-0 bg-blue-500/10 blur-[100px]" />
-                 <Image src="/hero-dashboard.png" alt="Enterprise Commerce Dashboard" fill className="object-cover relative z-10 opacity-90 hover:opacity-100 transition-opacity duration-700" priority />
+          {/* Main Hero Visual */}
+          <div className="mt-32 w-full rounded-2xl border border-white/[0.08] p-2 bg-white/[0.02] backdrop-blur-3xl shadow-2xl relative group overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-1000">
+             <div className="absolute inset-0 bg-blue-500/5 blur-[100px] rounded-full group-hover:bg-blue-500/10 transition-colors" />
+             <div className="relative w-full aspect-[16/9] lg:aspect-[21/9] rounded-xl overflow-hidden bg-zinc-950 border border-white/[0.04]">
+                 <Image 
+                    src="/modern_saas_dashboard_ui_1774113588179.png" 
+                    alt="Restock Merchant Dashboard" 
+                    fill 
+                    className="object-cover opacity-90 transition-transform duration-1000 group-hover:scale-105" 
+                    priority 
+                 />
              </div>
           </div>
         </div>
       </section>
 
-      {/* Value Proposition Grid */}
-      <section className="bg-zinc-950/50 py-32 relative border-b border-white/5">
-        <div className="container px-4 md:px-6">
-            <div className="text-center mb-20 max-w-3xl mx-auto">
-                <h2 className="text-3xl md:text-5xl font-medium tracking-tighter mb-6">Designed for scale.</h2>
-                <p className="text-zinc-400 text-lg md:text-xl font-light">Whether you are a solo entrepreneur or operating a multi-national retail brand, our architecture scales with your demand natively.</p>
+      {/* Value Prop */}
+      <section className="py-24 border-t border-white/[0.04] bg-[#0c0c0e]/50">
+        <div className="container px-6 max-w-7xl mx-auto">
+            <div className="text-center mb-20 max-w-3xl mx-auto space-y-4">
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Built for scale.</h2>
+                <p className="text-zinc-500 text-lg md:text-xl font-medium leading-relaxed">Everything you need to run a high-volume commerce business without the operational overhead.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="p-10 rounded-[2rem] bg-[#0a0a0a] border border-white/5 hover:border-white/10 transition-colors group">
-                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-8 border border-white/5 group-hover:bg-white/10 transition-colors">
-                        <Globe className="w-5 h-5 text-zinc-300" />
+                {[
+                    { title: "Verified Sourcing", desc: "Access a curated catalog of over 100,000+ premium products from verified global manufacturers.", icon: ShieldCheck },
+                    { title: "Smart Fulfillment", desc: "We automate the entire shipping process. Orders are fulfilled globally from our distributed warehouse network.", icon: Truck },
+                    { title: "High Margins", desc: "Define your own profit margins. We provide competitive wholesale rates so you can maximize your ROI.", icon: TrendingUp }
+                ].map((item, i) => (
+                    <div key={i} className="p-10 rounded-2xl bg-zinc-900/40 border border-white/[0.06] hover:border-white/[0.12] hover:bg-zinc-900/60 transition-all group flex flex-col items-center text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-8 border border-blue-500/20 group-hover:bg-blue-500/20 transition-all">
+                            <item.icon className="w-6 h-6 text-blue-500" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-4 tracking-tight">{item.title}</h3>
+                        <p className="text-zinc-500 leading-relaxed font-medium text-sm">{item.desc}</p>
                     </div>
-                    <h3 className="text-xl font-medium text-white mb-4">Instant Provisioning</h3>
-                    <p className="text-zinc-500 leading-relaxed font-light">Launch a fully functional, highly optimized digital storefront in seconds. Our automated systems handle hosting, SSL, and inventory synchronization seamlessly.</p>
-                </div>
-                <div className="p-10 rounded-[2rem] bg-[#0a0a0a] border border-white/5 hover:border-white/10 transition-colors group">
-                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-8 border border-white/5 group-hover:bg-white/10 transition-colors">
-                        <TrendingUp className="w-5 h-5 text-zinc-300" />
-                    </div>
-                    <h3 className="text-xl font-medium text-white mb-4">Dynamic Economics</h3>
-                    <p className="text-zinc-500 leading-relaxed font-light">Retain absolute control over your pricing strategy. Define your margins on a per-product basis and have profits routed directly to your secure escrow instantly.</p>
-                </div>
-                <div className="p-10 rounded-[2rem] bg-[#0a0a0a] border border-white/5 hover:border-white/10 transition-colors group">
-                    <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-8 border border-white/5 group-hover:bg-white/10 transition-colors">
-                        <Truck className="w-5 h-5 text-zinc-300" />
-                    </div>
-                    <h3 className="text-xl font-medium text-white mb-4">Frictionless Logistics</h3>
-                    <p className="text-zinc-500 leading-relaxed font-light">Eliminate warehouse overhead. Our integrated fulfillment centers pick, pack, and ship orders globally under your brand's white-label packaging.</p>
-                </div>
+                ))}
             </div>
         </div>
       </section>
 
-      {/* Deep Dive Section */}
-      <section className="py-32 relative overflow-hidden">
-        <div className="container px-4 md:px-6">
+      {/* Deep Dive Features */}
+      <section className="py-32 bg-[#09090b]">
+        <div className="container px-6 max-w-7xl mx-auto">
           <div className="grid gap-20 lg:grid-cols-2 items-center">
-            <div className="space-y-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                    <Zap className="w-3 h-3 text-zinc-300" /> High-Performance Engine
+            <div className="space-y-12">
+                <div className="space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md border border-white/[0.08] bg-white/[0.04] text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                        <Zap className="w-3.5 h-3.5 text-blue-500" /> Professional Engine
+                    </div>
+                    <h2 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] text-white">
+                      Unified commerce operations.
+                    </h2>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-medium tracking-tighter leading-[1.1]">
-                  A unified platform for modern commerce operations.
-                </h2>
-                <div className="space-y-8">
+                
+                <div className="space-y-10">
                     {[
-                        { title: "Enterprise Grade APIs", desc: "Interact directly with our robust inventory indexing to ensure you never oversell. Real-time synchronicity across all nodes.", icon: Box },
-                        { title: "Secured Transactions", desc: "Every transaction is cryptographically secured. Our intelligent escrow system protects both the merchant and the end consumer.", icon: ShieldCheck },
-                        { title: "Comprehensive Insight", desc: "Monitor traffic, conversion rates, and global distribution hotspots through your personal analytics command center.", icon: TrendingUp }
+                        { title: "Secure Transactions", desc: "Every order is secured through our encrypted escrow system. We protect both merchants and buyers from fraud.", icon: ShieldCheck },
+                        { title: "Advanced Analytics", desc: "Gain deep insights into your sales performance, traffic hotspots, and conversion patterns.", icon: TrendingUp },
+                        { title: "24/7 Support", desc: "Our dedicated merchant support team is available around the clock to help you scale your business.", icon: Zap }
                     ].map((feature, i) => (
-                        <div key={i} className="flex gap-6 group cursor-pointer">
-                            <div className="w-12 h-12 rounded-xl bg-[#0a0a0a] border border-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/5 transition-colors">
-                                <feature.icon className="w-5 h-5 text-zinc-400" />
+                        <div key={i} className="flex gap-6 group">
+                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-white/[0.04] flex items-center justify-center shrink-0 group-hover:bg-blue-600/10 group-hover:border-blue-500/20 transition-all duration-300">
+                                <feature.icon className="w-5 h-5 text-zinc-500 group-hover:text-blue-500 transition-colors" />
                             </div>
                             <div>
-                                <h4 className="font-medium text-lg text-white mb-2">{feature.title}</h4>
-                                <p className="text-zinc-500 leading-relaxed font-light">{feature.desc}</p>
+                                <h4 className="font-bold text-lg text-white mb-2 tracking-tight">{feature.title}</h4>
+                                <p className="text-zinc-500 leading-relaxed font-medium text-sm">{feature.desc}</p>
                             </div>
                         </div>
                     ))}
                 </div>
             </div>
             
-            <div className="relative w-full aspect-square md:aspect-auto md:h-[600px] flex items-center justify-center">
-                <div className="absolute inset-0 bg-white/5 blur-[120px] rounded-full" />
-                <div className="relative w-full max-w-md rounded-[2rem] border border-white/10 bg-[#0a0a0a] p-8 shadow-2xl backdrop-blur-xl">
-                    <div className="flex justify-between items-center mb-10 pb-6 border-b border-white/5">
-                         <div className="space-y-2">
-                             <div className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Total Revenue</div>
-                             <div className="text-3xl font-medium text-white tracking-tighter">$142,590.00</div>
+            <div className="relative">
+                {/* Visual Representation of Dashboard Elements */}
+                <div className="bg-zinc-900/40 border border-white/[0.04] p-8 rounded-2xl shadow-2xl backdrop-blur-md space-y-8 animate-in zoom-in-95 duration-700">
+                    <div className="flex justify-between items-center pb-6 border-b border-white/[0.04]">
+                         <div className="space-y-1">
+                             <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-600 font-bold">Total Sales (GMT)</div>
+                             <div className="text-4xl font-bold text-white tracking-tighter">$284,103.50</div>
                          </div>
-                         <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center">
-                             <TrendingUp className="w-4 h-4 text-emerald-400" />
+                         <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
+                             <TrendingUp className="w-6 h-6 text-blue-500" />
                          </div>
                     </div>
-                    {/* Abstract Graph */}
-                    <div className="w-full h-40 flex items-end justify-between gap-2">
-                        {[30, 45, 25, 60, 40, 75, 55, 90, 85, 100].map((h, i) => (
-                            <div key={i} className="w-full bg-zinc-800 rounded-t-sm hover:bg-zinc-600 transition-colors" style={{ height: `${h}%` }} />
-                        ))}
+                    
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-zinc-500">
+                            <span>Live Traffic Hotspots</span>
+                            <span className="text-blue-400">Real-time</span>
+                        </div>
+                        <div className="space-y-3">
+                            {[
+                                { city: 'New York, US', rate: 45, color: 'bg-blue-500' },
+                                { city: 'London, UK', rate: 25, color: 'bg-zinc-700' },
+                                { city: 'Berlin, DE', rate: 15, color: 'bg-zinc-800' },
+                                { city: 'Lagos, NG', rate: 15, color: 'bg-zinc-850' },
+                            ].map((loc, i) => (
+                                <div key={i} className="space-y-1.5">
+                                    <div className="flex justify-between text-[11px] font-bold text-zinc-400">
+                                        <span>{loc.city}</span>
+                                        <span>{loc.rate}%</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
+                                        <div className={cn("h-full rounded-full", loc.color)} style={{ width: `${loc.rate}%` }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="mt-8 pt-6 border-t border-white/5 flex justify-between text-xs text-zinc-500 font-medium">
-                        <span>Last 30 Days</span>
-                        <span className="text-emerald-400">+24.5%</span>
+
+                    <div className="pt-6 border-t border-white/[0.04] flex justify-between items-center">
+                        <div className="flex -space-x-3">
+                            {[1,2,3,4].map(i => (
+                                <div key={i} className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 overflow-hidden shrink-0">
+                                    <Image src={`https://i.pravatar.cc/150?u=${i}`} alt="Avatar" width={32} height={32} />
+                                </div>
+                            ))}
+                            <div className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-950 flex items-center justify-center text-[10px] font-bold text-zinc-500">+12k</div>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Global active merchants</p>
                     </div>
                 </div>
             </div>
@@ -154,31 +186,31 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Reviews Section */}
-      <div className="border-t border-white/5">
+      {/* Reviews Section Placeholder - Assuming it handles its own styling correctly now or I'll check it later */}
+      <div className="border-t border-white/[0.04]">
         <ReviewsSection />
       </div>
 
-      {/* CTA Section */}
-      <section className="relative py-32 overflow-hidden border-t border-white/5 bg-zinc-950/50 text-center">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]" />
-        
-        <div className="container relative z-10 px-4 md:px-6 flex flex-col items-center">
-          <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-8">
-              <ShoppingBag className="w-6 h-6 text-white" />
+      {/* Footer CTA */}
+      <section className="relative py-40 overflow-hidden border-t border-white/[0.04] bg-[#0c0c0e]/50 text-center">
+        <div className="container relative z-10 px-6 max-w-7xl mx-auto flex flex-col items-center">
+          <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mb-10 shadow-2xl shadow-blue-500/10">
+              <ShoppingBag className="w-7 h-7 text-blue-500" />
           </div>
-          <h2 className="mb-6 text-4xl font-medium text-white sm:text-6xl tracking-tighter">
-            Initiate Your Commerce Build.
+          <h2 className="mb-6 text-4xl sm:text-7xl font-bold tracking-tight text-white max-w-3xl">
+            Launch your global commerce business today.
           </h2>
-          <p className="mb-10 max-w-2xl text-lg font-light text-zinc-400">
-            Create your operational account today. Gain immediate access to global wholesale networks, secure escrow, and automated storefront generation.
+          <p className="mb-12 max-w-2xl text-lg font-medium text-zinc-500 leading-relaxed">
+            Create your merchant account and access our professional global network.
           </p>
-          <Link href="/register">
-            <Button size="lg" className="bg-white text-black hover:bg-zinc-200 text-sm px-12 h-14 rounded-full font-bold shadow-2xl transition-all">
-              Create Merchant Account
-            </Button>
-          </Link>
-          <p className="mt-6 text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Deployment takes approximately 60 seconds</p>
+          <div className="flex flex-col sm:flex-row gap-4">
+             <Link href="/register">
+                <Button size="lg" className="bg-white text-zinc-950 hover:bg-zinc-200 text-base px-10 h-14 rounded-xl font-bold shadow-2xl transition-all active:scale-[0.98]">
+                  Get Started for Free
+                </Button>
+            </Link>
+          </div>
+          <p className="mt-8 text-[11px] font-bold text-zinc-700 uppercase tracking-[0.2em]">Merchant approval takes under 24 hours</p>
         </div>
       </section>
     </main>

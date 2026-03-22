@@ -125,9 +125,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="h-16 flex items-center px-5 border-b border-white/[0.06]">
                     <Link href="/" className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">S</span>
+                            <span className="text-white font-bold text-sm">R</span>
                         </div>
-                        <span className="text-[15px] font-semibold text-white tracking-tight">Shoplinea</span>
+                        <span className="text-[15px] font-semibold text-white tracking-tight">Restock</span>
                     </Link>
                 </div>
 
@@ -189,7 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             />
                         </div>
 
-                        <span className="md:hidden text-sm font-semibold text-white">Shoplinea</span>
+                        <span className="md:hidden text-sm font-semibold text-white">Restock</span>
                     </div>
 
                     <div className="flex items-center gap-3">

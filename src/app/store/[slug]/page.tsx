@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, limit, doc, updateDoc, increment } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, doc, updateDoc, increment, getDoc } from "firebase/firestore";
 import {
     ShoppingBag,
     ShieldCheck,
@@ -17,7 +17,11 @@ import {
     User,
     LogOut,
     Package,
-    ArrowUpRight
+    ArrowUpRight,
+    ArrowRight,
+    SearchX,
+    MessageCircle,
+    ShoppingSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InquiryModal from "@/components/modals/InquiryModal";
@@ -26,9 +30,11 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import Link from "next/link";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 export default function StorePage() {
     const { slug } = useParams();
+    const router = useRouter();
     const [storeUser, setStoreUser] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -73,7 +79,7 @@ export default function StorePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950">
+            <div className="min-h-screen flex items-center justify-center bg-[#09090b]">
                 <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
             </div>
         );
@@ -81,13 +87,13 @@ export default function StorePage() {
 
     if (!storeUser) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-zinc-950 p-6 text-center">
-                <div className="w-20 h-20 bg-gray-100 dark:bg-zinc-900 rounded-3xl flex items-center justify-center mb-6">
-                    <ShoppingBag className="w-10 h-10 text-gray-400" />
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#09090b] p-6 text-center text-white">
+                <div className="w-20 h-20 bg-zinc-900 rounded-2xl flex items-center justify-center mb-6 border border-white/[0.06]">
+                    <ShoppingBag className="w-10 h-10 text-zinc-600" />
                 </div>
-                <h1 className="text-2xl font-black text-gray-900 dark:text-white">Store Not Found</h1>
-                <p className="text-gray-500 mt-2">This storefront might have been moved or taken offline.</p>
-                <Button className="mt-8 rounded-2xl bg-blue-600" onClick={() => window.location.href = "/"}>Back to Home</Button>
+                <h1 className="text-2xl font-bold">Store Not Found</h1>
+                <p className="text-zinc-500 mt-2 font-medium">This storefront might have been moved or taken offline.</p>
+                <Button className="mt-8 rounded-xl bg-blue-600 hover:bg-blue-700 px-8 h-12 font-bold" onClick={() => router.push("/")}>Return Home</Button>
             </div>
         );
     }
@@ -98,58 +104,57 @@ export default function StorePage() {
     );
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white selection:bg-blue-500/30 font-sans">
-            {/* Store Header */}
-            <header className="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-2xl border-b border-white/5">
-                <div className="container mx-auto px-6 h-24 flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <div className="w-12 h-12 bg-gradient-to-br from-zinc-800 to-zinc-950 rounded-2xl flex items-center justify-center text-white font-black text-xl border border-white/10 shadow-2xl">
+        <div className="min-h-screen bg-[#09090b] text-white selection:bg-blue-500/30">
+            {/* Header */}
+            <header className="sticky top-0 z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.06] py-3">
+                <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-zinc-950 border border-white/[0.08] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-xl">
                             {storeUser.storeName?.[0] || "S"}
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black tracking-tighter sm:text-3xl text-white leading-none mb-1">{storeUser.storeName}</h1>
-                            <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/80">Authorized Merchant</span>
+                            <h1 className="text-lg font-bold tracking-tight text-white leading-none">{storeUser.storeName}</h1>
+                            <div className="flex items-center gap-1.5 mt-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/80">Verified Local Merchant</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="hidden lg:flex flex-1 max-w-xl mx-16">
+                    <div className="hidden md:flex flex-1 max-w-md mx-12">
                         <div className="relative w-full group">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-blue-500 transition-colors duration-300" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-white transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search premium collection..."
-                                className="w-full pl-14 h-14 rounded-full bg-white/5 border border-white/5 text-sm font-bold placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition-all outline-none"
+                                placeholder="Search collection..."
+                                className="w-full h-10 pl-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm font-medium placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 transition-all"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         {user ? (
-                            <>
+                            <div className="flex items-center gap-2">
                                 <Link href="/buyer-orders">
-                                    <Button variant="outline" className="rounded-full font-black h-12 px-8 gap-3 bg-white/5 border-white/10 hover:bg-white/10 text-white transition-all hidden sm:flex">
-                                        <Package className="w-5 h-5" />
-                                        MY ORDERS
+                                    <Button variant="ghost" className="rounded-lg h-10 px-4 gap-2 text-zinc-400 hover:text-white hover:bg-white/[0.04] text-xs font-bold uppercase tracking-tight">
+                                        <Package className="w-4 h-4" />
+                                        <span className="hidden sm:inline">My Orders</span>
                                     </Button>
                                 </Link>
                                 <Button
                                     onClick={() => signOut(auth)}
                                     variant="ghost"
-                                    className="rounded-full font-black h-12 w-12 p-0 flex items-center justify-center bg-white/5 hover:bg-red-500/20 text-zinc-400 hover:text-red-500 transition-all"
+                                    className="rounded-lg h-10 w-10 p-0 flex items-center justify-center text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                                 >
-                                    <LogOut className="w-5 h-5" />
+                                    <LogOut className="w-4 h-4" />
                                 </Button>
-                            </>
+                            </div>
                         ) : (
                             <Link href="/">
-                                <Button variant="outline" className="rounded-full font-black h-12 px-8 gap-3 bg-white text-black hover:bg-zinc-200 border-none transition-all">
-                                    <User className="w-5 h-5" />
-                                    SIGN IN
+                                <Button className="rounded-lg font-bold h-10 px-6 bg-white text-zinc-950 hover:bg-zinc-200 transition-all text-xs">
+                                    Sign In
                                 </Button>
                             </Link>
                         )}
@@ -157,128 +162,79 @@ export default function StorePage() {
                 </div>
             </header>
 
-            <main className="container mx-auto px-6 py-12 space-y-24">
-                {/* Elite Hero Banner */}
-                <section className="relative rounded-[3rem] overflow-hidden bg-zinc-900 border border-white/10 flex flex-col items-center text-center py-32 px-4 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                    {/* Background glow and texture */}
-                    <div className="absolute inset-0 z-0">
-                        <div className="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[120px]" />
-                        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-80" />
+            <main className="container mx-auto px-6 py-12 max-w-7xl space-y-24">
+                {/* Hero Banner */}
+                <section className="relative rounded-[2rem] overflow-hidden bg-zinc-900/50 border border-white/[0.06] flex flex-col items-center justify-center text-center py-20 px-6 sm:py-32">
+                    <div className="absolute inset-0 z-0 opacity-10 flex items-center justify-center">
+                        <div className="w-[600px] h-[400px] bg-blue-600/30 rounded-full blur-[150px]" />
+                        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
                     </div>
                     
-                    <div className="relative z-10 max-w-3xl space-y-8 flex flex-col items-center">
-                        <div className="inline-flex items-center gap-3 px-5 py-2 bg-zinc-950/80 backdrop-blur-md rounded-full border border-white/5 shadow-2xl">
-                            <Star className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-zinc-300">Elite Curated Collection</span>
+                    <div className="relative z-10 space-y-6 max-w-3xl flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/[0.04] rounded-full border border-white/[0.1] text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                            Professional Experience
                         </div>
-                        <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.05]">
-                            Exceptional Quality.<br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-300 to-zinc-600">Zero Compromise.</span>
+                        <h2 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
+                            Carefully curated essentials <br className="hidden sm:block" />
+                            <span className="text-zinc-500">for your lifestyle.</span>
                         </h2>
-                        <p className="text-zinc-400 font-medium md:text-xl max-w-xl mx-auto leading-relaxed">
-                            Discover world-class essentials sourced directly from verified global suppliers. Premium tier products, expedited processing.
+                        <p className="text-zinc-500 font-medium sm:text-lg max-w-xl mx-auto leading-relaxed">
+                            Discover high-quality products from verified global suppliers. Professional service, guaranteed delivery.
                         </p>
-                        <div className="flex flex-wrap justify-center gap-10 pt-8 opacity-70">
-                            <div className="flex items-center gap-3">
-                                <Truck className="w-6 h-6 text-zinc-300" />
-                                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Global Priority</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Clock className="w-6 h-6 text-zinc-300" />
-                                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">24/7 Verified Support</span>
-                            </div>
-                        </div>
                     </div>
                 </section>
 
-                {/* Products Grid */}
-                <div className="space-y-12 pb-24">
-                    <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-white/10 pb-6">
+                {/* Products Section */}
+                <div className="space-y-12">
+                    <div className="flex items-end justify-between border-b border-white/[0.04] pb-6">
                         <div>
-                            <h3 className="text-4xl font-black tracking-tighter text-white">The Collection</h3>
-                            <p className="text-sm font-bold text-zinc-500 uppercase tracking-[0.2em] mt-2">Showing {filteredProducts.length} Items</p>
+                            <h3 className="text-2xl font-bold">The Collection</h3>
+                            <p className="text-xs font-bold text-zinc-600 uppercase tracking-widest mt-1">
+                                {filteredProducts.length} items available
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-zinc-600 text-[10px] font-bold uppercase tracking-[0.1em]">
+                            <Truck className="w-3 h-3" /> Priority Express Shipping
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredProducts.length === 0 ? (
-                            <div className="col-span-full py-40 text-center bg-zinc-900/50 rounded-[3rem] border border-white/5">
-                                <Package className="w-20 h-20 text-zinc-800 mx-auto mb-8" />
-                                <h4 className="text-2xl font-black tracking-tight text-white mb-2">Inventory Updating</h4>
-                                <p className="text-zinc-500 font-medium max-w-sm mx-auto">This merchant is currently curating new products. Check back shortly.</p>
+                            <div className="col-span-full py-40 flex flex-col items-center text-center space-y-4 bg-zinc-900/40 rounded-3xl border border-white/[0.04]">
+                                <SearchX className="w-12 h-12 text-zinc-800" />
+                                <div className="space-y-1">
+                                    <h4 className="text-white font-bold">No items found</h4>
+                                    <p className="text-zinc-600 text-sm font-medium">We couldn't find any products matching your search.</p>
+                                </div>
+                                <Button variant="outline" onClick={() => setSearchQuery("")} className="rounded-xl border-white/[0.1] hover:bg-white/[0.04] text-xs font-bold">Clear Search</Button>
                             </div>
                         ) : (
                             filteredProducts.map((product: any) => (
-                                <div key={product.id} className="group flex flex-col bg-[#0a0a0a] border border-white/5 rounded-[2rem] overflow-hidden hover:border-white/10 transition-all duration-700 hover:-translate-y-2 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
-                                    <div className="aspect-[4/5] bg-zinc-900 relative overflow-hidden">
-                                        <div className="absolute top-5 left-5 z-20">
-                                            <div className="flex items-center gap-2 bg-black/60 backdrop-blur-xl px-4 py-2 rounded-full border border-white/10 shadow-2xl">
-                                                <Eye className="w-4 h-4 text-zinc-300" />
-                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">
-                                                    {(product.engagementViews || 0).toLocaleString()} Views
-                                                </span>
-                                            </div>
-                                        </div>
-                                        {product.image ? (
-                                            <>
-                                                <Image
-                                                    src={product.image}
-                                                    alt={product.name}
-                                                    fill
-                                                    className="object-cover transition-transform duration-1000 group-hover:scale-110 group-hover:opacity-60"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                                            </>
-                                        ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center text-zinc-800 opacity-30 group-hover:scale-110 transition-transform duration-1000">
-                                                <ShoppingBag className="w-32 h-32" />
-                                            </div>
-                                        )}
-                                        <div className="absolute bottom-6 left-6 right-6 translate-y-24 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out z-30">
-                                            <Button
-                                                onClick={() => setInquiryProduct(product)}
-                                                className="w-full h-14 bg-white text-[#050505] font-black rounded-full shadow-2xl hover:bg-zinc-200 text-xs tracking-[0.2em] uppercase"
-                                            >
-                                                SECURE PURCHASE
-                                            </Button>
-                                        </div>
-                                    </div>
-                                    <div className="p-8 flex flex-col flex-1 relative z-10 bg-[#0a0a0a]">
-                                        <h4 className="font-bold text-lg text-white line-clamp-2 leading-snug mb-4">{product.name}</h4>
-                                        <div className="flex justify-between items-end mt-auto pt-4 border-t border-white/5">
-                                            <div>
-                                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">Available Now</p>
-                                                <p className="text-3xl font-black tracking-tighter text-white">${product.resellPrice.toLocaleString()}</p>
-                                            </div>
-                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white group-hover:text-black transition-colors">
-                                                <ArrowUpRight className="w-5 h-5" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <ProductCard 
+                                    key={product.id} 
+                                    product={product} 
+                                    onInquiry={() => setInquiryProduct(product)} 
+                                />
                             ))
                         )}
                     </div>
                 </div>
 
-                {/* Trust Footer */}
-                <section className="relative overflow-hidden bg-zinc-900 border border-white/5 p-16 rounded-[4rem] flex flex-col lg:flex-row items-center justify-between gap-16 text-center lg:text-left">
-                    <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5" />
-                    <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[100px] -mt-[300px] -mr-[300px]" />
-                    
-                    <div className="relative z-10 space-y-6 max-w-2xl">
-                        <div className="w-20 h-20 bg-black/50 border border-white/10 rounded-[2rem] flex items-center justify-center mx-auto lg:mx-0 shadow-2xl backdrop-blur-xl">
-                            <ShieldCheck className="w-10 h-10 text-emerald-400" />
+                {/* Features Footer */}
+                <section className="grid grid-cols-1 md:grid-cols-3 gap-8 py-20 border-t border-white/[0.04]">
+                    {[
+                        { title: "Escrow Protection", desc: "Your payment is held securely and only released once your order is successfully delivered.", icon: ShieldCheck },
+                        { title: "Verified Sourcing", desc: "Every product in this store is sourced from quality-vetted global manufacturers.", icon: ShoppingSquare },
+                        { title: "24/7 Assistance", desc: "Need help? Contact the merchant directly through our secure messaging system.", icon: MessageCircle }
+                    ].map((f, i) => (
+                        <div key={i} className="flex flex-col items-center text-center gap-4 p-8 bg-zinc-900/30 rounded-3xl border border-white/[0.04] hover:bg-zinc-900/50 transition-colors">
+                            <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-2">
+                                <f.icon className="w-6 h-6 text-blue-500" />
+                            </div>
+                            <h4 className="text-lg font-bold text-white tracking-tight">{f.title}</h4>
+                            <p className="text-sm text-zinc-500 font-medium leading-relaxed">{f.desc}</p>
                         </div>
-                        <h3 className="text-4xl font-black tracking-tighter text-white">Guaranteed Integrity.</h3>
-                        <p className="text-zinc-400 font-medium text-lg leading-relaxed">
-                            This storefront is monitored by Shoplinea.shop's central logistics network. 
-                            Your payment is held securely in escrow until successful delivery confirmation.
-                        </p>
-                    </div>
-                    <Button className="relative z-10 h-16 px-10 rounded-full font-black text-xs uppercase tracking-[0.2em] bg-white text-black hover:bg-zinc-200 transition-all shadow-2xl shrink-0">
-                        View Network Policy
-                    </Button>
+                    ))}
                 </section>
             </main>
 
@@ -301,9 +257,70 @@ export default function StorePage() {
                 storeUser={storeUser}
             />
 
-            <footer className="border-t border-white/5 py-12 text-center text-zinc-600 font-black text-[10px] uppercase tracking-[0.4em]">
-                &copy; 2026 {storeUser.storeName}. Powered by the premium Shoplinea.shop network.
+            <footer className="border-t border-white/[0.04] p-12 text-center text-zinc-700 text-[10px] font-bold uppercase tracking-[0.3em]">
+                &copy; 2026 {storeUser.storeName}. Powered by Restock.
             </footer>
+        </div>
+    );
+}
+
+function ProductCard({ product, onInquiry }: { product: any, onInquiry: () => void }) {
+    const [imageLoaded, setImageLoaded] = useState(false);
+
+    return (
+        <div className="group bg-zinc-900/30 border border-white/[0.06] rounded-2xl overflow-hidden hover:bg-zinc-900/60 hover:border-white/[0.12] transition-all duration-300 flex flex-col">
+            <div className="relative aspect-[4/5] overflow-hidden bg-zinc-950 cursor-pointer" onClick={onInquiry}>
+                {product.image ? (
+                    <Image 
+                        src={product.image} 
+                        alt={product.name} 
+                        fill 
+                        className={cn(
+                            "object-cover transition-transform duration-700 group-hover:scale-105",
+                            imageLoaded ? "opacity-100" : "opacity-0"
+                        )}
+                        onLoadingComplete={() => setImageLoaded(true)}
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                        <ShoppingBag className="w-16 h-16" />
+                    </div>
+                )}
+                
+                {/* Popularity Badge */}
+                <div className="absolute top-4 left-4 z-10">
+                    <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/[0.08] text-[9px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                        <Eye className="w-3 h-3 text-blue-500" />
+                        {(product.engagementViews || 0).toLocaleString()} Views
+                    </div>
+                </div>
+
+                <div className="absolute bottom-4 left-4 right-4 translate-y-20 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out z-20">
+                    <Button
+                        onClick={(e) => { e.stopPropagation(); onInquiry(); }}
+                        className="w-full h-12 bg-white text-zinc-950 font-bold rounded-xl shadow-2xl hover:bg-zinc-200 text-xs"
+                    >
+                        Secure Purchase
+                    </Button>
+                </div>
+            </div>
+            
+            <div className="p-6 flex flex-col flex-1">
+                <div className="flex-1 space-y-2 cursor-pointer" onClick={onInquiry}>
+                   <h4 className="font-bold text-sm text-white line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">{product.name}</h4>
+                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{product.category || 'Lifestyle'}</p>
+                </div>
+                
+                <div className="flex justify-between items-end mt-6 pt-4 border-t border-white/[0.04]">
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 leading-none mb-1">Price</p>
+                        <p className="text-2xl font-bold tracking-tight text-white">${product.resellPrice?.toLocaleString() || '0'}</p>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-500 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-45">
+                        <ArrowUpRight className="w-4 h-4" />
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Smartphone, Mail, Send, CheckCircle2, ShieldCheck, MessageSquare, Truck, Lock, Loader2 } from "lucide-react";
+import { Smartphone, Mail, Send, CheckCircle2, ShieldCheck, MessageSquare, Truck, Lock, Loader2, User, ChevronRight } from "lucide-react";
 import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, setDoc, increment } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface InquiryModalProps {
     isOpen: boolean;
@@ -21,18 +22,24 @@ interface InquiryModalProps {
 export default function InquiryModal({ isOpen, onClose, product, storeUser, onProceedToCheckout }: InquiryModalProps) {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [message, setMessage] = useState(`Hi, I'm interested in purchasing the ${product?.name}. Is it ready for same-day UPS dispatch?`);
+    const [message, setMessage] = useState(`Hi, I'm interested in purchasing the ${product?.name}. Is it currently in stock?`);
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
     const [authMode, setAuthMode] = useState<"login" | "register" | "form">("form");
     const [authData, setAuthData] = useState({ email: "", password: "" });
     const router = useRouter();
 
-    // Reset state when modal opens
     useEffect(() => {
         if (isOpen) {
             setSent(false);
             setLoading(false);
+            if (auth.currentUser) {
+                setAuthMode("form");
+                // Pre-fill name/email if possible
+                const u = auth.currentUser;
+                setName(u.displayName || "");
+                setEmail(u.email || "");
+            }
         }
     }, [isOpen]);
 
@@ -43,10 +50,9 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
         try {
             let currentUser = auth.currentUser;
 
-            // 0. Handle Authentication for guests
             if (!currentUser) {
                 if (authMode === "form") {
-                    setAuthMode("register"); // Transition to auth details
+                    setAuthMode("register");
                     setLoading(false);
                     return;
                 }
@@ -66,15 +72,15 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                         currentUser = res.user;
                     }
                 } catch (authErr: any) {
-                    alert(authErr.message);
+                    console.error(authErr);
                     setLoading(false);
                     return;
                 }
             }
 
             if (!currentUser) throw new Error("Authentication failed");
-            // 1. Create a chat record
-            const chatId = [auth.currentUser?.uid, storeUser.uid].sort().join("_");
+            
+            const chatId = [currentUser.uid, storeUser.uid].sort().join("_");
             const chatRef = doc(db, "chats", chatId);
             const chatSnap = await getDoc(chatRef);
 
@@ -84,7 +90,7 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                 participants: [currentUser.uid, storeUser.uid],
                 participantsNames: [name || "Buyer", storeUser.displayName || storeUser.storeName || "Reseller"],
                 unread: true,
-                pendingOrderId: product.id, // Reference the product they are interested in
+                pendingOrderId: product.id,
                 productName: product.name,
                 productPrice: product.resellPrice
             };
@@ -95,57 +101,57 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                 await setDoc(chatRef, chatData);
             }
 
-            // 2. Add the actual message to a sub-collection
             await addDoc(collection(db, "chats", chatId, "messages"), {
                 text: message,
                 senderId: currentUser.uid,
                 createdAt: serverTimestamp()
             });
 
-            // 3. Update Seller Stats
             await updateDoc(doc(db, "users", storeUser.uid), {
                 "stats.inquiries": increment(1)
             });
 
-            // 4. Send Pending Customer Email
             await addDoc(collection(db, "notifications"), {
                 userId: storeUser.uid,
                 type: "new_inquiry",
-                title: "Potential Customer Alert!",
-                message: `User ${name} has sent you a message regarding ${product.name}. Check your messages at ${window.location.host}/dashboard/messages`,
+                title: "New Product Inquiry!",
+                message: `${name} is interested in ${product.name}.`,
                 emailType: "pending_customer",
                 recipientEmail: storeUser.email,
                 createdAt: serverTimestamp()
             });
 
             setSent(true);
-        } catch (error) {
-            console.error("Error sending inquiry:", error);
-        } finally {
-            setLoading(false);
-        }
+        } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     if (sent) {
         return (
-            <Modal isOpen={isOpen} onClose={onClose} title="Message Active!">
-                <div className="flex flex-col items-center justify-center py-8 text-center space-y-6">
-                    <div className="w-20 h-20 bg-emerald-500/10 rounded-[2.5rem] flex items-center justify-center text-emerald-500 animate-bounce">
-                        <MessageSquare className="w-10 h-10" />
+            <Modal isOpen={isOpen} onClose={onClose} title="Success!">
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                    <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center text-emerald-500 shadow-2xl shadow-emerald-500/10">
+                        <CheckCircle2 className="w-10 h-10" />
                     </div>
                     <div className="space-y-2">
-                        <h3 className="text-2xl font-black dark:text-white">Message Linked</h3>
-                        <p className="text-sm text-zinc-500 font-medium max-w-[280px]">Your inquiry is now active. You can now proceed to select your delivery and payment method.</p>
+                        <h3 className="text-2xl font-bold">Inquiry Sent</h3>
+                        <p className="text-sm text-zinc-500 font-medium max-w-xs mx-auto">The merchant has been notified. You can continue the conversation in your dashboard.</p>
                     </div>
-                    <Button
-                        onClick={() => {
-                            onClose();
-                            router.push("/dashboard/messages");
-                        }}
-                        className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-xl shadow-blue-500/20"
-                    >
-                        GO TO MESSENGER & PAY
-                    </Button>
+                    <div className="w-full flex flex-col gap-3 pt-4">
+                        <Button
+                            onClick={() => { onClose(); router.push("/dashboard/messages"); }}
+                            className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xl shadow-blue-500/20"
+                        >
+                            Open Messenger
+                        </Button>
+                        <Button
+                            onClick={onClose}
+                            variant="ghost"
+                            className="w-full h-10 rounded-xl text-zinc-500 font-bold"
+                        >
+                            Back to Store
+                        </Button>
+                    </div>
                 </div>
             </Modal>
         );
@@ -155,97 +161,102 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Purchase Inquiry"
-            description="Start a secure discussion with the reseller regarding this product."
+            title="Product Inquiry"
+            description="Contact the merchant directly regarding this item."
         >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {!auth.currentUser && authMode !== "form" ? (
-                    <div className="space-y-4 animate-in fade-in zoom-in-95">
-                        <div className="bg-blue-600/5 border border-blue-600/10 p-5 rounded-3xl mb-4">
-                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest leading-none mb-2">Buyer Account Required</p>
-                            <p className="text-xs text-zinc-500 font-medium">Create a secure profile to track your orders and chat with the reseller.</p>
+                    <div className="space-y-6">
+                        <div className="bg-blue-600/5 border border-blue-600/10 p-5 rounded-2xl flex items-center gap-4">
+                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                                <User className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-white">Guest Checkout</h4>
+                                <p className="text-xs text-zinc-500 font-medium">Create a profile to track your orders and chat with the merchant.</p>
+                            </div>
                         </div>
+                        
                         <div className="space-y-3">
-                            <div className="relative">
-                                <Mail className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                <Input
-                                    required
-                                    type="email"
-                                    placeholder="Email Address"
-                                    value={authData.email}
-                                    onChange={e => setAuthData({ ...authData, email: e.target.value })}
-                                    className="h-14 pl-12 bg-gray-50 dark:bg-zinc-800 border-none rounded-2xl font-bold"
-                                />
-                            </div>
-                            <div className="relative">
-                                <Lock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                                <Input
-                                    required
-                                    type="password"
-                                    placeholder="Secure Password"
-                                    value={authData.password}
-                                    onChange={e => setAuthData({ ...authData, password: e.target.value })}
-                                    className="h-14 pl-12 bg-gray-50 dark:bg-zinc-800 border-none rounded-2xl font-bold"
-                                />
-                            </div>
+                            <Input
+                                required
+                                type="email"
+                                placeholder="Email Address"
+                                value={authData.email}
+                                onChange={e => setAuthData({ ...authData, email: e.target.value })}
+                                className="h-12 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium text-sm"
+                            />
+                            <Input
+                                required
+                                type="password"
+                                placeholder="Secure Password"
+                                value={authData.password}
+                                onChange={e => setAuthData({ ...authData, password: e.target.value })}
+                                className="h-12 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium text-sm"
+                            />
                         </div>
-                        <button type="button" onClick={() => setAuthMode(authMode === "login" ? "register" : "login")} className="w-full text-center text-xs font-black text-zinc-500 uppercase tracking-widest hover:text-blue-500 transition-colors">
-                            {authMode === "login" ? "Don't have an account? Sign Up" : "Already have an account? Login"}
+
+                        <button 
+                            type="button" 
+                            onClick={() => setAuthMode(authMode === "login" ? "register" : "login")} 
+                            className="w-full text-center text-xs font-bold text-zinc-500 hover:text-blue-500 transition-colors"
+                        >
+                            {authMode === "login" ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
                         </button>
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Name</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">Your Name</label>
                                 <Input
                                     required
-                                    placeholder="Full Name"
+                                    placeholder="John Doe"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="h-12 rounded-xl bg-gray-50 dark:bg-zinc-800 border-none px-4 font-bold"
+                                    className="h-11 rounded-xl bg-zinc-950/50 border-white/[0.06] text-sm font-medium"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Email</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">Email Address</label>
                                 <Input
                                     required
                                     type="email"
-                                    placeholder="Email"
+                                    placeholder="john@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="h-12 rounded-xl bg-gray-50 dark:bg-zinc-800 border-none px-4 font-bold"
+                                    className="h-11 rounded-xl bg-zinc-950/50 border-white/[0.06] text-sm font-medium"
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">Message to Reseller</label>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">Message</label>
                             <textarea
                                 required
                                 rows={4}
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
-                                className="w-full p-6 text-sm font-medium rounded-3xl bg-gray-50 dark:bg-zinc-800 border-none focus:ring-2 focus:ring-blue-500/20 text-gray-900 dark:text-white"
+                                className="w-full p-4 text-sm font-medium rounded-xl bg-zinc-950/50 border border-white/[0.06] focus:border-blue-500/50 focus:outline-none transition-all resize-none text-white placeholder:text-zinc-700"
                             />
                         </div>
                     </div>
                 )}
 
-                <div className="p-4 bg-blue-600/5 rounded-2xl border border-blue-600/10 flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-blue-500" />
-                    <p className="text-[10px] font-bold text-blue-400 leading-tight">Your communication is end-to-end encrypted and monitored for buyer protection.</p>
+                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                    <p className="text-[10px] font-bold text-emerald-500/80 leading-tight">Your communication is secure and protected under Restock Integrity.</p>
                 </div>
 
                 <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3 transition-all active:scale-95"
+                    className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                 >
                     {loading ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                         <>
-                            {authMode === "register" ? "REGISTER & SEND MESSAGE" : authMode === "login" ? "LOGIN & SEND MESSAGE" : "START SECURE PURCHASE"}
+                            {authMode === "register" ? "Create Account & Send" : authMode === "login" ? "Sign In & Send" : "Send Inquiry"}
                             <Send className="w-4 h-4" />
                         </>
                     )}

@@ -13,103 +13,111 @@ import {
     Globe,
     Search,
     BrainCircuit,
-    UserCheck
+    UserCheck,
+    Sparkles,
+    ShieldCheck,
+    TrendingUp
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const plans = [
     {
-        name: "Pro 300",
-        price: "300",
-        description: "Perfect for starting your automated e-commerce journey.",
+        name: "Starter",
+        price: "29",
+        description: "Perfect for starting your dropshipping journey.",
         features: [
-            "AI Store Management v1",
-            "Custom .shop Domain",
-            "AI Ad Copy Generator",
-            "Support for 100 Products",
-            "Basic SEO Indexer",
-            "Weekly Growth Audits"
+            "Up to 50 active products",
+            "Professional storefront",
+            "Real-time order tracking",
+            "Basic analytics",
+            "Standard support",
+            "0% transaction fees"
         ],
         icon: Rocket,
-        color: "bg-blue-600",
-        shadow: "shadow-blue-500/20"
+        color: "bg-blue-600/10",
+        iconColor: "text-blue-500",
+        border: "border-blue-500/20"
     },
     {
-        name: "Elite 500",
-        price: "500",
-        description: "Scale your revenue with advanced AI tools and scaling.",
+        name: "Professional",
+        price: "79",
+        description: "Scale your revenue with advanced management tools.",
         features: [
-            "Everything in Pro 300+",
-            "TikTok Viral Hook Research",
-            "Competitor Price Tracker",
-            "Unlimited Catalog Scaling",
-            "Premium Store Themes",
-            "AI Support Bot (v1)",
-            "Daily Performance Audits"
+            "Unlimited products",
+            "AI product recommendations",
+            "Advanced sales analytics",
+            "Priority fulfillment",
+            "Premium store templates",
+            "SEO optimization tools",
+            "24/7 priority support"
         ],
         icon: Zap,
-        color: "bg-indigo-600",
-        shadow: "shadow-indigo-500/20",
+        color: "bg-indigo-600/10",
+        iconColor: "text-indigo-500",
+        border: "border-indigo-500/30",
         popular: true
     },
     {
-        name: "Venture 1200",
-        price: "1,200",
-        description: "Complete agency-grade management for serious vendors.",
+        name: "Scale",
+        price: "199",
+        description: "For established businesses looking to dominate.",
         features: [
-            "Everything in Elite 500+",
-            "White-Label Dashboards",
-            "Dedicated Growth Manager",
-            "Automated Influencer Outreach",
-            "Priority Global Logistics",
-            "Custom API Direct Access",
-            "Bi-weekly Strategy Calls"
+            "Everything in Professional+",
+            "Bulk order processing",
+            "Dedicated account manager",
+            "White-label packaging",
+            "Custom API access",
+            "Influencer marketing tools",
+            "Bi-weekly strategy calls"
         ],
-        icon: Crown,
-        color: "bg-emerald-600",
-        shadow: "shadow-emerald-500/20"
+        icon: TrendingUp,
+        color: "bg-emerald-600/10",
+        iconColor: "text-emerald-500",
+        border: "border-emerald-500/20"
     },
     {
-        name: "Enterprise 5000",
-        price: "5,000",
-        description: "The ultimate empire-building solution for high-volume trade.",
+        name: "Enterprise",
+        price: "499",
+        description: "The ultimate solution for high-volume trade.",
         features: [
-            "Everything in Venture 1200+",
-            "Multi-Store Cloud Management",
-            "Zero Processing Fees",
-            "24/7 Concierge Support",
-            "Custom AI Model Training",
-            "Full Legal Compliance Suite",
-            "Tax Management Automations"
+            "Everything in Scale+",
+            "Multi-store management",
+            "Full legal compliance suite",
+            "Automated tax management",
+            "Custom AI model training",
+            "Volume-based rewards",
+            "Concierge support 24/7"
         ],
         icon: Building2,
-        color: "bg-amber-600",
-        shadow: "shadow-amber-500/20"
+        color: "bg-purple-600/10",
+        iconColor: "text-purple-500",
+        border: "border-purple-500/20"
     }
 ];
 
 export default function PricingPage() {
     return (
-        <div className="min-h-screen bg-white dark:bg-zinc-950 pt-32 pb-20 overflow-hidden relative">
+        <div className="min-h-screen bg-[#09090b] text-white pt-32 pb-20 selection:bg-blue-500/30 overflow-hidden relative">
             {/* Background elements */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl">
-                <div className="absolute top-40 right-10 w-96 h-96 bg-blue-600/5 rounded-full blur-[120px]" />
+                <div className="absolute top-40 right-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px]" />
                 <div className="absolute bottom-40 left-10 w-[500px] h-[500px] bg-indigo-600/5 rounded-full blur-[120px]" />
+                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]" />
             </div>
 
-            <div className="container relative z-10 px-6 max-w-7xl">
-                <div className="text-center space-y-4 mb-20 max-w-3xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/10 rounded-full border border-blue-100 dark:border-blue-900/30">
-                        <Sparkles className="w-4 h-4 text-blue-600" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Scale Your Empire</span>
+            <div className="container relative z-10 px-6 max-w-7xl mx-auto">
+                <div className="text-center space-y-4 mb-24 max-w-3xl mx-auto">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
+                        <Sparkles className="w-4 h-4 text-blue-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-blue-500">Professional Infrastructure</span>
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter italic">
-                        Select Your Plan. <br/>
-                        <span className="text-slate-400">Automate Your Success.</span>
+                    <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white leading-tight">
+                        Simple, transparent <br/>
+                        <span className="text-zinc-500">pricing for every stage.</span>
                     </h1>
-                    <p className="text-lg font-bold text-slate-500 dark:text-zinc-500 leading-relaxed">
-                        Choose the tier that matches your ambition. From startup to enterprise, our AI-powered ecosystem scales with you.
+                    <p className="text-lg font-medium text-zinc-500 max-w-2xl mx-auto">
+                        Choose the plan that fits your ambition. No hidden fees, no setup costs. Just world-class infrastructure to help you scale.
                     </p>
                 </div>
 
@@ -118,53 +126,59 @@ export default function PricingPage() {
                         <div 
                             key={plan.name}
                             className={cn(
-                                "group relative bg-white dark:bg-zinc-900/50 border rounded-[2.5rem] p-8 transition-all duration-500 hover:scale-[1.02] flex flex-col justify-between",
+                                "group relative bg-zinc-900/40 border rounded-[2rem] p-8 transition-all duration-500 flex flex-col justify-between",
                                 plan.popular 
-                                    ? "border-blue-500 shadow-2xl shadow-blue-500/10 scale-[1.05]" 
-                                    : "border-slate-100 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 hover:shadow-xl"
+                                    ? "border-blue-500/50 bg-blue-500/[0.02] shadow-2xl shadow-blue-500/10" 
+                                    : "border-white/[0.06] hover:border-white/[0.12] hover:bg-zinc-900/60"
                             )}
                         >
                             {plan.popular && (
-                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-6 py-2 bg-blue-600 rounded-full shadow-lg shadow-blue-500/20">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-white">Most Popular</span>
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-blue-600 rounded-full shadow-lg shadow-blue-500/20">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white">Most Recommended</span>
                                 </div>
                             )}
 
-                            <div>
-                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6", plan.color, plan.shadow)}>
-                                    <plan.icon className="w-8 h-8 text-white" />
+                            <div className="space-y-8">
+                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border", plan.color, plan.border)}>
+                                    <plan.icon className={cn("w-7 h-7", plan.iconColor)} />
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white italic tracking-tight">{plan.name}</h3>
-                                <div className="mt-4 flex items-baseline gap-1">
-                                    <span className="text-4xl font-black text-slate-900 dark:text-whiteTracking-tighter">${plan.price}</span>
-                                    <span className="text-sm font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest">/mo</span>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white tracking-tight">{plan.name}</h3>
+                                    <p className="mt-2 text-xs font-medium text-zinc-500 leading-relaxed">
+                                        {plan.description}
+                                    </p>
                                 </div>
-                                <p className="mt-4 text-[11px] font-bold text-slate-500 dark:text-zinc-500 leading-relaxed">
-                                    {plan.description}
-                                </p>
+                                
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-4xl font-bold text-white tracking-tighter">${plan.price}</span>
+                                    <span className="text-sm font-bold text-zinc-600 uppercase tracking-widest">/mo</span>
+                                </div>
 
-                                <div className="mt-8 space-y-4">
-                                    {plan.features.map((feature) => (
-                                        <div key={feature} className="flex items-center gap-3">
-                                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center border border-slate-100 dark:border-zinc-700">
-                                                <Check className="w-3 h-3 text-emerald-500" />
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">What's included</p>
+                                    <div className="space-y-3">
+                                        {plan.features.map((feature) => (
+                                            <div key={feature} className="flex items-center gap-3">
+                                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-zinc-950 border border-white/[0.06] flex items-center justify-center">
+                                                    <Check className="w-3 h-3 text-emerald-500" />
+                                                </div>
+                                                <span className="text-xs font-medium text-zinc-400">{feature}</span>
                                             </div>
-                                            <span className="text-[11px] font-bold text-slate-700 dark:text-zinc-300">{feature}</span>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="mt-10">
-                                <Link href="/register">
+                            <div className="mt-10 pt-8 border-t border-white/[0.04]">
+                                <Link href="/register" className="block">
                                     <Button className={cn(
-                                        "w-full h-14 rounded-2xl font-black uppercase text-xs tracking-widest transition-all",
+                                        "w-full h-12 rounded-xl font-bold transition-all gap-2",
                                         plan.popular 
                                             ? "bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20" 
-                                            : "bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-105"
+                                            : "bg-white text-zinc-950 hover:bg-zinc-200"
                                     )}>
-                                        Get Started Now
-                                        <ArrowRight className="ml-2 w-4 h-4" />
+                                        Get Started
+                                        <ArrowRight className="w-4 h-4" />
                                     </Button>
                                 </Link>
                             </div>
@@ -172,54 +186,23 @@ export default function PricingPage() {
                     ))}
                 </div>
 
-                <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="p-8 bg-zinc-50 dark:bg-zinc-900/30 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 flex flex-col items-center text-center space-y-4">
-                        <div className="w-12 h-12 bg-white dark:bg-zinc-800 rounded-xl flex items-center justify-center shadow-sm">
-                            <BrainCircuit className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">AI Management</h4>
-                        <p className="text-[11px] font-bold text-slate-500 dark:text-zinc-500 leading-relaxed capitalize">Powerful algorithms handle inventory, pricing, and buyer targeting automatically.</p>
+                {/* FAQ Section Placeholder / Extra Visuals */}
+                <div className="mt-32 p-12 bg-zinc-900/40 border border-white/[0.06] rounded-[2.5rem] flex flex-col items-center text-center space-y-6">
+                    <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center">
+                        <ShieldCheck className="w-8 h-8 text-blue-500" />
                     </div>
-                    <div className="p-8 bg-zinc-50 dark:bg-zinc-900/30 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 flex flex-col items-center text-center space-y-4">
-                        <div className="w-12 h-12 bg-white dark:bg-zinc-800 rounded-xl flex items-center justify-center shadow-sm">
-                            <Globe className="w-6 h-6 text-indigo-600" />
-                        </div>
-                        <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Custom Domains</h4>
-                        <p className="text-[11px] font-bold text-slate-500 dark:text-zinc-500 leading-relaxed capitalize">Every plan includes your own professional .shop or .com domain to build trust.</p>
-                    </div>
-                    <div className="p-8 bg-zinc-50 dark:bg-zinc-900/30 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 flex flex-col items-center text-center space-y-4">
-                        <div className="w-12 h-12 bg-white dark:bg-zinc-800 rounded-xl flex items-center justify-center shadow-sm">
-                            <Search className="w-6 h-6 text-emerald-600" />
-                        </div>
-                        <h4 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">SEO Supremacy</h4>
-                        <p className="text-[11px] font-bold text-slate-500 dark:text-zinc-500 leading-relaxed capitalize">Our tech-stack is built for speed and indexability, putting your products on front pages.</p>
+                    <div className="max-w-xl space-y-2">
+                        <h4 className="text-2xl font-bold">14-Day Money Back Guarantee</h4>
+                        <p className="text-zinc-500 font-medium">Test our platform risk-free. If you're not seeing the results you expected, we'll refund your subscription—no questions asked.</p>
                     </div>
                 </div>
             </div>
             
-            <footer className="container mt-32 border-t border-slate-100 dark:border-zinc-800 pt-12 pb-6 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-                    &copy; 2026 Shoplinea.shop — The Billion Dollar Pipeline.
+            <footer className="container mx-auto px-6 mt-32 border-t border-white/[0.04] py-12 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-600">
+                    &copy; 2026 Restock Technology Infrastructure. All rights reserved.
                 </p>
             </footer>
         </div>
     );
 }
-
-const Sparkles = ({ className }: { className?: string }) => (
-    <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width="24" 
-        height="24" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="3" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        className={className}
-    >
-        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-        <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-    </svg>
-);

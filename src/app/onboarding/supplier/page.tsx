@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Truck, ClipboardList, Megaphone, Loader2 } from "lucide-react";
-import { doc, updateDoc } from "firebase/firestore";
+import { CheckCircle2, Truck, ClipboardList, Megaphone, Loader2, Mail, Building2, Globe, Phone, Info, Check } from "lucide-react";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/config";
+import { onAuthStateChanged } from "firebase/auth";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function SupplierOnboarding() {
     const [step, setStep] = useState(1); // 1: Form, 2: Success
+    const [user, setUser] = useState<any>(null);
     const [formData, setFormData] = useState({
         companyName: "",
-        businessType: "",
+        businessType: "Manufacturer",
         phoneNumber: "",
         website: "",
         categories: "",
@@ -19,14 +23,28 @@ export default function SupplierOnboarding() {
         runAds: false,
     });
     const [loading, setLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
     const router = useRouter();
+
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, async (u) => {
+            setUser(u);
+            if (u) {
+                const docSnap = await getDoc(doc(db, "users", u.uid));
+                if (docSnap.exists() && docSnap.data().onboardingCompleted) {
+                    router.push("/dashboard");
+                }
+            }
+            setInitialLoading(false);
+        });
+        return () => unsub();
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
         try {
-            const user = auth.currentUser;
             if (user) {
                 await updateDoc(doc(db, "users", user.uid), {
                     companyName: formData.companyName,
@@ -41,56 +59,58 @@ export default function SupplierOnboarding() {
                     updatedAt: new Date().toISOString()
                 });
                 setStep(2);
+                toast.success("Application submitted successfully!");
             }
         } catch (error) {
             console.error("Error updating profile:", error);
+            toast.error("An error occurred. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
+    if (initialLoading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-blue-600" /></div>;
+
     if (step === 2) {
         return (
-            <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]" />
-                    <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]" />
-                </div>
-
-                <div className="bg-white dark:bg-zinc-900 p-10 rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-2xl shadow-gray-200/50 dark:shadow-none max-w-lg w-full text-center space-y-8 relative z-10">
-                    <div className="mx-auto h-24 w-24 bg-blue-50 dark:bg-blue-900/20 rounded-[2rem] flex items-center justify-center animate-bounce">
-                        <CheckCircle2 className="h-12 w-12 text-blue-600" />
+            <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-6 text-white selection:bg-blue-500/30">
+                <div className="w-full max-w-lg space-y-8 text-center animate-in fade-in zoom-in-95 duration-500">
+                    <div className="mx-auto h-20 w-20 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center shadow-2xl">
+                        <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                     </div>
-                    <div>
-                        <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Application Submitted</h2>
-                        <p className="mt-3 text-gray-500 font-medium">
-                            Your supplier application is now being reviewed by our vetting team.
+                    <div className="space-y-3">
+                        <h2 className="text-3xl font-bold tracking-tight">Application Submitted</h2>
+                        <p className="text-zinc-500 font-medium">
+                            Your supplier credentials are now being reviewed by our vetting team for global compliance.
                         </p>
                     </div>
 
-                    <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-3xl border border-blue-100/30 dark:border-blue-900/20 space-y-4 text-left">
-                        <p className="text-xs font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">Next Steps</p>
-                        <div className="space-y-3">
-                            <div className="flex gap-3">
-                                <div className="p-1.5 h-6 w-6 bg-blue-100 dark:bg-blue-800/30 rounded-lg flex items-center justify-center shrink-0">
-                                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                    <div className="bg-zinc-900/50 p-8 rounded-2xl border border-white/[0.06] text-left space-y-6">
+                        <h4 className="text-xs font-bold text-blue-500 uppercase tracking-widest">Next Steps</h4>
+                        <div className="space-y-4">
+                            {[
+                                { title: "Background Verification", desc: "Our analysts will verify your business details and category expertise." },
+                                { title: "Approval Notice", desc: "You will receive an email once your dashboard access is granted (24-48h)." },
+                                { title: "Direct Support", desc: "For urgent concerns, contact our merchant support via WhatsApp or Email." }
+                            ].map((s, i) => (
+                                <div key={i} className="flex gap-4">
+                                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-500/20">
+                                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-white">{s.title}</p>
+                                        <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{s.desc}</p>
+                                    </div>
                                 </div>
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300"><span className="text-blue-600">Check your email:</span> We will notify you once your application is approved.</p>
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="p-1.5 h-6 w-6 bg-blue-100 dark:bg-blue-800/30 rounded-lg flex items-center justify-center shrink-0">
-                                    <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
-                                </div>
-                                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Approval usually takes <span className="text-blue-600">24-48 hours</span>.</p>
-                            </div>
+                            ))}
                         </div>
                     </div>
 
                     <Button
                         onClick={() => router.push("/")}
-                        className="w-full h-14 bg-blue-600 hover:bg-blue-700 rounded-2xl text-white font-black shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="w-full h-12 bg-white hover:bg-zinc-200 text-zinc-950 rounded-xl font-bold shadow-xl transition-all active:scale-[0.98]"
                     >
-                        RETURN TO HOME
+                        Return to Dashboard
                     </Button>
                 </div>
             </div>
@@ -98,65 +118,74 @@ export default function SupplierOnboarding() {
     }
 
     return (
-        <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]" />
-                <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[120px]" />
-            </div>
-
-            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-gray-100 dark:border-zinc-800 shadow-2xl shadow-gray-200/50 dark:shadow-none overflow-hidden relative z-10">
-                <div className="bg-blue-600 p-10 text-white relative">
+        <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-6 text-white selection:bg-blue-500/30">
+            <div className="w-full max-w-2xl bg-zinc-900/50 rounded-2xl border border-white/[0.06] shadow-2xl overflow-hidden backdrop-blur-sm">
+                <div className="relative p-10 bg-gradient-to-br from-blue-600 to-blue-800 text-white">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
                         <Truck className="h-32 w-32" />
                     </div>
-                    <div className="relative z-10 flex flex-col items-center text-center">
-                        <div className="h-14 w-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6">
-                            <Truck className="h-7 w-7 text-white" />
+                    <div className="relative z-10 space-y-4">
+                        <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center border border-white/20 shadow-xl">
+                            <Truck className="h-6 w-6 text-white" />
                         </div>
-                        <h1 className="text-3xl font-black tracking-tight">Supplier Registration</h1>
-                        <p className="text-blue-100 mt-2 font-medium opacity-90 text-sm">Join our global network of premium product suppliers.</p>
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight">Supplier Registration</h1>
+                            <p className="text-blue-100/80 mt-1 font-medium text-sm">Join the network of professional global product suppliers.</p>
+                        </div>
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-10 space-y-8">
+                <form onSubmit={handleSubmit} className="p-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Company Name</label>
+                            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                <Building2 className="w-3 h-3" /> Company Name
+                            </label>
                             <input
                                 required
-                                className="w-full h-12 px-4 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
-                                placeholder="e.g. Acme Logistics"
+                                className="w-full h-11 px-4 rounded-xl border border-white/[0.08] bg-zinc-950/50 text-white placeholder:text-zinc-700 focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm"
+                                placeholder="Formal Business Name"
                                 value={formData.companyName}
                                 onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Business Type</label>
-                            <input
+                            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                <Info className="w-3 h-3" /> Business Type
+                            </label>
+                            <select
                                 required
-                                className="w-full h-12 px-4 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
-                                placeholder="e.g. Manufacturer, Wholesaler"
+                                className="w-full h-11 px-4 rounded-xl border border-white/[0.08] bg-zinc-950/50 text-white focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm appearance-none cursor-pointer"
                                 value={formData.businessType}
                                 onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                            />
+                            >
+                                <option value="Manufacturer">Manufacturer</option>
+                                <option value="Wholesaler">Wholesaler</option>
+                                <option value="Distributor">Official Distributor</option>
+                                <option value="Dropshipper">Dropshipping Agent</option>
+                            </select>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Contact Phone</label>
+                            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                <Phone className="w-3 h-3" /> Contact Phone
+                            </label>
                             <input
                                 required
-                                className="w-full h-12 px-4 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+                                className="w-full h-11 px-4 rounded-xl border border-white/[0.08] bg-zinc-950/50 text-white placeholder:text-zinc-700 focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm"
                                 placeholder="+1 (555) 000-0000"
                                 value={formData.phoneNumber}
                                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Website (Optional)</label>
+                            <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                <Globe className="w-3 h-3" /> Website (Optional)
+                            </label>
                             <input
-                                className="w-full h-12 px-4 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold"
+                                className="w-full h-11 px-4 rounded-xl border border-white/[0.08] bg-zinc-950/50 text-white placeholder:text-zinc-700 focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm"
                                 placeholder="https://yourcompany.com"
                                 value={formData.website}
                                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
@@ -165,62 +194,69 @@ export default function SupplierOnboarding() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Product Categories</label>
+                        <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                            <ClipboardList className="w-3 h-3" /> Product Categories
+                        </label>
                         <textarea
                             required
-                            className="w-full h-32 p-4 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold resize-none"
-                            placeholder="Describe the types of products you supply..."
+                            className="w-full h-28 p-4 rounded-xl border border-white/[0.08] bg-zinc-950/50 text-white placeholder:text-zinc-700 focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm resize-none"
+                            placeholder="Detail the types of products you supply for the global market..."
                             value={formData.categories}
                             onChange={(e) => setFormData({ ...formData, categories: e.target.value })}
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-1">Dropshipping Experience</label>
+                        <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                            <ShieldCheck className="w-3 h-3" /> Logistics Experience
+                        </label>
                         <textarea
                             required
-                            className="w-full h-32 p-4 rounded-2xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold resize-none"
-                            placeholder="Tell us about your experience with fulfillment and dropshipping..."
+                            className="w-full h-28 p-4 rounded-xl border border-white/[0.08] bg-zinc-950/50 text-white placeholder:text-zinc-700 focus:outline-none focus:border-blue-500/50 transition-all font-medium text-sm resize-none"
+                            placeholder="Briefly describe your experience with order fulfillment and speed..."
                             value={formData.experience}
                             onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
                         />
                     </div>
 
-                    <div className="bg-gray-50 dark:bg-zinc-950 p-6 rounded-3xl border border-gray-100 dark:border-zinc-800 group">
+                    <div className="p-6 bg-zinc-950/50 rounded-2xl border border-white/[0.06] group">
                         <div className="flex items-start gap-4">
-                            <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex-shrink-0 flex items-center justify-center transition-transform group-hover:scale-110">
-                                <Megaphone className="h-6 w-6 text-blue-600" />
+                            <div className="h-10 w-10 bg-blue-500/10 border border-blue-500/20 rounded-xl flex-shrink-0 flex items-center justify-center transition-transform group-hover:scale-105">
+                                <Megaphone className="h-5 w-5 text-blue-500" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-black text-gray-900 dark:text-white text-sm uppercase tracking-tight">Boost Visibility?</h3>
-                                <p className="text-xs text-gray-500 font-medium mt-1 mb-4 leading-relaxed">
-                                    Would you like us to run paid advertising campaigns for your products? (Commission based, no upfront cost)
+                                <h3 className="text-sm font-bold text-white tracking-tight">Expand Your Reach?</h3>
+                                <p className="text-xs text-zinc-500 font-medium mt-1 leading-relaxed">
+                                    Would you like us to run paid AI-powered advertising for your inventory? (Commission based, no upfront cost)
                                 </p>
-                                <label className="flex items-center space-x-3 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
-                                        className="h-5 w-5 text-blue-600 rounded-lg border-gray-200 dark:border-zinc-800 transition-all focus:ring-blue-500"
-                                        checked={formData.runAds}
-                                        onChange={(e) => setFormData({ ...formData, runAds: e.target.checked })}
-                                    />
-                                    <span className="font-bold text-gray-700 dark:text-gray-300 text-xs">Yes, promote my inventory.</span>
+                                <label className="flex items-center gap-3 mt-4 cursor-pointer select-none">
+                                    <div className={cn(
+                                        "w-5 h-5 rounded-md border flex items-center justify-center transition-all",
+                                        formData.runAds ? "bg-blue-600 border-blue-600" : "bg-zinc-800 border-white/10"
+                                    )}>
+                                        {formData.runAds && <Check className="w-3.5 h-3.5 text-white" />}
+                                        <input
+                                            type="checkbox"
+                                            className="hidden"
+                                            checked={formData.runAds}
+                                            onChange={(e) => setFormData({ ...formData, runAds: e.target.checked })}
+                                        />
+                                    </div>
+                                    <span className="font-bold text-zinc-300 text-xs tracking-tight">Promote my inventory via Restock Ads.</span>
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-4">
-                        <Button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full h-14 bg-blue-600 hover:bg-blue-700 rounded-2xl text-white font-black shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
-                        >
-                            {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : "SUBMIT APPLICATION"}
-                        </Button>
-                    </div>
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full h-12 bg-white hover:bg-zinc-200 text-zinc-950 rounded-xl font-bold shadow-xl transition-all active:scale-[0.98]"
+                    >
+                        {loading ? <Loader2 className="h-5 h-5 animate-spin" /> : "Submit Application"}
+                    </Button>
                 </form>
             </div>
         </div>
     );
 }
-

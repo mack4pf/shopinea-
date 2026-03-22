@@ -8,19 +8,20 @@ import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-    Loader2, 
-    Store, 
-    ShieldCheck, 
-    Mail, 
-    Lock, 
-    User, 
-    Phone, 
-    CheckCircle2, 
-    AlertTriangle, 
+import {
+    Loader2,
+    Store,
+    ShieldCheck,
+    Mail,
+    Lock,
+    User,
+    Phone,
+    AlertCircle,
     ChevronLeft,
     Globe,
-    CreditCard
+    CreditCard,
+    ArrowRight,
+    Check
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -36,13 +37,10 @@ export default function RegisterPage() {
         currency: "USD",
         role: "reseller" as "reseller" | "supplier"
     });
-    
-    // Verification State
+
     const [generatedCode, setGeneratedCode] = useState("");
     const [userInputCode, setUserInputCode] = useState("");
     const [sendingCode, setSendingCode] = useState(false);
-    
-    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
 
@@ -52,33 +50,32 @@ export default function RegisterPage() {
 
     const formatError = (err: any) => {
         const code = err.code || err.message;
+        console.error("Firebase Error:", code);
         switch (code) {
             case "auth/email-already-in-use":
-                return "This email address is already in use.";
+                return "This email address is already registered.";
             case "auth/invalid-email":
                 return "Please enter a valid email address.";
             case "auth/weak-password":
                 return "Password is too weak. Please use at least 6 characters.";
             case "auth/too-many-requests":
-                return "Account temporarily disabled due to many failed attempts. Please try later.";
-            case "auth/operation-not-allowed":
-                return "Email/password accounts are not enabled. Contact support.";
+                return "Too many attempts. Please try again later.";
+            case "auth/network-request-failed":
+                return "Network error. Please check your connection.";
             default:
-                return "An unexpected error occurred. Please try again.";
+                return "An error occurred during registration. Please try again.";
         }
     };
 
     const handleInitialSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
-
         if (!agreedToTerms) {
-            setError("Please agree to the terms to proceed.");
+            toast.error("Please agree to the terms of service.");
             return;
         }
 
         if (formData.password.length < 6) {
-            setError("Password must be at least 6 characters.");
+            toast.error("Password must be at least 6 characters.");
             return;
         }
 
@@ -98,14 +95,13 @@ export default function RegisterPage() {
             });
 
             if (response.ok) {
-                toast.success("Verification code sent.");
+                toast.success("Verification code sent to your email.");
                 setStep(2);
             } else {
-                setError("Failed to send code. Please check your email.");
+                toast.error("Failed to send code. Please check your email.");
             }
         } catch (err: any) {
-            console.error(err);
-            setError("Network error. Could not send code.");
+            toast.error("Network error. Could not send code.");
         } finally {
             setSendingCode(false);
         }
@@ -113,15 +109,12 @@ export default function RegisterPage() {
 
     const handleVerifyAndRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
-
         if (userInputCode !== generatedCode) {
-            setError("Invalid verification code.");
+            toast.error("Invalid verification code.");
             return;
         }
 
         setLoading(true);
-
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
@@ -138,7 +131,7 @@ export default function RegisterPage() {
                 country: formData.country,
                 currency: formData.currency,
                 role: formData.role,
-                isVerified: true, 
+                isVerified: true,
                 onboardingCompleted: false,
                 createdAt: new Date().toISOString(),
                 referralCode: newReferralCode,
@@ -147,13 +140,15 @@ export default function RegisterPage() {
                 storeProducts: [],
                 stats: { views: 0, messages: 0, payments: 0 },
                 adWalletBalance: 0,
-                pendingAdDebt: 0
+                pendingAdDebt: 0,
+                kycStatus: 'unverified'
             });
 
             toast.success("Account created successfully!");
             router.push(`/onboarding/${formData.role}`);
         } catch (err: any) {
-            setError(formatError(err));
+            const msg = formatError(err);
+            toast.error(msg);
             if (err.code === "auth/email-already-in-use") setStep(1);
         } finally {
             setLoading(false);
@@ -161,230 +156,210 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#020202] flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden relative">
-            {/* Minimal Background */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[150px]" />
+        <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-6 text-white selection:bg-blue-500/30">
+            {/* Logo */}
+            <div className="mb-8 flex flex-col items-center gap-2">
+                <Link href="/" className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
+                    <span className="text-zinc-950 font-bold text-2xl">R</span>
+                </Link>
+                <h1 className="text-xl font-bold tracking-tight">Restock</h1>
             </div>
 
-            <div className="w-full max-w-[460px] relative z-10">
-                {/* Brand Header */}
-                <div className="flex flex-col items-center mb-10 space-y-4">
-                    <Link href="/" className="group">
-                        <div className="w-16 h-16 bg-white rounded-[1.8rem] flex items-center justify-center shadow-2xl group-hover:rotate-6 transition-transform duration-500">
-                            <span className="text-[#020202] font-black text-3xl">S</span>
-                        </div>
-                    </Link>
-                    <div className="text-center">
-                        <h1 className="text-3xl font-black tracking-tight uppercase leading-none">Shoplinea</h1>
-                        <p className="text-[10px] font-bold tracking-[0.4em] text-blue-500 uppercase mt-2">Digital Commerce Platform</p>
-                    </div>
-                </div>
-
-                <div className="bg-[#0A0A0B] border border-white/[0.05] rounded-[2.8rem] p-8 md:p-12 shadow-2xl relative overflow-hidden group">
-                    {/* Active Line */}
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-
-                    {error && (
-                        <div className="mb-8 bg-rose-500/10 border border-rose-500/20 px-5 py-4 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
-                            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
-                            <p className="text-[12px] font-bold text-rose-500 uppercase tracking-wider">{error}</p>
-                        </div>
-                    )}
-
+            <div className="w-full max-w-[440px]">
+                <div className="bg-zinc-900/50 border border-white/[0.06] rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
                     {step === 1 ? (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
-                            <div className="space-y-2">
-                                <h2 className="text-2xl font-black tracking-tight uppercase leading-none">Create Account</h2>
-                                <p className="text-[11px] font-bold text-zinc-600 uppercase tracking-widest leading-none">Merchant Account Setup</p>
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div>
+                                <h2 className="text-2xl font-semibold">Create your account</h2>
+                                <p className="text-sm text-zinc-500 mt-1">Join the network of professional merchants.</p>
                             </div>
 
                             {/* Role Selector */}
-                            <div className="grid grid-cols-2 gap-2 p-1.5 bg-zinc-950 rounded-[1.4rem] border border-white/5">
+                            <div className="flex p-1 bg-zinc-950 rounded-lg border border-white/[0.04]">
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: "reseller" })}
                                     className={cn(
-                                        "flex items-center justify-center gap-2 py-4 rounded-[1rem] transition-all duration-500",
-                                        formData.role === "reseller" ? "bg-white text-black shadow-xl" : "text-zinc-600 hover:text-white"
+                                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-xs font-medium transition-all",
+                                        formData.role === "reseller" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
                                     )}
                                 >
-                                    <Store className="w-4 h-4" />
-                                    <span className="text-[11px] font-black uppercase tracking-widest">Reseller</span>
+                                    <Store className="w-3.5 h-3.5" />
+                                    Reseller
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: "supplier" })}
                                     className={cn(
-                                        "flex items-center justify-center gap-2 py-4 rounded-[1rem] transition-all duration-500",
-                                        formData.role === "supplier" ? "bg-white text-black shadow-xl" : "text-zinc-600 hover:text-white"
+                                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-xs font-medium transition-all",
+                                        formData.role === "supplier" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
                                     )}
                                 >
-                                    <ShieldCheck className="w-4 h-4" />
-                                    <span className="text-[11px] font-black uppercase tracking-widest">Supplier</span>
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                    Supplier
                                 </button>
                             </div>
 
                             <form onSubmit={handleInitialSubmit} className="space-y-4">
                                 <div className="space-y-4">
-                                    <div className="relative group/field">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700 group-focus-within/field:text-white transition-colors" />
-                                        <Input
-                                            required
-                                            value={formData.name}
-                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="Full Name"
-                                            className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        />
-                                    </div>
-                                    <div className="relative group/field">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700 group-focus-within/field:text-white transition-colors" />
-                                        <Input
-                                            required
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                            placeholder="Email Address"
-                                            className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        />
-                                    </div>
-                                    <div className="relative group/field">
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700 group-focus-within/field:text-white transition-colors" />
-                                        <Input
-                                            required
-                                            type="tel"
-                                            value={formData.phone}
-                                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                            placeholder="Phone Number"
-                                            className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        />
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
                                         <div className="relative">
-                                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700" />
-                                            <select 
-                                                value={formData.country} 
+                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                            <Input
+                                                required
+                                                value={formData.name}
+                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                placeholder="Full Name"
+                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="relative">
+                                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                            <Input
+                                                required
+                                                type="email"
+                                                value={formData.email}
+                                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                                placeholder="Email Address"
+                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="relative">
+                                            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                            <Input
+                                                required
+                                                type="tel"
+                                                value={formData.phone}
+                                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                                placeholder="Phone"
+                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                            <select
+                                                value={formData.country}
                                                 onChange={e => setFormData({ ...formData, country: e.target.value })}
-                                                className="w-full h-14 pl-12 pr-4 bg-zinc-950 border border-white/[0.05] rounded-2xl text-[11px] font-black uppercase tracking-widest text-white appearance-none focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer"
+                                                className="w-full h-11 pl-11 bg-zinc-950/50 border border-white/[0.08] rounded-xl text-[13px] text-white focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer appearance-none"
                                             >
                                                 <option value="United States">United States</option>
                                                 <option value="United Kingdom">United Kingdom</option>
                                                 <option value="Canada">Canada</option>
-                                                <option value="Germany">Germany</option>
                                                 <option value="Nigeria">Nigeria</option>
-                                            </select>
-                                        </div>
-                                        <div className="relative">
-                                            <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700" />
-                                            <select 
-                                                value={formData.currency} 
-                                                onChange={e => setFormData({ ...formData, currency: e.target.value })}
-                                                className="w-full h-14 pl-12 pr-4 bg-zinc-950 border border-white/[0.05] rounded-2xl text-[11px] font-black uppercase tracking-widest text-white appearance-none focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer"
-                                            >
-                                                <option value="USD">USD ($)</option>
-                                                <option value="EUR">EUR (€)</option>
-                                                <option value="GBP">GBP (£)</option>
-                                                <option value="NGN">NGN (₦)</option>
+                                                <option value="Ghana">Ghana</option>
                                             </select>
                                         </div>
                                     </div>
 
-                                    <div className="relative group/field">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-700 group-focus-within/field:text-white transition-colors" />
-                                        <Input
-                                            required
-                                            type="password"
-                                            value={formData.password}
-                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                            placeholder="Password"
-                                            className="h-14 pl-12 bg-zinc-950 border-white/[0.05] rounded-2xl text-[13px] font-bold text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/5 transition-all"
-                                        />
+                                    <div className="space-y-2">
+                                        <div className="relative">
+                                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                            <Input
+                                                required
+                                                type="password"
+                                                value={formData.password}
+                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                placeholder="Password"
+                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start gap-4 pt-4 border-t border-white/5 mt-6">
+                                <div className="flex items-start gap-3 mt-6">
                                     <input
                                         id="terms"
                                         type="checkbox"
                                         checked={agreedToTerms}
                                         onChange={e => setAgreedToTerms(e.target.checked)}
-                                        className="mt-1 h-5 w-5 rounded border-white/10 bg-zinc-950 text-white focus:ring-offset-0 focus:ring-blue-600 cursor-pointer transition-all"
+                                        className="mt-1 h-4 w-4 rounded border-white/10 bg-zinc-950 text-blue-600 focus:ring-0 focus:ring-offset-0 cursor-pointer transition-all"
                                     />
-                                    <label htmlFor="terms" className="text-[10px] font-bold text-zinc-600 leading-relaxed cursor-pointer hover:text-white transition-colors uppercase tracking-widest">
-                                        I agree to the Terms of Service and Privacy Policy for global trade and secure transactions.
+                                    <label htmlFor="terms" className="text-xs text-zinc-500 leading-relaxed cursor-pointer hover:text-zinc-400 transition-colors">
+                                        I agree to the <Link href="/terms" className="text-blue-500 hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</Link>.
                                     </label>
                                 </div>
 
                                 <Button
                                     type="submit"
                                     disabled={sendingCode || !agreedToTerms}
-                                    className="w-full h-16 rounded-[1.8rem] bg-white text-black font-black uppercase tracking-widest text-[11px] hover:bg-zinc-200 transition-all active:scale-[0.98] mt-6 shadow-2xl"
+                                    className="w-full h-11 bg-white hover:bg-zinc-200 text-zinc-950 font-semibold rounded-xl transition-all active:scale-[0.98] mt-2 gap-2"
                                 >
-                                    {sendingCode ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify Email & Continue"}
+                                    {sendingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                                        <>Create Account <ArrowRight className="w-4 h-4" /></>
+                                    )}
                                 </Button>
                             </form>
                         </div>
                     ) : (
-                        <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <button onClick={() => setStep(1)} className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-600 tracking-widest hover:text-white transition-colors">
-                                <ChevronLeft className="w-4 h-4" /> Back to details
+                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                            <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-white transition-colors group">
+                                <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" /> Back to details
                             </button>
-                            
-                            <div className="text-center space-y-6">
-                                <div className="w-24 h-24 bg-emerald-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto border border-emerald-500/20 shadow-2xl">
-                                    <Mail className="w-10 h-10 text-emerald-500" />
+
+                            <div className="text-center space-y-4">
+                                <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20 shadow-xl">
+                                    <Mail className="w-7 h-7 text-blue-500" />
                                 </div>
-                                <div className="space-y-2">
-                                    <h2 className="text-2xl font-black tracking-tight uppercase text-white">Security Verification</h2>
-                                    <p className="text-[11px] font-bold text-zinc-600 uppercase tracking-widest leading-loose">
-                                        Verification code sent to: <br/>
-                                        <span className="text-white bg-white/5 px-4 py-2 rounded-xl inline-block mt-4 tracking-normal lowercase">{formData.email}</span>
+                                <div>
+                                    <h2 className="text-xl font-semibold">Check your email</h2>
+                                    <p className="text-sm text-zinc-500 mt-1 max-w-[280px] mx-auto">
+                                        We sent a verification code to <span className="text-white">{formData.email}</span>
                                     </p>
                                 </div>
                             </div>
 
-                            <form onSubmit={handleVerifyAndRegister} className="space-y-10">
-                                <div className="space-y-6">
-                                    <label className="text-[11px] font-black uppercase tracking-[0.4em] text-zinc-700 text-center block">Verification Code</label>
+                            <form onSubmit={handleVerifyAndRegister} className="space-y-6">
+                                <div className="space-y-4">
                                     <Input
                                         autoFocus
                                         value={userInputCode}
                                         onChange={e => setUserInputCode(e.target.value)}
-                                        placeholder="000 000"
-                                        className="h-28 text-center text-5xl font-black tracking-[0.4em] rounded-[2.2rem] bg-zinc-950 border-white/5 text-white placeholder:text-zinc-900 focus:border-emerald-500/50 focus:ring-8 focus:ring-emerald-500/5 transition-all"
+                                        placeholder="000000"
+                                        className="h-14 text-center text-3xl font-bold tracking-[0.2em] rounded-xl bg-zinc-950/50 border-white/10 text-white placeholder:text-zinc-800 transition-all"
                                         maxLength={6}
                                     />
                                     <div className="text-center">
-                                        <button 
-                                            type="button"
-                                            onClick={handleInitialSubmit}
-                                            disabled={sendingCode}
-                                            className="text-[10px] font-black uppercase text-zinc-700 hover:text-white transition-colors tracking-widest"
-                                        >
-                                            {sendingCode ? "Resending..." : "Resend Verification Code"}
-                                        </button>
+                                        <p className="text-xs text-zinc-600">
+                                            Didn't receive it?{" "}
+                                            <button
+                                                type="button"
+                                                onClick={handleInitialSubmit}
+                                                disabled={sendingCode}
+                                                className="text-blue-500 hover:underline font-medium"
+                                            >
+                                                {sendingCode ? "Resending..." : "Resend code"}
+                                            </button>
+                                        </p>
                                     </div>
                                 </div>
 
                                 <Button
                                     type="submit"
                                     disabled={loading || userInputCode.length < 6}
-                                    className="w-full h-18 rounded-[2rem] bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-[12px] shadow-2xl shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.98]"
                                 >
-                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Complete Registration"}
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Sign Up"}
                                 </Button>
                             </form>
                         </div>
                     )}
                 </div>
 
-                <div className="mt-8 text-center">
-                    <p className="text-[12px] font-bold text-zinc-700 uppercase tracking-widest">
+                <div className="mt-8 text-center space-y-4">
+                    <p className="text-sm text-zinc-500">
                         Already have an account?{" "}
-                        <Link href="/login" className="text-white hover:text-blue-500 transition-colors underline underline-offset-4">Log In</Link>
+                        <Link href="/login" className="text-white hover:text-blue-500 transition-colors font-medium">Log In</Link>
                     </p>
+                    <div className="flex items-center gap-2 justify-center text-[10px] text-zinc-700 uppercase tracking-widest font-semibold">
+                        <ShieldCheck className="w-3 h-3 text-zinc-800" />
+                        Secure Registration Protocol
+                    </div>
                 </div>
             </div>
         </div>

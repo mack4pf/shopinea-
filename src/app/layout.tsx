@@ -6,8 +6,8 @@ import { AuthProvider } from "@/context/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Shoplinea.shop - Wholesale Marketplace",
-  description: "B2B Dropshipping & Wholesale Platform",
+  title: "Restock - Global Commerce Infrastructure",
+  description: "B2B Supply Chain & Marketplace Infrastructure for Professional Merchants.",
 };
 
 export default function RootLayout({
