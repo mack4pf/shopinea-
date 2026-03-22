@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Box, Globe, ShieldCheck, Truck, TrendingUp, Zap, ShoppingBag, Check, Plus, Search } from "lucide-react";
 import { ReviewsSection } from "@/components/marketing/ReviewsSection";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   return (
