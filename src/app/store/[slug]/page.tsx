@@ -21,7 +21,7 @@ import {
     ArrowRight,
     SearchX,
     MessageCircle,
-    ShoppingSquare
+    ShoppingCart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InquiryModal from "@/components/modals/InquiryModal";
@@ -224,7 +224,7 @@ export default function StorePage() {
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-8 py-20 border-t border-white/[0.04]">
                     {[
                         { title: "Escrow Protection", desc: "Your payment is held securely and only released once your order is successfully delivered.", icon: ShieldCheck },
-                        { title: "Verified Sourcing", desc: "Every product in this store is sourced from quality-vetted global manufacturers.", icon: ShoppingSquare },
+                        { title: "Verified Sourcing", desc: "Every product in this store is sourced from quality-vetted global manufacturers.", icon: ShoppingCart },
                         { title: "24/7 Assistance", desc: "Need help? Contact the merchant directly through our secure messaging system.", icon: MessageCircle }
                     ].map((f, i) => (
                         <div key={i} className="flex flex-col items-center text-center gap-4 p-8 bg-zinc-900/30 rounded-3xl border border-white/[0.04] hover:bg-zinc-900/50 transition-colors">
