@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Truck, ClipboardList, Megaphone, Loader2, Mail, Building2, Globe, Phone, Info, Check } from "lucide-react";
+import { CheckCircle2, Truck, ClipboardList, Megaphone, Loader2, Mail, Building2, Globe, Phone, Info, Check, ShieldCheck } from "lucide-react";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
