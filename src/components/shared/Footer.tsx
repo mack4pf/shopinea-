@@ -1,21 +1,20 @@
 import Link from "next/link";
-import { Facebook, Twitter, Instagram, Linkedin, Github, Globe, ShieldCheck } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, Globe, ShieldCheck } from "lucide-react";
+import { ShopineaLogo } from "@/components/shared/ShopineaLogo";
 
 export function Footer() {
     return (
-        <footer className="bg-[#09090b] border-t border-white/[0.04] text-zinc-400">
+        <footer className="bg-[#07060f] border-t border-white/[0.04] text-zinc-400">
             <div className="container px-6 max-w-7xl mx-auto py-24">
                 <div className="grid gap-12 lg:grid-cols-5">
                     {/* Brand */}
                     <div className="lg:col-span-2 space-y-8">
-                        <Link href="/" className="flex items-center space-x-3">
-                            <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <span className="text-white font-bold text-lg">R</span>
-                            </div>
-                            <span className="text-white font-bold text-xl tracking-tight">Restock</span>
+                        <Link href="/" className="flex items-center gap-2.5">
+                            <ShopineaLogo size={34} />
+                            <span className="text-white font-extrabold text-xl tracking-tight">shopinea</span>
                         </Link>
                         <p className="text-sm font-medium leading-relaxed max-w-sm text-zinc-500">
-                            The world&apos;s most advanced supply chain infrastructure for professional merchants. Scale your commerce empire with AI-driven logistics and global sourcing.
+                            The world&apos;s most intelligent AI-powered dropshipping platform. Start your e-commerce business today — no inventory, no limits, just profits.
                         </p>
                         <div className="flex space-x-5">
                             <Link href="#" className="p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg hover:text-white hover:bg-white/[0.08] transition-all"><Twitter className="h-4 w-4" /></Link>
@@ -71,7 +70,7 @@ export function Footer() {
 
                 <div className="mt-24 pt-8 border-t border-white/[0.04] flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">
-                        © {new Date().getFullYear()} Restock Technology Infrastructure. All rights reserved.
+                        © {new Date().getFullYear()} Shopinea. All rights reserved.
                     </p>
                     <div className="flex gap-8">
                         <Link href="/privacy" className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest hover:text-white transition-colors">Privacy Policy</Link>

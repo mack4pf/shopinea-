@@ -63,96 +63,119 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-6 text-white selection:bg-blue-500/30">
-            {/* Logo */}
-            <div className="mb-8 flex flex-col items-center gap-2">
-                <Link href="/" className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-                    <span className="text-zinc-950 font-bold text-2xl">R</span>
-                </Link>
-                <h1 className="text-xl font-bold tracking-tight">Restock</h1>
+        <div className="min-h-screen bg-[#09090b] flex text-white">
+
+            {/* Left decorative panel — hidden on mobile */}
+            <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 bg-white/[0.02] border-r border-white/[0.05] p-10">
+                <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-9 h-9 object-contain" />
+                    <span className="text-sm font-bold text-white tracking-tight">shopinea</span>
+                </div>
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <h2 className="text-3xl font-bold leading-tight">The complete platform for modern merchants.</h2>
+                        <p className="text-zinc-500 text-sm leading-relaxed">Source products, build your store, run ads, and grow — all in one place.</p>
+                    </div>
+                    <div className="space-y-3">
+                        {[
+                            "Verified supplier network",
+                            "Automated order management",
+                            "Built-in ad wallet & campaigns",
+                            "Real-time analytics dashboard",
+                        ].map((item, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full bg-blue-500/15 border border-blue-500/25 flex items-center justify-center shrink-0">
+                                    <svg className="w-2.5 h-2.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                </div>
+                                <span className="text-sm text-zinc-400">{item}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <p className="text-xs text-zinc-700">© 2026 Shopinea. All rights reserved.</p>
             </div>
 
-            <div className="w-full max-w-[420px]">
-                <div className="bg-zinc-900/50 border border-white/[0.06] rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
+            {/* Right: form */}
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+                {/* Mobile logo */}
+                <div className="flex items-center gap-2 mb-8 lg:hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-bold text-white">shopinea</span>
+                </div>
+
+                <div className="w-full max-w-[400px]">
                     <div className="mb-8">
-                        <h2 className="text-2xl font-semibold">Sign in</h2>
-                        <p className="text-sm text-zinc-500 mt-1">Welcome back to your merchant dashboard.</p>
+                        <h1 className="text-2xl font-bold text-white">Welcome back</h1>
+                        <p className="text-sm text-zinc-500 mt-1.5">Sign in to your merchant account to continue.</p>
                     </div>
 
                     {error && (
-                        <div className="mb-6 bg-rose-500/10 border border-rose-500/20 px-4 py-3 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                            <p className="text-xs font-medium text-rose-500 leading-normal">{error}</p>
+                        <div className="mb-5 bg-red-500/[0.08] border border-red-500/20 px-4 py-3 rounded-xl flex items-start gap-3">
+                            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                            <p className="text-xs font-medium text-red-400 leading-relaxed">{error}</p>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-medium text-zinc-400 ml-1">Email address</label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-white transition-colors" />
-                                    <Input
-                                        type="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="name@email.com"
-                                        className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 transition-all font-medium"
-                                    />
-                                </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-zinc-400">Email address</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                <Input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="name@email.com"
+                                    className="h-11 pl-11 bg-white/[0.04] border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                />
                             </div>
+                        </div>
 
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center ml-1">
-                                    <label className="text-xs font-medium text-zinc-400">Password</label>
-                                    <Link 
-                                        href="/forgot-password" 
-                                        className="text-[11px] font-medium text-blue-500 hover:text-blue-400 transition-colors"
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                                <div className="relative group">
-                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-white transition-colors" />
-                                    <Input
-                                        type="password"
-                                        required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="••••••••"
-                                        className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 transition-all font-medium"
-                                    />
-                                </div>
+                        <div className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-medium text-zinc-400">Password</label>
+                                <Link href="/forgot-password" className="text-[11px] text-blue-500 hover:text-blue-400 transition-colors">Forgot password?</Link>
+                            </div>
+                            <div className="relative">
+                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                <Input
+                                    type="password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="h-11 pl-11 bg-white/[0.04] border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                />
                             </div>
                         </div>
 
                         <Button
                             type="submit"
                             disabled={loading}
-                            className="w-full h-11 bg-white hover:bg-zinc-200 text-zinc-950 rounded-xl font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all active:scale-[0.99] flex items-center justify-center gap-2 mt-2"
                         >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                                <>Sign In <ArrowRight className="w-4 h-4" /></>
-                            )}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Sign In <ArrowRight className="w-4 h-4" /></>}
                         </Button>
                     </form>
 
-                    <div className="mt-8 pt-8 border-t border-white/[0.03] flex items-start gap-3">
-                        <div className="w-9 h-9 bg-blue-500/10 rounded-lg flex items-center justify-center border border-blue-500/20 shrink-0">
-                            <ShieldCheck className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <p className="text-[10px] text-zinc-500 leading-relaxed uppercase tracking-wider font-semibold">
-                            Secure encrypted session. Real-time threat detection active for all transactions.
-                        </p>
+                    <div className="mt-6 flex items-center gap-3">
+                        <div className="flex-1 h-px bg-white/[0.06]" />
+                        <span className="text-[11px] text-zinc-600">or</span>
+                        <div className="flex-1 h-px bg-white/[0.06]" />
                     </div>
-                </div>
 
-                <div className="mt-8 text-center">
-                    <p className="text-sm text-zinc-500">
-                        Don't have an account?{" "}
-                        <Link href="/register" className="text-white hover:text-blue-500 transition-colors font-medium">Create one now</Link>
+                    <p className="mt-6 text-sm text-zinc-500 text-center">
+                        Don&apos;t have an account?{" "}
+                        <Link href="/register" className="text-white hover:text-blue-400 transition-colors font-medium">Create one free</Link>
                     </p>
+
+                    <div className="mt-8 flex items-center gap-2 justify-center">
+                        <ShieldCheck className="w-3.5 h-3.5 text-zinc-700" />
+                        <p className="text-[11px] text-zinc-700">Encrypted · Secure · OWASP compliant</p>
+                    </div>
                 </div>
             </div>
         </div>

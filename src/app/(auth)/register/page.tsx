@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
+import { COUNTRY_NAMES } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,12 +22,14 @@ import {
     Globe,
     CreditCard,
     ArrowRight,
-    Check
+    Check,
+    X,
+    FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-export default function RegisterPage() {
+function RegisterPageInner() {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: "",
@@ -43,6 +46,7 @@ export default function RegisterPage() {
     const [sendingCode, setSendingCode] = useState(false);
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
+    const [termsModal, setTermsModal] = useState<"terms" | "privacy" | null>(null);
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -156,32 +160,63 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-6 text-white selection:bg-blue-500/30">
-            {/* Logo */}
-            <div className="mb-8 flex flex-col items-center gap-2">
-                <Link href="/" className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-                    <span className="text-zinc-950 font-bold text-2xl">R</span>
-                </Link>
-                <h1 className="text-xl font-bold tracking-tight">Restock</h1>
+        <>
+        <div className="min-h-screen bg-[#09090b] flex text-white selection:bg-blue-500/30">
+
+            {/* Left decorative panel — hidden on mobile */}
+            <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 bg-white/[0.02] border-r border-white/[0.05] p-10">
+                <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-9 h-9 object-contain" />
+                    <span className="text-sm font-bold text-white tracking-tight">shopinea</span>
+                </div>
+                <div className="space-y-5">
+                    <div>
+                        <h2 className="text-3xl font-bold leading-tight">Start selling smarter today.</h2>
+                        <p className="text-zinc-500 text-sm mt-2 leading-relaxed">Join thousands of resellers and suppliers building their business on Shopinea.</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {[
+                            { label: "Products", value: "50K+" },
+                            { label: "Merchants", value: "12K+" },
+                            { label: "Countries", value: "40+" },
+                            { label: "Uptime", value: "99.9%" },
+                        ].map((s, i) => (
+                            <div key={i} className="p-4 bg-white/[0.03] border border-white/[0.05] rounded-xl">
+                                <p className="text-xl font-bold text-white">{s.value}</p>
+                                <p className="text-xs text-zinc-500 mt-0.5">{s.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <p className="text-xs text-zinc-700">© 2026 Shopinea. All rights reserved.</p>
             </div>
 
-            <div className="w-full max-w-[440px]">
-                <div className="bg-zinc-900/50 border border-white/[0.06] rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
+            {/* Right: form */}
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+                {/* Mobile logo */}
+                <div className="flex items-center gap-2 mb-8 lg:hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-bold text-white">shopinea</span>
+                </div>
+
+                <div className="w-full max-w-[440px]">
                     {step === 1 ? (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
                             <div>
-                                <h2 className="text-2xl font-semibold">Create your account</h2>
-                                <p className="text-sm text-zinc-500 mt-1">Join the network of professional merchants.</p>
+                                <h1 className="text-2xl font-bold">Create your account</h1>
+                                <p className="text-sm text-zinc-500 mt-1.5">Join the network of professional merchants.</p>
                             </div>
 
                             {/* Role Selector */}
-                            <div className="flex p-1 bg-zinc-950 rounded-lg border border-white/[0.04]">
+                            <div className="flex p-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
                                 <button
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: "reseller" })}
                                     className={cn(
-                                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-xs font-medium transition-all",
-                                        formData.role === "reseller" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all",
+                                        formData.role === "reseller" ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
                                     )}
                                 >
                                     <Store className="w-3.5 h-3.5" />
@@ -191,8 +226,8 @@ export default function RegisterPage() {
                                     type="button"
                                     onClick={() => setFormData({ ...formData, role: "supplier" })}
                                     className={cn(
-                                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-xs font-medium transition-all",
-                                        formData.role === "supplier" ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
+                                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all",
+                                        formData.role === "supplier" ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300"
                                     )}
                                 >
                                     <ShieldCheck className="w-3.5 h-3.5" />
@@ -200,168 +235,270 @@ export default function RegisterPage() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleInitialSubmit} className="space-y-4">
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <div className="relative">
-                                            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                                            <Input
-                                                required
-                                                value={formData.name}
-                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                                placeholder="Full Name"
-                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
-                                            />
-                                        </div>
-                                    </div>
+                            <form onSubmit={handleInitialSubmit} className="space-y-3">
+                                <div className="relative">
+                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                    <Input
+                                        required
+                                        value={formData.name}
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="Full Name"
+                                        className="h-11 pl-11 bg-white/[0.04] border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                    />
+                                </div>
 
-                                    <div className="space-y-2">
-                                        <div className="relative">
-                                            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                                            <Input
-                                                required
-                                                type="email"
-                                                value={formData.email}
-                                                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                                placeholder="Email Address"
-                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
-                                            />
-                                        </div>
-                                    </div>
+                                <div className="relative">
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                    <Input
+                                        required
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                        placeholder="Email Address"
+                                        className="h-11 pl-11 bg-white/[0.04] border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                    />
+                                </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="relative">
-                                            <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                                            <Input
-                                                required
-                                                type="tel"
-                                                value={formData.phone}
-                                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                                placeholder="Phone"
-                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
-                                            />
-                                        </div>
-                                        <div className="relative">
-                                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                                            <select
-                                                value={formData.country}
-                                                onChange={e => setFormData({ ...formData, country: e.target.value })}
-                                                className="w-full h-11 pl-11 bg-zinc-950/50 border border-white/[0.08] rounded-xl text-[13px] text-white focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer appearance-none"
-                                            >
-                                                <option value="United States">United States</option>
-                                                <option value="United Kingdom">United Kingdom</option>
-                                                <option value="Canada">Canada</option>
-                                                <option value="Nigeria">Nigeria</option>
-                                                <option value="Ghana">Ghana</option>
-                                            </select>
-                                        </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="relative">
+                                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                        <Input
+                                            required
+                                            type="tel"
+                                            value={formData.phone}
+                                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                            placeholder="Phone"
+                                            className="h-11 pl-11 bg-white/[0.04] border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                        />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <div className="relative">
-                                            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                                            <Input
-                                                required
-                                                type="password"
-                                                value={formData.password}
-                                                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                placeholder="Password"
-                                                className="h-11 pl-11 bg-zinc-950/50 border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-600 focus:border-blue-500/50 transition-all"
-                                            />
-                                        </div>
+                                    <div className="relative">
+                                        <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none z-10" />
+                                        <select
+                                            value={formData.country}
+                                            onChange={e => setFormData({ ...formData, country: e.target.value })}
+                                            className="w-full h-11 pl-11 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer appearance-none"
+                                        >
+                                            {COUNTRY_NAMES.map(c => (
+                                                <option key={c} value={c} className="bg-zinc-900">{c}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start gap-3 mt-6">
+                                <div className="relative">
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                    <Input
+                                        required
+                                        type="password"
+                                        value={formData.password}
+                                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                        placeholder="Password (min 6 characters)"
+                                        className="h-11 pl-11 bg-white/[0.04] border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                    />
+                                </div>
+
+                                <div className="flex items-start gap-3 pt-1">
                                     <input
                                         id="terms"
                                         type="checkbox"
                                         checked={agreedToTerms}
                                         onChange={e => setAgreedToTerms(e.target.checked)}
-                                        className="mt-1 h-4 w-4 rounded border-white/10 bg-zinc-950 text-blue-600 focus:ring-0 focus:ring-offset-0 cursor-pointer transition-all"
+                                        className="mt-0.5 h-4 w-4 rounded border-white/10 bg-zinc-950 text-blue-600 focus:ring-0 cursor-pointer"
                                     />
-                                    <label htmlFor="terms" className="text-xs text-zinc-500 leading-relaxed cursor-pointer hover:text-zinc-400 transition-colors">
-                                        I agree to the <Link href="/terms" className="text-blue-500 hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</Link>.
+                                    <label htmlFor="terms" className="text-xs text-zinc-500 leading-relaxed cursor-pointer">
+                                        I agree to the{" "}
+                                        <button type="button" onClick={() => setTermsModal("terms")} className="text-blue-400 hover:underline">Terms of Service</button>
+                                        {" "}and{" "}
+                                        <button type="button" onClick={() => setTermsModal("privacy")} className="text-blue-400 hover:underline">Privacy Policy</button>
                                     </label>
                                 </div>
 
                                 <Button
                                     type="submit"
                                     disabled={sendingCode || !agreedToTerms}
-                                    className="w-full h-11 bg-white hover:bg-zinc-200 text-zinc-950 font-semibold rounded-xl transition-all active:scale-[0.98] mt-2 gap-2"
+                                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.99] gap-2 mt-1"
                                 >
-                                    {sendingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                                        <>Create Account <ArrowRight className="w-4 h-4" /></>
-                                    )}
+                                    {sendingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
                                 </Button>
                             </form>
+
+                            <p className="text-sm text-zinc-500 text-center">
+                                Already have an account?{" "}
+                                <Link href="/login" className="text-white hover:text-blue-400 transition-colors font-medium">Sign in</Link>
+                            </p>
                         </div>
                     ) : (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-400">
                             <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-white transition-colors group">
                                 <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" /> Back to details
                             </button>
 
                             <div className="text-center space-y-4">
-                                <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20 shadow-xl">
-                                    <Mail className="w-7 h-7 text-blue-500" />
+                                <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto border border-blue-500/20">
+                                    <Mail className="w-7 h-7 text-blue-400" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-semibold">Check your email</h2>
-                                    <p className="text-sm text-zinc-500 mt-1 max-w-[280px] mx-auto">
-                                        We sent a verification code to <span className="text-white">{formData.email}</span>
+                                    <h2 className="text-xl font-bold">Check your email</h2>
+                                    <p className="text-sm text-zinc-500 mt-1.5 max-w-[280px] mx-auto">
+                                        We sent a 6-digit code to <span className="text-white font-medium">{formData.email}</span>
                                     </p>
                                 </div>
                             </div>
 
-                            <form onSubmit={handleVerifyAndRegister} className="space-y-6">
-                                <div className="space-y-4">
-                                    <Input
-                                        autoFocus
-                                        value={userInputCode}
-                                        onChange={e => setUserInputCode(e.target.value)}
-                                        placeholder="000000"
-                                        className="h-14 text-center text-3xl font-bold tracking-[0.2em] rounded-xl bg-zinc-950/50 border-white/10 text-white placeholder:text-zinc-800 transition-all"
-                                        maxLength={6}
-                                    />
-                                    <div className="text-center">
-                                        <p className="text-xs text-zinc-600">
-                                            Didn't receive it?{" "}
-                                            <button
-                                                type="button"
-                                                onClick={handleInitialSubmit}
-                                                disabled={sendingCode}
-                                                className="text-blue-500 hover:underline font-medium"
-                                            >
-                                                {sendingCode ? "Resending..." : "Resend code"}
-                                            </button>
-                                        </p>
-                                    </div>
-                                </div>
-
+                            <form onSubmit={handleVerifyAndRegister} className="space-y-5">
+                                <Input
+                                    autoFocus
+                                    value={userInputCode}
+                                    onChange={e => setUserInputCode(e.target.value)}
+                                    placeholder="000000"
+                                    className="h-14 text-center text-3xl font-bold tracking-[0.25em] rounded-xl bg-white/[0.04] border-white/[0.08] text-white placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                    maxLength={6}
+                                />
+                                <p className="text-center text-xs text-zinc-600">
+                                    Didn&apos;t receive it?{" "}
+                                    <button type="button" onClick={handleInitialSubmit} disabled={sendingCode} className="text-blue-400 hover:underline font-medium">
+                                        {sendingCode ? "Resending…" : "Resend code"}
+                                    </button>
+                                </p>
                                 <Button
                                     type="submit"
                                     disabled={loading || userInputCode.length < 6}
-                                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.98]"
+                                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.99]"
                                 >
-                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Sign Up"}
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Create Account"}
                                 </Button>
                             </form>
                         </div>
                     )}
                 </div>
+            </div>
+        </div>
 
-                <div className="mt-8 text-center space-y-4">
-                    <p className="text-sm text-zinc-500">
-                        Already have an account?{" "}
-                        <Link href="/login" className="text-white hover:text-blue-500 transition-colors font-medium">Log In</Link>
-                    </p>
-                    <div className="flex items-center gap-2 justify-center text-[10px] text-zinc-700 uppercase tracking-widest font-semibold">
-                        <ShieldCheck className="w-3 h-3 text-zinc-800" />
-                        Secure Registration Protocol
+        {/* Terms / Privacy Modal */}
+        {termsModal && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setTermsModal(null)}>
+                <div className="relative w-full max-w-2xl max-h-[85vh] bg-[#111113] border border-white/[0.08] rounded-2xl flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.06]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                                <FileText className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <h2 className="text-base font-bold text-white">
+                                {termsModal === "terms" ? "Terms of Service" : "Privacy Policy"}
+                            </h2>
+                        </div>
+                        <button onClick={() => setTermsModal(null)} className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] flex items-center justify-center transition-colors">
+                            <X className="w-4 h-4 text-zinc-400" />
+                        </button>
+                    </div>
+
+                    {/* Scrollable content */}
+                    <div className="overflow-y-auto flex-1 px-6 py-6 space-y-6 text-sm text-zinc-400 leading-relaxed">
+                        {termsModal === "terms" ? (
+                            <>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Last updated: May 2026</p>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">1. Acceptance of Terms</h3>
+                                    <p>By creating an account on Shopinea, you agree to be bound by these Terms of Service. If you do not agree, do not use the platform.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">2. Platform Description</h3>
+                                    <p>Shopinea is a dropshipping and reseller marketplace connecting suppliers with resellers. We facilitate transactions but are not a party to any agreement between buyers, resellers, and suppliers.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">3. Account Responsibilities</h3>
+                                    <p>You are responsible for maintaining the confidentiality of your account credentials. You must be at least 18 years old to register. Providing false information during registration may result in immediate account termination.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">4. Reseller & Supplier Conduct</h3>
+                                    <p>Resellers must not misrepresent products in their stores. Suppliers are responsible for accurate product listings, inventory availability, and timely fulfillment. Both parties must comply with all applicable local and international laws.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">5. Payments & Escrow</h3>
+                                    <p>All customer payments are held in escrow and released to the reseller only upon confirmed delivery. Shopinea charges a platform fee as stated in your subscription plan. Fraudulent transactions will result in account suspension and potential legal action.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">6. Prohibited Activities</h3>
+                                    <p>You may not list counterfeit, illegal, or hazardous products. Spam, phishing, or manipulation of the platform's review or ranking systems is strictly prohibited. Automated scraping or API abuse will result in permanent bans.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">7. Termination</h3>
+                                    <p>Shopinea reserves the right to suspend or terminate any account at any time for violations of these terms, fraudulent activity, or any other reason deemed necessary to protect the platform and its users.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">8. Limitation of Liability</h3>
+                                    <p>Shopinea is not liable for any indirect, incidental, or consequential damages arising from the use or inability to use the platform. Our total liability shall not exceed the fees paid by you in the 30 days preceding the claim.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">9. Changes to Terms</h3>
+                                    <p>We may update these terms at any time. Continued use of the platform after changes constitutes acceptance of the updated terms.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">10. Contact</h3>
+                                    <p>For questions about these terms, contact us at <span className="text-blue-400">support@shopinea.com</span>.</p>
+                                </section>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Last updated: May 2026</p>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">1. Information We Collect</h3>
+                                    <p>We collect information you provide during registration (name, email, phone, country), transaction data, and usage analytics. We also collect device and browser data automatically when you use the platform.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">2. How We Use Your Information</h3>
+                                    <p>Your data is used to operate and improve the platform, process transactions, send service notifications, provide customer support, and detect fraud. We do not sell your personal data to third parties.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">3. Data Sharing</h3>
+                                    <p>We share data with payment processors, logistics partners, and cloud service providers solely to deliver our services. All third parties are bound by confidentiality obligations.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">4. Cookies & Tracking</h3>
+                                    <p>We use cookies to maintain your session, remember preferences, and analyze platform usage. You can disable cookies in your browser, though some features may not function correctly.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">5. Data Security</h3>
+                                    <p>We implement industry-standard security measures including encryption in transit (TLS) and at rest. However, no system is 100% secure. Please use a strong, unique password and do not share your credentials.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">6. Your Rights</h3>
+                                    <p>You have the right to access, correct, or delete your personal data at any time by contacting us. You may also request a copy of the data we hold about you.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">7. Data Retention</h3>
+                                    <p>We retain your data for as long as your account is active or as required by law. When you close your account, we will delete or anonymize your personal data within 90 days.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">8. Contact</h3>
+                                    <p>For privacy inquiries, contact our Data Protection Officer at <span className="text-blue-400">privacy@shopinea.com</span>.</p>
+                                </section>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-6 py-4 border-t border-white/[0.06] flex items-center justify-between gap-4">
+                        <p className="text-[11px] text-zinc-600">By checking the box on the registration form, you agree to these terms.</p>
+                        <button
+                            onClick={() => { setAgreedToTerms(true); setTermsModal(null); }}
+                            className="shrink-0 px-5 py-2.5 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2"
+                        >
+                            <Check className="w-3.5 h-3.5" /> I Agree
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
+        )}
+        </>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense>
+            <RegisterPageInner />
+        </Suspense>
     );
 }

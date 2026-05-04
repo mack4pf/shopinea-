@@ -337,123 +337,98 @@ export default function EscrowOpsPage() {
     if (loading) return <div className="h-screen flex items-center justify-center bg-zinc-950"><Loader2 className="w-12 h-12 animate-spin text-blue-600" /></div>;
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-1000 pb-24">
+        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-24">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-end gap-10">
-                <div className="space-y-4">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20 shadow-2xl">
-                            <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500 leading-none">Security Ops Center</span>
-                    </div>
-                    <h1 className="text-6xl font-black tracking-tighter italic uppercase text-white leading-none">Escrow Terminal</h1>
-                    <p className="text-zinc-600 font-extrabold uppercase tracking-[0.3em] text-[10px] pl-1">Hierarchical Asset Liquidation • Matrix Authorization</p>
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-white">Escrow</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Manage order releases, payouts, and subscription approvals.</p>
                 </div>
-                <div className="relative w-full md:w-96 group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" />
+                <div className="relative w-full md:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                     <Input 
-                        placeholder="FILTER BY MERCHANT_ID..." 
+                        placeholder="Filter by merchant..." 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-14 bg-zinc-950 border-zinc-900 h-18 rounded-[2rem] font-black text-white shadow-xl italic uppercase tracking-widest text-[10px] focus:ring-4 focus:ring-emerald-500/10 transition-all" 
+                        className="pl-10 bg-white/[0.04] border-white/[0.08] h-10 rounded-lg text-white text-sm placeholder:text-zinc-600" 
                     />
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                {/* MERCHANT ESCROW RELEASE (Left 2 Columns) */}
-                <div className="lg:col-span-2 space-y-10">
-                    <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center gap-4">
-                            <LayoutDashboard className="w-6 h-6 text-emerald-500" />
-                            <h2 className="text-2xl font-black text-white italic uppercase tracking-tight">Active Escrows</h2>
-                        </div>
-                        <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-full border border-emerald-500/20 italic">
-                            {orders.length} PENDING NODES
-                        </span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Order Releases - Left 2 Columns */}
+                <div className="lg:col-span-2 space-y-5">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-semibold text-white">Active Escrows</h2>
+                        <span className="text-xs text-zinc-500 bg-white/[0.04] px-2.5 py-1 rounded border border-white/[0.06]">{orders.length} pending</span>
                     </div>
 
                     {groupedOrders.length === 0 ? (
-                        <div className="p-32 bg-zinc-900 border border-dashed border-zinc-800 rounded-[3.5rem] flex flex-col items-center justify-center grayscale opacity-30">
-                            <Box className="w-20 h-20 text-zinc-700 mb-8" />
-                            <p className="text-[11px] font-black uppercase text-zinc-600 tracking-[0.5em] italic">Null Entry in Settlement Buffer</p>
+                        <div className="py-16 flex flex-col items-center justify-center bg-white/[0.02] border border-white/[0.04] rounded-xl">
+                            <Box className="w-10 h-10 text-zinc-700 mb-3" />
+                            <p className="text-sm text-zinc-600">No orders pending release</p>
                         </div>
                     ) : (
                         groupedOrders.map((group) => (
-                            <div key={group.userId} className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] overflow-hidden shadow-2xl relative group/card">
-                                <div className="absolute inset-0 bg-white/[0.01] pointer-events-none" />
-                                
-                                <div className="p-10 border-b border-zinc-950 bg-zinc-950/20 backdrop-blur-3xl flex flex-col md:flex-row justify-between gap-8">
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-[2rem] bg-zinc-950 border border-zinc-800 flex items-center justify-center text-emerald-500 shadow-inner">
-                                            <User className="w-8 h-8" />
+                            <div key={group.userId} className="bg-white/[0.02] border border-white/[0.04] rounded-xl overflow-hidden">
+                                <div className="px-4 py-3 border-b border-white/[0.04] flex flex-col md:flex-row justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                                            <User className="w-4 h-4 text-zinc-500" />
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none mb-2">{group.userName}</h3>
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">{group.storeName}</span>
-                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                <span className="text-[9px] font-black text-emerald-500 uppercase italic">Active Nodes: {group.orders.length}</span>
-                                            </div>
+                                            <p className="text-sm font-medium text-white">{group.userName}</p>
+                                            <p className="text-xs text-zinc-500">{group.storeName} • {group.orders.length} orders</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-2 bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-800">
-                                            <Dice5 className="w-4 h-4 text-zinc-600" />
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.06] px-3 py-1.5 rounded-lg">
+                                            <Dice5 className="w-3.5 h-3.5 text-zinc-500" />
                                             <Input 
                                                 type="number" 
                                                 value={randomAmount} 
                                                 onChange={e => setRandomAmount(parseInt(e.target.value))}
-                                                className="w-12 h-6 bg-transparent border-none p-0 text-white font-black text-xs text-center"
+                                                className="w-12 h-5 bg-transparent border-none p-0 text-white text-xs text-center"
                                             />
                                         </div>
-                                        <Button 
+                                        <button
                                             onClick={() => handleRandomRelease(group.userId, randomAmount)}
                                             disabled={!!processingId}
-                                            variant="outline" 
-                                            className="h-14 font-black text-[9px] tracking-widest uppercase italic border-zinc-800 hover:bg-emerald-600 hover:text-white transition-all rounded-[1.2rem] px-6"
+                                            className="h-8 px-3 text-xs font-medium bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-zinc-300 rounded-lg transition-colors disabled:opacity-50"
                                         >
-                                            RANDOM_SEED
-                                        </Button>
-                                        <Button 
+                                            Random
+                                        </button>
+                                        <button
                                             onClick={() => handleReleaseMultiple(group.orders.map(o => o.id), group.userId)}
                                             disabled={!!processingId}
-                                            className="h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] tracking-widest uppercase italic rounded-[1.2rem] px-8 shadow-2xl shadow-emerald-500/20 border-b-4 border-emerald-800 active:border-b-0"
+                                            className="h-8 px-3 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50"
                                         >
-                                            RELEASE_ALL
-                                        </Button>
+                                            {processingId === `multi-${group.userId}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Release All'}
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div className="p-8 space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar">
+                                <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
                                     {group.orders.map((o) => (
-                                        <div key={o.id} className="p-6 bg-zinc-950 border border-zinc-800 rounded-[2rem] flex items-center justify-between group/row hover:border-emerald-500/30 transition-all shadow-inner">
-                                            <div className="flex items-center gap-6">
-                                                <div className="w-14 h-14 rounded-2xl bg-zinc-900 flex items-center justify-center border border-zinc-800 text-zinc-600 shadow-xl group-hover/row:scale-110 transition-transform">
-                                                    <Package className="w-7 h-7" />
+                                        <div key={o.id} className="px-3 py-2.5 bg-white/[0.02] border border-white/[0.04] rounded-lg flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                                                    <Package className="w-3.5 h-3.5 text-zinc-500" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-base font-black text-white italic tracking-tighter uppercase leading-none mb-1.5">{o.productName}</p>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest">CID: {o.id.slice(-8).toUpperCase()}</span>
-                                                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-500/5 px-2 py-0.5 rounded border border-emerald-500/10 italic">SIMULATED_TRANS</span>
-                                                    </div>
+                                                    <p className="text-sm font-medium text-white">{o.productName}</p>
+                                                    <p className="text-xs text-zinc-500">#{o.id.slice(-8).toUpperCase()}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-8">
-                                                <div className="text-right">
-                                                    <p className="text-xl font-black text-white italic tracking-tighter leading-none">${o.resellerProfit?.toLocaleString()}</p>
-                                                    <p className="text-[9px] font-black text-emerald-500 uppercase mt-1 italic">YIELD</p>
-                                                </div>
-                                                <Button 
+                                            <div className="flex items-center gap-4">
+                                                <p className="text-sm font-semibold text-white">${o.resellerProfit?.toLocaleString()}</p>
+                                                <button
                                                     onClick={() => handleReleaseMultiple([o.id], group.userId)}
                                                     disabled={!!processingId}
-                                                    variant="ghost" 
-                                                    className="w-12 h-12 rounded-xl text-emerald-500/40 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all"
+                                                    className="w-7 h-7 rounded-lg text-emerald-400/50 hover:text-emerald-400 hover:bg-emerald-500/10 flex items-center justify-center transition-colors"
                                                 >
-                                                    <Send className="w-5 h-5" />
-                                                </Button>
+                                                    <Send className="w-3.5 h-3.5" />
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
@@ -463,43 +438,38 @@ export default function EscrowOpsPage() {
                     )}
                 </div>
 
-                {/* Tiers & Withdrawals (Right Column) */}
-                <div className="space-y-12">
+                {/* Right sidebar - Subscriptions & Payouts */}
+                <div className="space-y-6">
                     {/* Subscription Requests */}
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] p-10 space-y-10 shadow-2xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl -mr-20 -mt-20" />
-                        <div className="flex items-center gap-5 relative z-10">
-                            <div className="w-14 h-14 bg-amber-500/10 rounded-[1.5rem] flex items-center justify-center border border-amber-500/20 shadow-2xl shadow-amber-500/10">
-                                <Crown className="w-7 h-7 text-amber-500" />
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Crown className="w-4 h-4 text-amber-400" />
+                                <h3 className="text-sm font-semibold text-white">Subscriptions</h3>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-black text-white italic uppercase tracking-tight leading-none mb-1">Tier Authorizing</h3>
-                                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest italic">{subscriptionRequests.length} QUEUED TRANCHES</p>
-                            </div>
+                            <span className="text-xs text-zinc-500">{subscriptionRequests.length}</span>
                         </div>
 
-                        <div className="space-y-4 relative z-10">
+                        <div className="space-y-3">
                             {subscriptionRequests.length === 0 ? (
-                                <div className="p-10 border border-dashed border-zinc-800 rounded-[2rem] text-center grayscale opacity-30">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 italic">Clear Buffer</p>
-                                </div>
+                                <p className="text-xs text-zinc-600 py-4 text-center">No pending requests</p>
                             ) : (
                                 subscriptionRequests.map(req => (
-                                    <div key={req.id} className="p-6 bg-zinc-950 border border-zinc-800 rounded-[2rem] space-y-6 shadow-inner group/sub hover:border-amber-500/20 transition-all">
+                                    <div key={req.id} className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-lg space-y-3">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <p className="text-base font-black text-white italic tracking-tighter uppercase leading-none mb-2">{req.userName || 'Unknown'}</p>
-                                                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest italic">{req.planName} PROTOCOL</span>
+                                                <p className="text-sm font-medium text-white">{req.userName || 'Unknown'}</p>
+                                                <p className="text-xs text-amber-400">{req.planName}</p>
                                             </div>
-                                            <p className="text-xl font-black text-white italic tracking-tighter">${req.amount}</p>
+                                            <p className="text-sm font-semibold text-white">${req.amount}</p>
                                         </div>
-                                        <Button 
+                                        <button
                                             onClick={() => handleApproveSubscription(req)}
                                             disabled={!!processingId}
-                                            className="w-full h-14 bg-amber-600 hover:bg-amber-700 text-white font-black italic rounded-xl text-[10px] uppercase tracking-[0.2em] shadow-2xl shadow-amber-500/20 border-b-4 border-amber-800 active:border-b-0 transition-all"
+                                            className="w-full h-8 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors"
                                         >
-                                            {processingId === req.id ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "ACTIVATE_NODE"}
-                                        </Button>
+                                            {processingId === req.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Activate Plan'}
+                                        </button>
                                     </div>
                                 ))
                             )}
@@ -507,81 +477,70 @@ export default function EscrowOpsPage() {
                     </div>
 
                     {/* Payout Requests */}
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-[3.5rem] p-10 space-y-10 shadow-2xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl -mr-20 -mt-20" />
-                        <div className="flex items-center gap-5 relative z-10">
-                            <div className="w-14 h-14 bg-blue-500/10 rounded-[1.5rem] flex items-center justify-center border border-blue-500/20 shadow-2xl shadow-blue-500/10">
-                                <DollarSign className="w-7 h-7 text-blue-500" />
+                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-blue-400" />
+                                <h3 className="text-sm font-semibold text-white">Payouts</h3>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-black text-white italic uppercase tracking-tight leading-none mb-1">Exit Settlement</h3>
-                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest italic">{payoutRequests.length} CAP_FLIGHT_EVENTS</p>
-                            </div>
+                            <span className="text-xs text-zinc-500">{payoutRequests.length}</span>
                         </div>
 
-                        <div className="space-y-4 relative z-10">
-                             {payoutRequests.length === 0 ? (
-                                <div className="p-10 border border-dashed border-zinc-800 rounded-[2rem] text-center grayscale opacity-30">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 italic">Static Liquidity</p>
-                                </div>
+                        <div className="space-y-3">
+                            {payoutRequests.length === 0 ? (
+                                <p className="text-xs text-zinc-600 py-4 text-center">No pending payouts</p>
                             ) : (
                                 payoutRequests.map(p => (
-                                    <div key={p.id} className="p-6 bg-zinc-950 border border-zinc-800 rounded-[2.5rem] space-y-6 shadow-inner group/payout hover:border-blue-500/20 transition-all">
-                                        <div className="flex flex-col gap-4">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="text-base font-black text-white italic tracking-tighter uppercase leading-none mb-2">{p.userName}</p>
-                                                    <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest italic">{p.method?.toUpperCase()} • {p.methodDetails?.bankName || p.methodDetails?.network}</span>
-                                                </div>
-                                                <p className="text-2xl font-black text-white italic tracking-tighter">${p.amount?.toLocaleString()}</p>
+                                    <div key={p.id} className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-lg space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-sm font-medium text-white">{p.userName}</p>
+                                                <p className="text-xs text-zinc-500">{p.method?.toUpperCase()}</p>
                                             </div>
-                                            <div className="p-4 bg-zinc-900 rounded-xl border border-zinc-800">
-                                                <p className="text-[10px] font-black text-zinc-600 uppercase mb-2 tracking-widest">NODE_ID / ADDRESS</p>
-                                                <p className="text-[11px] font-mono text-zinc-400 break-all select-all font-bold">{p.methodDetails?.accountNumber || p.methodDetails?.address}</p>
-                                            </div>
-                                            <div className="flex justify-between items-center px-1">
-                                                <span className={cn(
-                                                    "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md border",
-                                                    p.status === 'completed' ? 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5' :
-                                                    p.status === 'declined' ? 'text-rose-500 border-rose-500/20 bg-rose-500/5' :
-                                                    'text-amber-500 border-amber-500/20 bg-amber-500/5 animate-pulse'
-                                                )}>
-                                                    STATUS: {p.status || 'PENDING'}
-                                                </span>
-                                            </div>
+                                            <p className="text-sm font-semibold text-white">${p.amount?.toLocaleString()}</p>
                                         </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-3 pt-2">
-                                            {p.status === 'pending' || p.status === 'declined' ? (
-                                                <Button 
+                                        <div className="p-2 bg-white/[0.03] border border-white/[0.04] rounded-lg">
+                                            <p className="text-[10px] text-zinc-600 mb-1">Account / Address</p>
+                                            <p className="text-xs font-mono text-zinc-400 break-all">{p.methodDetails?.accountNumber || p.methodDetails?.address}</p>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className={cn(
+                                                "text-[10px] font-medium px-2 py-0.5 rounded border",
+                                                p.status === 'completed' ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' :
+                                                p.status === 'declined' ? 'text-rose-400 border-rose-500/20 bg-rose-500/10' :
+                                                'text-amber-400 border-amber-500/20 bg-amber-500/10'
+                                            )}>
+                                                {p.status || 'pending'}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {(p.status === 'pending' || p.status === 'declined') && (
+                                                <button
                                                     onClick={() => handleApprovePayout(p)}
                                                     disabled={!!processingId}
-                                                    className="w-full h-12 bg-white hover:bg-zinc-200 text-black font-black italic rounded-xl text-[10px] uppercase tracking-widest shadow-lg border-b-4 border-zinc-300 active:border-b-0 transition-all gap-2"
+                                                    className="h-8 text-xs font-medium bg-white text-black hover:bg-zinc-200 rounded-lg flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                                                 >
-                                                    {processingId === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-4 h-4" /> SETTLE</>}
-                                                </Button>
-                                            ) : null}
-
-                                            {p.status === 'pending' ? (
-                                                <Button 
+                                                    {processingId === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><CheckCircle2 className="w-3.5 h-3.5" /> Settle</>}
+                                                </button>
+                                            )}
+                                            {p.status === 'pending' && (
+                                                <button
                                                     onClick={() => handleDeclinePayout(p)}
                                                     disabled={!!processingId}
-                                                    className="w-full h-12 bg-rose-600 hover:bg-rose-700 text-white font-black italic rounded-xl text-[10px] uppercase tracking-widest shadow-lg border-b-4 border-rose-800 active:border-b-0 transition-all gap-2"
+                                                    className="h-8 text-xs font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-lg flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                                                 >
-                                                    {processingId === `decline-${p.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" /> DECLINE</>}
-                                                </Button>
-                                            ) : null}
-
-                                            {p.status === 'completed' || p.status === 'declined' ? (
-                                                <Button 
+                                                    {processingId === `decline-${p.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><XCircle className="w-3.5 h-3.5" /> Decline</>}
+                                                </button>
+                                            )}
+                                            {(p.status === 'completed' || p.status === 'declined') && (
+                                                <button
                                                     onClick={() => handlePendingPayout(p)}
                                                     disabled={!!processingId}
-                                                    variant="outline"
-                                                    className="w-full h-12 bg-transparent border-zinc-700 hover:bg-zinc-800 text-zinc-400 hover:text-white font-black italic rounded-xl text-[10px] uppercase tracking-widest shadow-lg transition-all gap-2"
+                                                    className="h-8 text-xs font-medium bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-zinc-400 rounded-lg flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
                                                 >
-                                                    {processingId === `pending-${p.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Clock className="w-4 h-4" /> QUEUE</>}
-                                                </Button>
-                                            ) : null}
+                                                    {processingId === `pending-${p.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Clock className="w-3.5 h-3.5" /> Queue</>}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))
@@ -593,4 +552,3 @@ export default function EscrowOpsPage() {
         </div>
     );
 }
-

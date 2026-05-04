@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Restock - Global Commerce Infrastructure",
-  description: "B2B Supply Chain & Marketplace Infrastructure for Professional Merchants.",
+  title: "Shopinea | Commerce Operating System",
+  description: "Shopinea is a modern commerce platform built for brands, resellers, and suppliers to launch, scale, and manage online stores with confidence.",
 };
 
 export default function RootLayout({
@@ -17,11 +17,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <script src="https://cdn.tailwindcss.com"></script>
-        {/* <link href="./globals.css" rel="stylesheet" /> */}
-      </head>
-      <body className={inter.className}>
+      <head />
+      <body className={plusJakartaSans.className}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

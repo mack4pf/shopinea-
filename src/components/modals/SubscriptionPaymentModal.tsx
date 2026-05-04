@@ -1,26 +1,12 @@
-"use client";
+﻿"use client";
 
-import React, { useState, useEffect } from "react";
-import { 
-    X, 
-    Zap, 
-    Crown, 
-    Rocket, 
-    Check, 
-    ArrowRight,
-    Copy,
-    CheckCircle2,
-    Loader2,
-    Bitcoin,
-    ShieldCheck,
-    CreditCard,
-    DollarSign,
-    Timer,
-    QrCode,
-    Building2,
-    Send
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import {
+    X, Check, ArrowRight, Copy, CheckCircle2, Loader2,
+    ShieldCheck, Building2, UploadCloud, Clock, ChevronLeft
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BitcoinLogo, EthereumLogo, USDTLogo, PayPalLogo } from "@/components/shared/BrandLogos";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
@@ -34,322 +20,334 @@ interface SubscriptionPaymentModalProps {
     userName: string;
 }
 
+const STEPS = ["Review", "Method", "Confirm"];
+
 export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userName }: SubscriptionPaymentModalProps) {
+    const router = useRouter();
     const [step, setStep] = useState(1);
     const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
     const [selectedCrypto, setSelectedCrypto] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [copied, setCopied] = useState(false);
+    const [copied, setCopied] = useState<string | null>(null);
     const [paymentConfig, setPaymentConfig] = useState<any>(null);
-    const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes in seconds
+    const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+    const [receiptName, setReceiptName] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const fileRef = useRef<HTMLInputElement>(null);
 
-    // Countdown Logic
     useEffect(() => {
-        if (step === 4 && timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [step, timeLeft]);
-
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    // Fetch config logic
-    useEffect(() => {
-        if (isOpen) {
-            const fetchConfig = async () => {
-                const snap = await getDoc(doc(db, "settings", "payments"));
-                if (snap.exists()) setPaymentConfig(snap.data());
-            };
-            fetchConfig();
-            setStep(1); // Reset step when opening
-            setSelectedMethod(null);
-            setSelectedCrypto(null);
-            setTimeLeft(1800);
-        }
+        if (!isOpen) return;
+        getDoc(doc(db, "settings", "payments")).then(s => { if (s.exists()) setPaymentConfig(s.data()); });
+        setStep(1); setSelectedMethod(null); setSelectedCrypto(null); setReceiptUrl(null); setReceiptName(null);
     }, [isOpen]);
 
     if (!isOpen || !plan) return null;
 
-    const handleCopy = (text: string) => {
-        if (!text) return;
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        toast.success("Details copied!");
-        setTimeout(() => setCopied(false), 2000);
+    const labelIdx = step <= 1 ? 0 : step <= 3 ? 1 : 2;
+
+    const handleCopy = async (text: string, key: string) => {
+        if (!text) { toast.error("Not configured yet."); return; }
+        try { await navigator.clipboard.writeText(text); } catch {
+            const el = document.createElement("textarea");
+            el.value = text; el.style.cssText = "position:fixed;left:-9999px";
+            document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
+        }
+        setCopied(key); toast.success("Copied!"); setTimeout(() => setCopied(null), 2000);
     };
 
-    const handleSubmitPayment = async () => {
+    const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]; if (!file) return;
+        setUploading(true);
+        const fd = new FormData(); fd.append("file", file);
+        try {
+            const res = await fetch("/api/upload", { method: "POST", body: fd });
+            const data = await res.json();
+            if (data.url) { setReceiptUrl(data.url); setReceiptName(file.name); toast.success("Receipt uploaded."); }
+            else throw new Error();
+        } catch { toast.error("Upload failed. Please try again."); }
+        finally { setUploading(false); }
+    };
+
+    const handleSubmit = async () => {
+        if (!receiptUrl) { toast.error("Please upload your payment receipt first."); return; }
         setSubmitting(true);
         try {
             await addDoc(collection(db, "subscription_requests"), {
-                userId,
-                userName,
-                planId: plan.id,
-                planName: plan.name,
-                amount: plan.price,
-                method: selectedMethod,
-                asset: selectedCrypto || 'N/A',
-                status: "pending",
-                createdAt: serverTimestamp(),
+                userId, userName,
+                planId: plan.id, planName: plan.name, amount: plan.price,
+                method: selectedMethod, asset: selectedCrypto || "N/A",
+                receiptUrl, status: "pending", createdAt: serverTimestamp(),
             });
-
-            toast.success("Payment notification sent to admin!");
             setStep(5);
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to submit request.");
-        } finally {
-            setSubmitting(false);
-        }
+        } catch { toast.error("Failed to submit. Please try again."); }
+        finally { setSubmitting(false); }
     };
+
+    const paymentAddress =
+        selectedCrypto === "btc" ? paymentConfig?.btcAddress :
+        selectedCrypto === "eth" ? paymentConfig?.ethAddress :
+        selectedCrypto === "usdt" ? paymentConfig?.usdtAddress : null;
 
     return (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 overflow-y-auto">
-            <div 
-                className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500" 
-                onClick={onClose} 
-            />
-            
-            <div className="relative w-full max-w-2xl bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500 my-8">
+            <div className="absolute inset-0 z-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative z-10 w-full max-w-md bg-[#0f0f13] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 animate-in zoom-in-95 duration-300 my-8 overflow-hidden">
+
                 {/* Header */}
-                <div className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center border border-blue-600/20">
-                            <ShieldCheck className="w-6 h-6 text-blue-500" />
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-600/15 border border-blue-500/20 rounded-lg flex items-center justify-center">
+                            <ShieldCheck className="w-4 h-4 text-blue-400" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none">Global Activation</h3>
-                            <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest mt-1">Tier: {plan.name} • ${plan.price}</p>
+                            <p className="text-sm font-semibold text-white leading-tight">Subscribe to {plan.name}</p>
+                            <p className="text-xs text-zinc-500">${plan.price.toLocaleString()}/month</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/5 transition-colors">
-                        <X className="w-5 h-5 text-zinc-500" />
+                    <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center transition-colors">
+                        <X className="w-4 h-4 text-zinc-500" />
                     </button>
                 </div>
 
-                <div className="p-10">
-                    {/* Step 1: Inclusions */}
+                {/* Step indicator */}
+                {step < 5 && (
+                    <div className="px-5 pt-4 pb-0">
+                        <div className="flex items-center">
+                            {STEPS.map((label, i) => (
+                                <React.Fragment key={i}>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className={cn(
+                                            "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 transition-all",
+                                            i < labelIdx ? "bg-blue-600 text-white" :
+                                            i === labelIdx ? "bg-blue-600 text-white ring-2 ring-blue-500/20" :
+                                            "bg-white/[0.06] text-zinc-600"
+                                        )}>
+                                            {i < labelIdx ? <Check className="w-2.5 h-2.5" /> : i + 1}
+                                        </div>
+                                        <span className={cn("text-xs font-medium transition-colors",
+                                            i === labelIdx ? "text-white" : i < labelIdx ? "text-zinc-500" : "text-zinc-700"
+                                        )}>{label}</span>
+                                    </div>
+                                    {i < STEPS.length - 1 && (
+                                        <div className={cn("flex-1 h-px mx-2 transition-colors", i < labelIdx ? "bg-blue-600/40" : "bg-white/[0.06]")} />
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="p-5">
+
+                    {/* Step 1: Plan Review */}
                     {step === 1 && (
-                        <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                            <div className="space-y-4">
-                                <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">Review Scaling Assets</h4>
-                                <p className="text-sm font-bold text-zinc-500 leading-relaxed capitalize">
-                                    Your merchant account will be upgraded with the following enterprise-grade tools:
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-4 animate-in slide-in-from-right-3 duration-300">
+                            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2.5">
+                                <p className="text-xs font-medium text-zinc-400 mb-3">What's included in {plan.name}</p>
                                 {plan.features.map((f: string, i: number) => (
-                                    <div key={i} className="flex items-center gap-3 p-4 bg-zinc-900 rounded-2xl border border-zinc-800 hover:border-blue-500/30 transition-colors">
-                                        <Check className="w-4 h-4 text-emerald-500" />
-                                        <span className="text-[11px] font-bold text-zinc-400">{f}</span>
+                                    <div key={i} className="flex items-center gap-3">
+                                        <div className="w-4 h-4 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+                                            <Check className="w-2.5 h-2.5 text-emerald-400" />
+                                        </div>
+                                        <span className="text-sm text-zinc-300">{f}</span>
                                     </div>
                                 ))}
                             </div>
-
-                            <Button 
-                                onClick={() => setStep(2)}
-                                className="w-full h-14 bg-white text-black font-black italic rounded-2xl gap-3 shadow-xl shadow-white/5 hover:scale-[1.02] transition-all text-xs uppercase"
-                            >
-                                CONTINUE TO PAYMENT SELECTION <ArrowRight className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* Step 2: Choose Method */}
-                    {step === 2 && (
-                        <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                            <div className="space-y-2 text-center">
-                                <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase">Select Gateway</h4>
-                                <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Global Financial Protocols</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4">
-                                {[
-                                    { id: 'bank', name: 'Bank Transfer', desc: 'SWIFT / SEPA / Local Wire', icon: Building2, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-                                    { id: 'paypal', name: 'PayPal Checkout', desc: 'Secure Instant Processing', icon: Send, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
-                                    { id: 'crypto', name: 'Cryptocurrency', desc: 'BTC / ETH / USDT Network', icon: Bitcoin, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-                                ].map((method) => (
-                                    <button 
-                                        key={method.id}
-                                        onClick={() => {
-                                            setSelectedMethod(method.id);
-                                            if (method.id === 'crypto') setStep(3);
-                                            else setStep(4);
-                                        }}
-                                        className="flex items-center justify-between p-6 bg-zinc-950 border border-zinc-900 rounded-3xl hover:border-blue-500/50 hover:bg-zinc-900 transition-all group"
-                                    >
-                                        <div className="flex items-center gap-5">
-                                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", method.bg)}>
-                                                <method.icon className={cn("w-7 h-7", method.color)} />
-                                            </div>
-                                            <div className="text-left">
-                                                <p className="font-black text-white italic uppercase tracking-tight">{method.name}</p>
-                                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">{method.desc}</p>
-                                            </div>
-                                        </div>
-                                        <ArrowRight className="w-5 h-5 text-zinc-800 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 3: Choose Crypto */}
-                    {step === 3 && (
-                        <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                            <div className="text-center">
-                                <h4 className="text-2xl font-black text-white italic tracking-tighter uppercase">Select Asset</h4>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4">
-                                {[
-                                    { id: 'btc', name: 'Bitcoin (BTC)', icon: Bitcoin, color: 'text-orange-500' },
-                                    { id: 'eth', name: 'Ethereum (ETH)', icon: Zap, color: 'text-blue-400' },
-                                    { id: 'usdt', name: 'USDT (ERC20/TRC20)', icon: ShieldCheck, color: 'text-emerald-500' },
-                                ].map((coin) => (
-                                    <button 
-                                        key={coin.id}
-                                        onClick={() => {
-                                            setSelectedCrypto(coin.id);
-                                            setStep(4);
-                                        }}
-                                        className="flex items-center justify-between p-5 bg-zinc-950 border border-zinc-900 rounded-2xl hover:border-blue-500/50 hover:bg-zinc-900 transition-all group"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <coin.icon className={cn("w-5 h-5", coin.color)} />
-                                            <span className="text-sm font-black text-white italic uppercase">{coin.name}</span>
-                                        </div>
-                                        <CheckCircle2 className="w-5 h-5 text-zinc-800 group-hover:text-blue-500 transition-all" />
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            <Button variant="ghost" onClick={() => setStep(2)} className="w-full text-zinc-500 font-black text-[10px] uppercase">
-                                BACK TO GATEWAYS
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* Step 4: Show Details + Timer */}
-                    {step === 4 && (
-                        <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                            <div className="flex justify-between items-center p-6 bg-blue-500/5 border border-blue-500/10 rounded-3xl">
-                                <div className="flex items-center gap-3">
-                                    <Timer className="w-5 h-5 text-blue-500 animate-pulse" />
-                                    <div>
-                                        <p className="text-[9px] font-black uppercase text-blue-500 tracking-[0.2em]">Transaction Window</p>
-                                        <p className="text-xl font-black text-white italic">{formatTime(timeLeft)}</p>
-                                    </div>
+                            <div className="flex items-center justify-between p-4 bg-blue-600/[0.07] border border-blue-500/20 rounded-xl">
+                                <div>
+                                    <p className="text-xs text-zinc-400 mb-1">Total due today</p>
+                                    <p className="text-2xl font-bold text-white">${plan.price.toLocaleString()}<span className="text-sm font-normal text-zinc-500 ml-1">/mo</span></p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest">Required Amount</p>
-                                    <p className="text-xl font-black text-white italic">${plan.price}</p>
+                                    <p className="text-[11px] text-zinc-500">Billed monthly</p>
+                                    <p className="text-[11px] text-zinc-600 mt-0.5">Cancel anytime</p>
                                 </div>
                             </div>
+                            <button onClick={() => setStep(2)}
+                                className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 transition-colors">
+                                Continue to Payment <ArrowRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
 
-                            <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-[2rem] space-y-6 relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:rotate-12 transition-transform">
-                                    <QrCode className="w-20 h-20 text-white" />
-                                </div>
-
-                                {selectedMethod === 'bank' && (
-                                    <div className="space-y-4">
-                                        <p className="text-[10px] font-black uppercase text-blue-500 tracking-widest">Bank Settlement Details</p>
-                                        <div className="space-y-3">
-                                            {[
-                                                { label: 'Bank Name', val: paymentConfig?.bankName },
-                                                { label: 'Account/IBAN', val: paymentConfig?.bankAccount },
-                                                { label: 'SWIFT/BIC', val: paymentConfig?.bankSwift },
-                                            ].map((item, i) => (
-                                                <div key={i} className="flex justify-between items-end border-b border-white/5 pb-2">
-                                                    <span className="text-[9px] font-black uppercase text-zinc-500">{item.label}</span>
-                                                    <button onClick={() => handleCopy(item.val)} className="text-xs font-black text-white italic hover:text-blue-500 transition-colors uppercase tracking-tight">{item.val || 'PENDING...'}</button>
-                                                </div>
-                                            ))}
-                                        </div>
+                    {/* Step 2: Payment method */}
+                    {step === 2 && (
+                        <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
+                            <p className="text-sm text-zinc-400 mb-1">How would you like to pay <span className="text-white font-medium">${plan.price.toLocaleString()}</span>?</p>
+                            {[
+                                { id: "bank",   label: "Bank Transfer",  sub: "SWIFT / SEPA / Local wire",    icon: <Building2 className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/10 border-blue-500/20" },
+                                { id: "paypal", label: "PayPal",         sub: "Pay with your PayPal account", icon: <PayPalLogo size={20} />,                         bg: "bg-white/[0.04] border-white/[0.06]" },
+                                { id: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT",             icon: <BitcoinLogo size={20} />,                        bg: "bg-white/[0.04] border-white/[0.06]" },
+                            ].map((m: any) => (
+                                <button key={m.id}
+                                    onClick={() => { setSelectedMethod(m.id); if (m.id === "crypto") setStep(3); else setStep(4); }}
+                                    className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:border-blue-500/30 hover:bg-white/[0.05] transition-all text-left group">
+                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border", m.bg)}>{m.icon}</div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-white">{m.label}</p>
+                                        <p className="text-xs text-zinc-500 mt-0.5">{m.sub}</p>
                                     </div>
-                                )}
+                                    <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-blue-400 transition-colors" />
+                                </button>
+                            ))}
+                            <button onClick={() => setStep(1)} className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                                <ChevronLeft className="w-3.5 h-3.5" /> Back
+                            </button>
+                        </div>
+                    )}
 
-                                {selectedMethod === 'paypal' && (
-                                    <div className="space-y-4 text-center">
-                                        <p className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">PayPal Recipient Address</p>
-                                        <button 
-                                            onClick={() => handleCopy(paymentConfig?.paypalEmail)}
-                                            className="text-2xl font-black text-white italic hover:text-blue-500 transition-colors"
-                                        >
-                                            {paymentConfig?.paypalEmail || 'processing@shoplinea.shop'}
+                    {/* Step 3: Crypto asset */}
+                    {step === 3 && (
+                        <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
+                            <p className="text-sm text-zinc-400 mb-1">Select the asset you'll pay with.</p>
+                            {[
+                                { id: "btc",  name: "Bitcoin",    ticker: "BTC",               Logo: BitcoinLogo },
+                                { id: "eth",  name: "Ethereum",   ticker: "ETH",               Logo: EthereumLogo },
+                                { id: "usdt", name: "Tether USD", ticker: "USDT (ERC20/TRC20)", Logo: USDTLogo },
+                            ].map((coin) => (
+                                <button key={coin.id}
+                                    onClick={() => { setSelectedCrypto(coin.id); setStep(4); }}
+                                    className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:border-blue-500/30 hover:bg-white/[0.05] transition-all text-left group">
+                                    <coin.Logo size={28} />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-white">{coin.name}</p>
+                                        <p className="text-xs text-zinc-500 mt-0.5">{coin.ticker}</p>
+                                    </div>
+                                    <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-blue-400 transition-colors" />
+                                </button>
+                            ))}
+                            <button onClick={() => setStep(2)} className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                                <ChevronLeft className="w-3.5 h-3.5" /> Back
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Step 4: Payment details + receipt upload */}
+                    {step === 4 && (
+                        <div className="space-y-4 animate-in slide-in-from-right-3 duration-300">
+                            <div>
+                                <p className="text-sm font-semibold text-white mb-0.5">Send your payment</p>
+                                <p className="text-xs text-zinc-500">Transfer exactly <span className="text-white font-medium">${plan.price.toLocaleString()}</span> to the details below, then upload your receipt.</p>
+                            </div>
+
+                            {/* Payment destination */}
+                            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
+                                {selectedMethod === "bank" && (<>
+                                    <p className="text-xs font-medium text-zinc-400">Bank Transfer Details</p>
+                                    {[
+                                        { label: "Bank Name",      val: paymentConfig?.bankName,    key: "bn" },
+                                        { label: "Account / IBAN", val: paymentConfig?.bankAccount, key: "ba" },
+                                        { label: "SWIFT / BIC",    val: paymentConfig?.bankSwift,   key: "bs" },
+                                    ].map(item => (
+                                        <div key={item.key} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
+                                            <span className="text-xs text-zinc-500">{item.label}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-white">{item.val || "—"}</span>
+                                                {item.val && <button onClick={() => handleCopy(item.val, item.key)} className="text-zinc-600 hover:text-blue-400 transition-colors">
+                                                    {copied === item.key ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                                </button>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </>)}
+                                {selectedMethod === "paypal" && (<>
+                                    <p className="text-xs font-medium text-zinc-400">Send payment to</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold text-white">{paymentConfig?.paypalEmail || "Not configured"}</span>
+                                        {paymentConfig?.paypalEmail && (
+                                            <button onClick={() => handleCopy(paymentConfig.paypalEmail, "pp")} className="text-zinc-600 hover:text-blue-400 transition-colors">
+                                                {copied === "pp" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                            </button>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-zinc-600 pt-1">Send as "Friends & Family". Reference: <span className="text-zinc-400 font-mono">{userId.slice(0, 8)}</span></p>
+                                </>)}
+                                {selectedMethod === "crypto" && (<>
+                                    <p className="text-xs font-medium text-zinc-400">{selectedCrypto?.toUpperCase()} wallet address</p>
+                                    <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 font-mono text-xs text-zinc-300 break-all leading-relaxed">
+                                        {paymentAddress || "Address not configured"}
+                                    </div>
+                                    {paymentAddress && (
+                                        <button onClick={() => handleCopy(paymentAddress, "cr")}
+                                            className="w-full h-8 flex items-center justify-center gap-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors">
+                                            {copied === "cr" ? <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy address</>}
                                         </button>
-                                        <p className="text-[9px] font-bold text-zinc-500 uppercase">Send as 'Friends & Family' for instant activation</p>
-                                    </div>
-                                )}
-
-                                {selectedMethod === 'crypto' && (
-                                    <div className="space-y-4 text-center">
-                                        <p className="text-[10px] font-black uppercase text-orange-500 tracking-widest">
-                                            Transfer to {selectedCrypto?.toUpperCase()} Address
-                                        </p>
-                                        <div className="p-4 bg-zinc-950 rounded-2xl border border-zinc-800 break-all font-mono text-[11px] font-bold text-zinc-300">
-                                            {selectedCrypto === 'btc' ? paymentConfig?.btcAddress : 
-                                             selectedCrypto === 'eth' ? paymentConfig?.ethAddress : 
-                                             paymentConfig?.usdtAddress || 'Address Fetching...'}
-                                        </div>
-                                        <Button 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => handleCopy(selectedCrypto === 'btc' ? paymentConfig?.btcAddress : selectedCrypto === 'eth' ? paymentConfig?.ethAddress : paymentConfig?.usdtAddress)}
-                                            className="h-10 rounded-xl border-zinc-800 bg-zinc-950 text-[10px] font-black uppercase gap-2"
-                                        >
-                                            <Copy className="w-3 h-3" /> Copy Address
-                                        </Button>
-                                    </div>
-                                )}
+                                    )}
+                                </>)}
                             </div>
 
-                            <div className="space-y-4 italic">
-                                <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl flex gap-3">
-                                    <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0" />
-                                    <p className="text-[10px] font-bold text-emerald-500/80 leading-relaxed uppercase">
-                                        Your activation is protected by our global security protocol. Click below only after successful transfer.
-                                    </p>
+                            {/* Divider */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex-1 h-px bg-white/[0.06]" />
+                                <span className="text-xs text-zinc-600">Upload your receipt</span>
+                                <div className="flex-1 h-px bg-white/[0.06]" />
+                            </div>
+
+                            {/* Receipt upload */}
+                            {receiptUrl ? (
+                                <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.04]">
+                                    <div className="w-9 h-9 bg-emerald-500/15 rounded-lg flex items-center justify-center shrink-0">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-white truncate">{receiptName || "Receipt uploaded"}</p>
+                                        <p className="text-xs text-emerald-400">Ready to submit</p>
+                                    </div>
+                                    <button onClick={() => { setReceiptUrl(null); setReceiptName(null); }} className="text-xs text-zinc-500 hover:text-red-400 transition-colors shrink-0">Remove</button>
                                 </div>
-                                <Button 
-                                    onClick={handleSubmitPayment}
-                                    disabled={submitting}
-                                    className="w-full h-15 bg-blue-600 hover:bg-blue-700 text-white font-black italic rounded-2xl gap-3 shadow-xl shadow-blue-500/20 text-xs uppercase"
-                                >
-                                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "PROCEED WITH VERIFICATION"}
-                                </Button>
+                            ) : (
+                                <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                                    className="w-full border-2 border-dashed border-white/[0.10] hover:border-blue-500/40 hover:bg-blue-500/[0.03] rounded-xl p-5 flex flex-col items-center gap-2.5 transition-all group">
+                                    {uploading ? <Loader2 className="w-6 h-6 animate-spin text-blue-400" /> : <UploadCloud className="w-6 h-6 text-zinc-500 group-hover:text-blue-400 transition-colors" />}
+                                    <div className="text-center">
+                                        <p className="text-sm font-medium text-zinc-300">{uploading ? "Uploading…" : "Upload payment receipt"}</p>
+                                        <p className="text-xs text-zinc-600 mt-0.5">Screenshot or photo of your payment confirmation · PNG, JPG, PDF</p>
+                                    </div>
+                                </button>
+                            )}
+                            <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleReceiptUpload} />
+
+                            {/* Verification ETA */}
+                            <div className="flex items-start gap-3 p-3 bg-blue-500/[0.06] border border-blue-500/15 rounded-xl">
+                                <Clock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                                <p className="text-xs text-zinc-400">Verification typically completes in <span className="text-white font-medium">1–5 minutes</span> after your receipt is submitted.</p>
                             </div>
+
+                            <button onClick={handleSubmit} disabled={submitting || !receiptUrl}
+                                className={cn("w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all",
+                                    receiptUrl ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-white/[0.04] border border-white/[0.06] text-zinc-600 cursor-not-allowed")}>
+                                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Payment"}
+                            </button>
+                            <button onClick={() => { setSelectedMethod(null); setSelectedCrypto(null); setStep(2); }}
+                                className="w-full flex items-center justify-center gap-1.5 py-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                                <ChevronLeft className="w-3.5 h-3.5" /> Change payment method
+                            </button>
                         </div>
                     )}
 
                     {/* Step 5: Success */}
                     {step === 5 && (
-                        <div className="text-center py-10 space-y-8 animate-in zoom-in-95 duration-500">
-                            <div className="w-24 h-24 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-blue-600/10 border border-blue-600/20">
-                                <CheckCircle2 className="w-12 h-12 text-blue-500" />
+                        <div className="flex flex-col items-center text-center py-8 space-y-5 animate-in zoom-in-95 duration-300">
+                            <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/25 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                             </div>
-                            <div className="space-y-4">
-                                <h4 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Signal Transmitted</h4>
-                                <p className="text-sm font-bold text-zinc-500 leading-relaxed capitalize max-w-sm mx-auto">
-                                    Your activation is marked as **PENDING**. Our financial ops team will verify the inflow and activate your elite tier within 1-12 hours.
+                            <div className="space-y-2">
+                                <h3 className="text-lg font-semibold text-white">Payment submitted</h3>
+                                <p className="text-sm text-zinc-400 max-w-xs mx-auto">
+                                    Your receipt is under review. We'll activate your <span className="text-white">{plan.name}</span> plan once the payment is confirmed.
                                 </p>
                             </div>
-                            <Button 
-                                onClick={onClose}
-                                className="w-full h-14 bg-zinc-900 border border-zinc-800 text-white font-black italic rounded-2xl hover:bg-zinc-800 transition-all text-xs uppercase"
-                            >
-                                RETURN TO DASHBOARD
-                            </Button>
+                            <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/[0.08] border border-blue-500/15 rounded-xl w-full justify-center">
+                                <Clock className="w-4 h-4 text-blue-400" />
+                                <p className="text-sm text-zinc-300">Usually takes <span className="text-white font-semibold">1–5 minutes</span></p>
+                            </div>
+                            <button onClick={() => { onClose(); router.push('/dashboard'); }}
+                                className="w-full h-11 bg-white/[0.06] border border-white/[0.08] text-white font-medium text-sm rounded-xl hover:bg-white/[0.10] transition-colors">
+                                Back to Dashboard
+                            </button>
                         </div>
                     )}
+
                 </div>
             </div>
         </div>

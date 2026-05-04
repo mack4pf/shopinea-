@@ -1,109 +1,197 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { collection, query, getDocs, orderBy, doc, updateDoc, increment, getDoc, where, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+    collection, query, getDocs, orderBy, doc, updateDoc, increment,
+    getDoc, where, addDoc, serverTimestamp
+} from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { 
-    LayoutDashboard, 
-    ShoppingCart, 
-    Wallet, 
-    Users, 
-    CheckCircle2, 
-    XCircle, 
-    Loader2, 
-    Search, 
-    Filter,
-    ArrowUpRight,
-    Clock,
-    DollarSign,
-    Box,
-    Shield,
-    Zap,
-    Lock,
-    UserCheck,
-    Eye,
-    ShieldAlert,
-    Mail,
-    Crown,
-    History,
-    TrendingUp,
-    Megaphone,
-    Target,
-    BarChart3,
-    UserCircle
+import {
+    Users, ShieldCheck, Package, Zap, Eye, TrendingUp, Loader2,
+    CheckCircle2, XCircle, UserCircle, RefreshCw, AlertTriangle,
+    DollarSign, ShoppingBag, ChevronRight, Search, MapPin, Plus, X
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Modal } from "@/components/ui/modal";
+import { cn } from "@/lib/utils";
+
+// ─── City API helper ──────────────────────────────────────────────────────────
+const cityCache: Record<string, string[]> = {};
+async function fetchCitiesForCountry(country: string): Promise<string[]> {
+    const key = country.trim().toLowerCase();
+    if (cityCache[key]) return cityCache[key];
+    try {
+        const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: country.trim() }),
+        });
+        const json = await res.json();
+        if (!json.error && Array.isArray(json.data) && json.data.length > 0) {
+            cityCache[key] = json.data;
+            return json.data;
+        }
+    } catch { /* fall through */ }
+    return [];
+}
+
+// ─── Searchable Select (for users/products) ──────────────────────────────────
+function SearchableSelect({ value, onChange, options, placeholder, className = "" }: {
+    value: string; onChange: (v: string) => void;
+    options: { label: string; value: string }[];
+    placeholder?: string; className?: string;
+}) {
+    const [open, setOpen] = useState(false);
+    const [q, setQ] = useState("");
+    const ref = useRef<HTMLDivElement>(null);
+    const filtered = q ? options.filter(o => o.label.toLowerCase().includes(q.toLowerCase())) : options;
+    const selected = options.find(o => o.value === value);
+
+    useEffect(() => {
+        function out(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) { setOpen(false); setQ(""); } }
+        document.addEventListener("mousedown", out);
+        return () => document.removeEventListener("mousedown", out);
+    }, []);
+
+    return (
+        <div ref={ref} className={cn("relative", className)}>
+            <button type="button" onClick={() => setOpen(!open)}
+                className={cn("w-full h-10 flex items-center gap-2 px-3 bg-white/[0.03] border rounded-xl text-sm text-left transition-all",
+                    open ? "border-blue-500/50" : "border-white/[0.08] hover:border-white/[0.14]")}>
+                <span className={cn("flex-1 truncate", selected ? "text-white" : "text-zinc-600")}>
+                    {selected?.label || placeholder || "Select…"}
+                </span>
+                <svg className={cn("w-4 h-4 text-zinc-500 shrink-0 transition-transform", open && "rotate-180")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9" /></svg>
+            </button>
+            {open && (
+                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#0f0f14] border border-white/[0.1] rounded-xl shadow-2xl shadow-black/60 overflow-hidden">
+                    <div className="p-2 border-b border-white/[0.06]">
+                        <div className="flex items-center gap-2 px-3 h-8 bg-white/[0.04] border border-white/[0.06] rounded-lg">
+                            <Search className="w-3 h-3 text-zinc-500" />
+                            <input autoFocus type="text" value={q} onChange={e => setQ(e.target.value)}
+                                placeholder="Search…" className="flex-1 bg-transparent text-xs text-white placeholder:text-zinc-600 outline-none" />
+                        </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto py-1">
+                        {filtered.length === 0 ? <p className="px-4 py-3 text-xs text-zinc-600 text-center">No results</p>
+                            : filtered.map(o => (
+                                <button key={o.value} type="button"
+                                    onClick={() => { onChange(o.value); setOpen(false); setQ(""); }}
+                                    className={cn("w-full text-left px-3.5 py-2 text-[13px] transition-colors",
+                                        value === o.value ? "text-blue-300 bg-blue-500/10" : "text-zinc-300 hover:bg-white/[0.05] hover:text-white")}>
+                                    {o.label}
+                                </button>
+                            ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ─── Status Badge ─────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+    const map: Record<string, string> = {
+        delivered: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        shipped: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+        pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        awaiting_seller_fulfillment: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        awaiting_admin_confirmation: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+        cancelled: "bg-red-500/10 text-red-400 border-red-500/20",
+    };
+    return (
+        <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium capitalize", map[status] || "bg-zinc-800 text-zinc-400 border-zinc-700")}>
+            {status?.replace(/_/g, " ") || "unknown"}
+        </span>
+    );
+}
+
+// ─── KPI Card ─────────────────────────────────────────────────────────────────
+function KpiCard({ label, value, sub, icon: Icon, accent, badge }: {
+    label: string; value: string | number; sub: string;
+    icon: React.ElementType; accent: string; badge?: string;
+}) {
+    const accents: Record<string, { bg: string; border: string; icon: string }> = {
+        blue:    { bg: "bg-blue-500/10",    border: "border-blue-500/20",    icon: "text-blue-400" },
+        emerald: { bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: "text-emerald-400" },
+        amber:   { bg: "bg-amber-500/10",   border: "border-amber-500/20",   icon: "text-amber-400" },
+        purple:  { bg: "bg-purple-500/10",  border: "border-purple-500/20",  icon: "text-purple-400" },
+    };
+    const a = accents[accent] || accents.blue;
+    return (
+        <div className="relative bg-[#0d0d11] border border-white/[0.07] rounded-2xl p-5 overflow-hidden hover:border-white/[0.12] transition-all">
+            <div className="flex items-start justify-between mb-4">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border", a.bg, a.border)}>
+                    <Icon className={cn("w-5 h-5", a.icon)} />
+                </div>
+                {badge && <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border", a.bg, a.border, a.icon)}>{badge}</span>}
+            </div>
+            <p className="text-2xl font-bold text-white tracking-tight">{value}</p>
+            <p className="text-sm text-white/60 mt-0.5 font-medium">{label}</p>
+            <p className="text-[11px] text-zinc-600 mt-1">{sub}</p>
+            <div className={cn("absolute -bottom-4 -right-4 w-24 h-24 rounded-full blur-2xl opacity-10", a.bg)} />
+        </div>
+    );
+}
 
 export default function AdminDashboard() {
-    const [user, setUser] = useState<any>(null);
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+    const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState<any[]>([]);
     const [kycRequests, setKycRequests] = useState<any[]>([]);
     const [allUsers, setAllUsers] = useState<any[]>([]);
     const [allProducts, setAllProducts] = useState<any[]>([]);
-    const [adCampaigns, setAdCampaigns] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
-
-    // Store Views Booster
-    const [viewsTargetUserId, setViewsTargetUserId] = useState("");
-    const [viewsAmount, setViewsAmount] = useState("");
-    const [visitsAmount, setVisitsAmount] = useState("");
-    const [boostingViews, setBoostingViews] = useState(false);
-
-    // Sales Simulator
-    const [simTargetUserId, setSimTargetUserId] = useState("");
-    const [simProductId, setSimProductId] = useState("");
-    const [simCount, setSimCount] = useState("20");
-    const [simPaymentSplit, setSimPaymentSplit] = useState("60");
-    const [simCountry, setSimCountry] = useState("USA");
-    const [runningSim, setRunningSim] = useState(false);
-
+    const [refreshing, setRefreshing] = useState(false);
+    const [tab, setTab] = useState<"overview" | "kyc" | "orders" | "tools">("overview");
+    const [orderSearch, setOrderSearch] = useState("");
     const [selectedKyc, setSelectedKyc] = useState<any>(null);
+    const [simUserId, setSimUserId] = useState("");
+    const [simSelectedProducts, setSimSelectedProducts] = useState<string[]>([]);
+    const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "20" }]);
+    const [runningSim, setRunningSim] = useState(false);
+    const [boostUserId, setBoostUserId] = useState("");
+    const [boostViews, setBoostViews] = useState("");
+    const [boostVisits, setBoostVisits] = useState("");
+    const [boosting, setBoosting] = useState(false);
 
-    const fetchData = async () => {
+    const addSimLocation = () => setSimLocations(prev => [...prev, { country: "", count: "5" }]);
+    const removeSimLocation = (i: number) => setSimLocations(prev => prev.filter((_, idx) => idx !== i));
+    const updateSimLocation = (i: number, field: 'country' | 'count', val: string) =>
+        setSimLocations(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: val } : l));
+
+    const SIM_FIRST = ["Liam","Emma","Noah","Olivia","James","Sophia","Oliver","Ava","Ethan","Isabella","Lucas","Mia","Mason","Charlotte","Logan","Amelia","Aiden","Harper","Jack","Evelyn","Carter","Abigail","Sebastian","Emily","Owen","Ella","Caleb","Elizabeth","Ryan","Camila","Nathan","Luna","Wyatt","Sofia","Luke","Avery","Isaiah","Mila","Gabriel","Aria","Benjamin","Scarlett","Elijah","Penelope","Julian","Layla","Adrian","Chloe","Levi","Victoria","Aaron","Madison","Charles","Eleanor","Thomas","Grace","Jaxon","Nora","Kai","Riley","Hunter","Zoey","Dominic","Hannah","Jordan","Lily","Ian","Aubrey","Carson","Lillian","Axel","Addison","Adam","Ellie","Miles","Stella","Asher","Natalie","Xavier","Zoe","Mateo","Leah","Nolan","Hazel","Ezra","Violet","Leo","Aurora","Micah","Savannah","Max","Audrey","Finn","Brooklyn","Tobias","Bella","Remi","Claire","Zach","Skylar"];
+    const SIM_LAST  = ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Wilson","Taylor","Anderson","Thomas","Jackson","White","Harris","Martin","Thompson","Moore","Young","Allen","King","Wright","Scott","Torres","Nguyen","Hill","Flores","Green","Adams","Nelson","Baker","Hall","Rivera","Campbell","Mitchell","Carter","Roberts","Gomez","Phillips","Evans","Turner","Diaz","Parker","Cruz","Edwards","Collins","Reyes","Stewart","Morris","Morales","Murphy","Cook","Rogers","Gutierrez","Ortiz","Morgan","Cooper","Peterson","Bailey","Reed","Kelly","Howard","Ramos","Kim","Cox","Ward","Richardson","Watson","Brooks","Chavez","Wood","James","Bennett","Gray","Mendoza","Ruiz","Hughes","Price","Alvarez","Castillo","Sanders","Patel","Myers","Long","Ross","Foster","Jimenez","Powell","Jenkins","Perry","Russell","Sullivan","Bell","Coleman","Butler","Henderson","Barnes","Gonzalez","Fisher","Simmons"];
+
+    const fetchData = async (quiet = false) => {
+        if (!quiet) setLoading(true); else setRefreshing(true);
         try {
-            const ordersSnap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
-            setOrders(ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-            const kycSnap = await getDocs(query(collection(db, "users"), where("kycStatus", "==", "pending")));
-            setKycRequests(kycSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-            const usersSnap = await getDocs(collection(db, "users"));
+            const [ordersSnap, kycSnap, usersSnap, productsSnap] = await Promise.all([
+                getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc"))),
+                getDocs(query(collection(db, "users"), where("kycStatus", "==", "pending"))),
+                getDocs(collection(db, "users")),
+                getDocs(collection(db, "products")),
+            ]);
+            setOrders(ordersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+            setKycRequests(kycSnap.docs.map(d => ({ id: d.id, ...d.data() })));
             setAllUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-
-            const productsSnap = await getDocs(collection(db, "products"));
             setAllProducts(productsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-
-            const campaignsSnap = await getDocs(query(collection(db, "campaigns"), orderBy("createdAt", "desc")));
-            setAdCampaigns(campaignsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        } catch { toast.error("Failed to load data."); }
+        finally { setLoading(false); setRefreshing(false); }
     };
 
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (u) => {
             if (u) {
-                setUser(u);
                 const userDoc = await getDoc(doc(db, "users", u.uid));
                 if (userDoc.exists() && userDoc.data()?.isAdmin) {
-                    setIsAdmin(true);
-                    fetchData();
+                    setIsAdmin(true); fetchData();
                 } else {
                     setIsAdmin(false);
-                    if (typeof window !== 'undefined') window.location.href = '/admin/login';
+                    if (typeof window !== "undefined") window.location.href = "/admin/login";
                 }
             } else {
-                if (typeof window !== 'undefined') window.location.href = '/admin/login';
+                if (typeof window !== "undefined") window.location.href = "/admin/login";
             }
         });
         return () => unsub();
@@ -112,379 +200,600 @@ export default function AdminDashboard() {
     const handleApproveKyc = async (userId: string) => {
         setProcessingId(userId);
         try {
-            await updateDoc(doc(db, "users", userId), { 
-                kycStatus: "verified",
-                kycVerifiedAt: serverTimestamp()
-            });
-            toast.success("Merchant Verified Successfully!");
-            setSelectedKyc(null);
-            fetchData();
-        } catch (err) {
-            toast.error("Verification failed.");
-        } finally {
-            setProcessingId(null);
-        }
+            await updateDoc(doc(db, "users", userId), { kycStatus: "verified", kycVerifiedAt: serverTimestamp() });
+            toast.success("KYC approved."); setSelectedKyc(null); fetchData(true);
+        } catch { toast.error("Failed to approve KYC."); }
+        finally { setProcessingId(null); }
     };
 
-    const handleRejectKyc = async (userId: string, reason: string) => {
+    const handleRejectKyc = async (userId: string) => {
         setProcessingId(userId);
         try {
-            await updateDoc(doc(db, "users", userId), { 
-                kycStatus: "rejected",
-                kycRejectionReason: reason
-            });
-            toast.success("Identity record rejected.");
-            setSelectedKyc(null);
-            fetchData();
-        } catch (err) {
-            toast.error("Rejection protocol failed.");
-        } finally {
-            setProcessingId(null);
-        }
+            await updateDoc(doc(db, "users", userId), { kycStatus: "rejected", kycRejectionReason: "Documents do not meet requirements." });
+            toast.success("KYC rejected."); setSelectedKyc(null); fetchData(true);
+        } catch { toast.error("Failed to reject KYC."); }
+        finally { setProcessingId(null); }
+    };
+
+    const handleRunSimulator = async () => {
+        const simUser = allUsers.find(u => u.id === simUserId);
+        const storeProds = (simUser?.storeProducts || []).filter((p: any) => simSelectedProducts.includes(p.id));
+        const validLocs = simLocations.filter(l => l.country.trim() && Number(l.count) > 0);
+        if (!simUserId) { toast.error("Select a reseller account first."); return; }
+        if (storeProds.length === 0) { toast.error("Select at least one product."); return; }
+        if (validLocs.length === 0) { toast.error("Add at least one location."); return; }
+        setRunningSim(true);
+        try {
+            // Pre-fetch cities for all locations
+            const locCities: Record<string, string[]> = {};
+            await Promise.all(validLocs.map(async loc => {
+                locCities[loc.country] = await fetchCitiesForCountry(loc.country);
+            }));
+
+            const usedNames = new Set<string>();
+            const getUniqueName = () => {
+                for (let t = 0; t < 500; t++) {
+                    const n = `${SIM_FIRST[Math.floor(Math.random()*SIM_FIRST.length)]} ${SIM_LAST[Math.floor(Math.random()*SIM_LAST.length)]}`;
+                    if (!usedNames.has(n)) { usedNames.add(n); return n; }
+                }
+                const fb = `${SIM_FIRST[Math.floor(Math.random()*SIM_FIRST.length)]} ${SIM_LAST[Math.floor(Math.random()*SIM_LAST.length)]} ${Math.floor(Math.random()*99)}`;
+                usedNames.add(fb); return fb;
+            };
+            let total = 0;
+            for (const loc of validLocs) {
+                const count = Math.min(Number(loc.count) || 0, 2000);
+                const cities = locCities[loc.country] || [];
+                for (let i = 0; i < count; i++) {
+                    const product = storeProds[Math.floor(Math.random() * storeProds.length)];
+                    const profit = (product.resellPrice || 0) - (product.price || 0);
+                    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 7) * 86400000 - Math.floor(Math.random() * 86400000));
+                    const randomCity = cities.length > 0 ? cities[Math.floor(Math.random() * cities.length)] : null;
+                    await addDoc(collection(db, "orders"), {
+                        resellerId: simUserId,
+                        customerName: getUniqueName(),
+                        customerCountry: loc.country,
+                        ...(randomCity ? { customerCity: randomCity } : {}),
+                        productId: product.id,
+                        productName: product.name,
+                        resellPrice: product.resellPrice || product.price || 0,
+                        resellerProfit: profit > 0 ? profit : (product.price || 0) * 0.3,
+                        status: 'shipped',
+                        createdAt,
+                    });
+                    await updateDoc(doc(db, "users", simUserId), {
+                        pendingPayout: increment(profit > 0 ? profit : (product.price || 0) * 0.3)
+                    });
+                    total++;
+                }
+            }
+            toast.success(`Injected ${total} orders across ${validLocs.length} location(s)!`);
+            fetchData(true);
+        } catch (e) { console.error(e); toast.error("Simulation failed."); }
+        finally { setRunningSim(false); }
     };
 
     const handleBoostViews = async () => {
-        if (!viewsTargetUserId || (!viewsAmount && !visitsAmount)) {
-            toast.error("Config parameters required.");
-            return;
-        }
-        setBoostingViews(true);
+        if (!boostUserId || (!boostViews && !boostVisits)) { toast.error("Select a user and enter amounts."); return; }
+        setBoosting(true);
         try {
-            const userRef = doc(db, "users", viewsTargetUserId);
-            const updates: any = {};
-            if (viewsAmount)  updates["stats.views"]   = increment(Number(viewsAmount));
-            if (visitsAmount) updates["stats.visits"] = increment(Number(visitsAmount));
-            await updateDoc(userRef, updates);
-            toast.success("Network traffic injected!");
-            setViewsAmount(""); setVisitsAmount("");
-        } catch (err) {
-            toast.error("Injection failed.");
-        } finally {
-            setBoostingViews(false);
-        }
-    };
-
-    const FAKE_BUYERS = [
-        { name: "Liam Smith", country: "USA" }, 
-        { name: "Emma Wilson", country: "United Kingdom" }, 
-        { name: "Oliver Brown", country: "Australia" },
-        { name: "Sophia Muller", country: "Germany" }, 
-        { name: "Noah Johnson", country: "USA" }, 
-        { name: "Mia Davies", country: "Australia" },
-        { name: "Lucas Dubois", country: "France" }, 
-        { name: "Isabella Rossi", country: "Italy" }, 
-        { name: "Ethan White", country: "Canada" },
-        { name: "Charlotte Taylor", country: "USA" }, 
-        { name: "Max Schmidt", country: "Germany" }, 
-        { name: "Ava Thompson", country: "Australia" },
-    ];
-
-    const handleRunSimulator = async () => {
-        if (!simTargetUserId || !simProductId) {
-            toast.error("Reseller & Product selection required.");
-            return;
-        }
-        setRunningSim(true);
-        try {
-            const product = allProducts.find(p => p.id === simProductId);
-            const count = Number(simCount) || 20;
-            const paidPct = Number(simPaymentSplit) || 60;
-
-            for (let i = 0; i < count; i++) {
-                const buyer = FAKE_BUYERS[i % FAKE_BUYERS.length];
-                const isPaidNow = Math.random() * 100 < paidPct;
-                const profit = (product.resellPrice || product.price) - (product.initialPrice || product.cost);
-                
-                const dayOffset = Math.floor(Math.random() * 30);
-                const createdAt = new Date(Date.now() - (dayOffset * 86400000));
-
-                const orderRef = await addDoc(collection(db, "orders"), {
-                    resellerId: simTargetUserId,
-                    customerName: buyer.name,
-                    customerCountry: simCountry || buyer.country,
-                    productId: simProductId,
-                    productName: product.name || product.productName,
-                    resellPrice: product.resellPrice || product.price,
-                    initialPrice: product.initialPrice || product.cost,
-                    resellerProfit: profit,
-                    status: isPaidNow ? 'delivered' : 'shipped',
-                    isSimulated: true,
-                    createdAt,
-                    releasedAt: isPaidNow ? createdAt : null,
+            const vNum = Number(boostViews) || 0;
+            const visNum = Number(boostVisits) || 0;
+            const updates: Record<string, any> = {};
+            if (vNum)   updates["storeViews"]  = increment(vNum);
+            if (visNum) updates["storeVisits"] = increment(visNum);
+            // Distribute views across store products
+            const boostUser = allUsers.find(u => u.id === boostUserId);
+            const prods: any[] = boostUser?.storeProducts || [];
+            if (prods.length > 0 && vNum > 0) {
+                const weights = prods.map(() => Math.random());
+                const wSum = weights.reduce((s, w) => s + w, 0);
+                let dist = 0;
+                prods.forEach((p: any, i: number) => {
+                    if (!p?.id) return;
+                    const share = i === prods.length - 1 ? vNum - dist : Math.round((weights[i] / wSum) * vNum);
+                    updates[`productViews.${p.id}`] = increment(share);
+                    dist += share;
                 });
-
-                if (isPaidNow) {
-                    await updateDoc(doc(db, "users", simTargetUserId), { payoutBalance: increment(profit) });
-                } else {
-                    await updateDoc(doc(db, "users", simTargetUserId), { pendingPayout: increment(profit) });
-                }
             }
-            toast.success(`✅ Generated ${count} realistic demand units!`);
-            fetchData();
-        } catch (err) {
-            toast.error("Simulation failed.");
-        } finally {
-            setRunningSim(false);
-        }
+            await updateDoc(doc(db, "users", boostUserId), updates);
+            toast.success(`Injected ${vNum ? vNum.toLocaleString() + " views" : ""}${vNum && visNum ? " + " : ""}${visNum ? visNum.toLocaleString() + " visits" : ""} across ${prods.length} product(s)!`);
+            setBoostViews(""); setBoostVisits("");
+        } catch { toast.error("Update failed."); }
+        finally { setBoosting(false); }
     };
 
     if (loading) return (
-        <div className="h-screen flex items-center justify-center bg-zinc-950">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+            <div className="w-10 h-10 border-2 border-white/[0.06] border-t-blue-500 rounded-full animate-spin" />
+            <p className="text-sm text-zinc-500">Loading dashboard…</p>
         </div>
     );
 
-    return (
-        <div className="p-8 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 pb-20">
-            {/* Elite Summary Header */}
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Shield className="w-5 h-5 text-blue-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 leading-none">Global Control Terminal</span>
-                    </div>
-                    <h1 className="text-5xl font-black tracking-tight italic uppercase text-white">Ops Registry</h1>
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] pl-1">Network Analytics • Identity Compliance • Market Injection</p>
-                </div>
+    const totalRevenue   = orders.reduce((acc, o) => acc + (o.resellPrice || 0), 0);
+    const totalWallets   = allUsers.reduce((acc, u) => acc + (u.walletBalance || 0), 0);
+    const pendingOrders  = orders.filter(o => ["pending","shipped","awaiting_seller_fulfillment","awaiting_admin_confirmation"].includes(o.status)).length;
+    const deliveredOrders = orders.filter(o => o.status === "delivered").length;
+    const filteredOrders = orderSearch
+        ? orders.filter(o =>
+            (o.productName || "").toLowerCase().includes(orderSearch.toLowerCase()) ||
+            (o.customerName || "").toLowerCase().includes(orderSearch.toLowerCase()) ||
+            (o.status || "").toLowerCase().includes(orderSearch.toLowerCase())
+          )
+        : orders;
+    const userOptions    = allUsers.map(u => ({ label: u.displayName || u.email || u.id, value: u.id }));
+    const productOptions = allProducts.map(p => ({ label: p.name || p.productName || p.id, value: p.id }));
 
-                <div className="flex gap-10">
-                    <div className="text-right">
-                        <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest leading-none mb-1">Total Network Revenue</p>
-                        <p className="text-3xl font-black italic tracking-tighter text-white">${orders.reduce((acc, o) => acc + (o.resellPrice || 0), 0).toLocaleString()}</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest leading-none mb-1">Merchant Cap (Liquid)</p>
-                        <p className="text-3xl font-black italic tracking-tighter text-emerald-500">${allUsers.reduce((acc, u) => acc + (u.walletBalance || 0), 0).toLocaleString()}</p>
-                    </div>
+    const TABS = [
+        { id: "overview", label: "Overview" },
+        { id: "kyc",      label: "KYC Reviews", badge: kycRequests.length > 0 ? String(kycRequests.length) : undefined },
+        { id: "orders",   label: "Orders" },
+        { id: "tools",    label: "Admin Tools" },
+    ];
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+
+            {/* ── Page header ── */}
+            <div className="flex items-start justify-between">
+                <div>
+                    <h1 className="text-xl font-bold text-white tracking-tight">Admin Dashboard</h1>
+                    <p className="text-sm text-zinc-500 mt-1">
+                        {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+                    </p>
                 </div>
+                <button onClick={() => fetchData(true)} disabled={refreshing}
+                    className="flex items-center gap-2 h-9 px-4 text-xs font-semibold text-zinc-400 hover:text-white bg-white/[0.04] border border-white/[0.07] rounded-xl hover:bg-white/[0.07] transition-all disabled:opacity-50">
+                    <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
+                    Refresh
+                </button>
             </div>
 
-            {/* Global Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {[
-                    { label: "Pending KYC", value: kycRequests.length, icon: UserCheck, color: "rose" },
-                    { label: "Ad Load", value: adCampaigns.filter(c => c.status === 'scheduled').length, icon: Zap, color: "indigo" },
-                    { label: "Active Nodes", value: allUsers.length, icon: Users, color: "blue" },
-                    { label: "Fleet Items", value: allProducts.length, icon: Box, color: "emerald" },
-                ].map((s, i) => (
-                    <div key={i} className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] space-y-3 shadow-2xl group hover:border-blue-500/30 transition-all">
-                        <div className={`w-12 h-12 rounded-2xl bg-${s.color}-500/10 border border-${s.color}-500/20 flex items-center justify-center group-hover:bg-${s.color}-500/20 transition-all`}>
-                            <s.icon className={`w-6 h-6 text-${s.color}-500`} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest leading-none mb-2">{s.label}</p>
-                            <h3 className="text-3xl font-black italic tracking-tighter text-white">{s.value}</h3>
-                        </div>
-                    </div>
+            {/* ── KPI strip ── */}
+            <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
+                <KpiCard label="Total Users"    value={allUsers.length}                         icon={Users}       accent="blue"    sub="Registered accounts" />
+                <KpiCard label="Total Revenue"  value={`$${totalRevenue.toLocaleString()}`}     icon={DollarSign}  accent="emerald" sub="All-time order volume" />
+                <KpiCard label="Pending Orders" value={pendingOrders}                           icon={ShoppingBag} accent="amber"   sub="Need action" badge={pendingOrders > 0 ? "Action" : undefined} />
+                <KpiCard label="KYC Queue"      value={kycRequests.length}                      icon={ShieldCheck} accent={kycRequests.length > 0 ? "amber" : "purple"} sub="Awaiting review" />
+                <KpiCard label="Products"       value={allProducts.length}                      icon={Package}     accent="purple"  sub="In catalogue" />
+            </div>
+
+            {/* ── Tabs ── */}
+            <div className="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl w-fit">
+                {TABS.map(t => (
+                    <button key={t.id} onClick={() => setTab(t.id as typeof tab)}
+                        className={cn("relative flex items-center gap-2 px-4 h-8 text-sm font-medium rounded-lg transition-all",
+                            tab === t.id ? "bg-white/[0.08] text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300")}>
+                        {t.label}
+                        {t.badge && (
+                            <span className="flex items-center justify-center w-4 h-4 bg-amber-500 text-black text-[10px] font-bold rounded-full">{t.badge}</span>
+                        )}
+                    </button>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Identity Compliance Terminal */}
-                <div className="bg-rose-500/5 border border-rose-500/20 p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden h-fit">
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-rose-500/5 rounded-full blur-[100px] -mr-40 -mt-40" />
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 bg-rose-500/10 rounded-[1.5rem] flex items-center justify-center">
-                            <ShieldAlert className="w-8 h-8 text-rose-500" />
+            {/* ══ OVERVIEW ══ */}
+            {tab === "overview" && (
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                    {/* Recent orders table */}
+                    <div className="xl:col-span-2 bg-[#0d0d11] border border-white/[0.07] rounded-2xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-bold text-white">Recent Orders</p>
+                                <p className="text-xs text-zinc-500 mt-0.5">{orders.length} total</p>
+                            </div>
+                            <button onClick={() => setTab("orders")} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
+                                View all <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">Identity Compliance</h2>
-                            <p className="text-[10px] font-black uppercase text-rose-500 tracking-[0.2em]">Pending Identity Checks ({kycRequests.length})</p>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-white/[0.04]">
+                                        {["Customer", "Product", "Amount", "Status"].map(h => (
+                                            <th key={h} className="px-6 py-3 text-left text-[11px] font-semibold text-zinc-500 uppercase tracking-wide">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/[0.03]">
+                                    {orders.slice(0, 7).length === 0 ? (
+                                        <tr><td colSpan={4} className="px-6 py-10 text-center text-xs text-zinc-600">No orders yet</td></tr>
+                                    ) : orders.slice(0, 7).map(o => (
+                                        <tr key={o.id} className="hover:bg-white/[0.02] transition-colors">
+                                            <td className="px-6 py-3.5 whitespace-nowrap">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.06] flex items-center justify-center shrink-0">
+                                                        <UserCircle className="w-4 h-4 text-zinc-500" />
+                                                    </div>
+                                                    <span className="text-[13px] text-white font-medium">{o.customerName || "—"}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <span className="text-[13px] text-zinc-300 truncate max-w-[160px] block">{o.productName || "—"}</span>
+                                            </td>
+                                            <td className="px-6 py-3.5 whitespace-nowrap">
+                                                <span className="text-[13px] font-semibold text-white">${(o.resellPrice || 0).toFixed(2)}</span>
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <StatusBadge status={o.status} />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
-                    <div className="space-y-4 relative z-10">
-                        {kycRequests.length === 0 ? (
-                            <div className="py-10 text-center bg-zinc-950/50 rounded-[2rem] border border-zinc-800 border-dashed">
-                                <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest italic">Compliance Matrix Clear</p>
-                            </div>
-                        ) : (
-                            kycRequests.map((k) => (
-                                <div key={k.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-[2rem] group hover:border-rose-500/50 transition-all">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center border border-zinc-800">
-                                                <UserCircle className="w-5 h-5 text-zinc-500" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs font-black italic text-white uppercase tracking-tight leading-none mb-1">{k.displayName || k.email?.split('@')[0]}</p>
-                                                <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">{k.email}</p>
-                                            </div>
+                    {/* Right: health + wallets + kyc alert */}
+                    <div className="space-y-4">
+                        <div className="bg-[#0d0d11] border border-white/[0.07] rounded-2xl p-5 space-y-4">
+                            <p className="text-sm font-bold text-white">Platform Health</p>
+                            {[
+                                { label: "Delivered", value: deliveredOrders, total: orders.length, color: "bg-emerald-500" },
+                                { label: "In-Transit", value: pendingOrders, total: orders.length, color: "bg-amber-500" },
+                                { label: "Resellers", value: allUsers.filter(u => u.role === "reseller").length, total: allUsers.length, color: "bg-blue-500" },
+                            ].map((item, i) => {
+                                const pct = item.total > 0 ? Math.round((item.value / item.total) * 100) : 0;
+                                return (
+                                    <div key={i} className="space-y-1.5">
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-zinc-400 font-medium">{item.label}</span>
+                                            <span className="text-white font-semibold">{item.value}<span className="text-zinc-600">/{item.total}</span></span>
                                         </div>
-                                        <Button 
-                                            onClick={() => setSelectedKyc(k)}
-                                            className="h-9 rounded-xl bg-white text-black font-black text-[9px] uppercase px-4 hover:scale-[1.02] transition-transform shadow-xl"
-                                        >
-                                            REVIEW ID
-                                        </Button>
+                                        <div className="h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+                                            <div className={cn("h-full rounded-full transition-all", item.color)} style={{ width: `${pct}%` }} />
+                                        </div>
                                     </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="bg-[#0d0d11] border border-white/[0.07] rounded-2xl p-5 space-y-1">
+                            <p className="text-sm font-bold text-white mb-3">Wallet Summary</p>
+                            {[
+                                { label: "User Balances",    value: `$${totalWallets.toLocaleString()}`,                                                           color: "text-emerald-400" },
+                                { label: "Pending Payouts",  value: `$${allUsers.reduce((a,u)=>a+(u.pendingPayout||0),0).toLocaleString()}`,                        color: "text-amber-400" },
+                                { label: "Released Payouts", value: `$${allUsers.reduce((a,u)=>a+(u.payoutBalance||0),0).toLocaleString()}`,                        color: "text-blue-400" },
+                            ].map((row, i) => (
+                                <div key={i} className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0">
+                                    <span className="text-xs text-zinc-500">{row.label}</span>
+                                    <span className={cn("text-sm font-bold", row.color)}>{row.value}</span>
                                 </div>
-                            ))
+                            ))}
+                        </div>
+
+                        {kycRequests.length > 0 && (
+                            <button onClick={() => setTab("kyc")} className="w-full bg-amber-500/[0.07] border border-amber-500/20 rounded-2xl p-4 flex items-center gap-3 hover:bg-amber-500/[0.12] transition-colors text-left">
+                                <div className="w-9 h-9 bg-amber-500/15 border border-amber-500/25 rounded-xl flex items-center justify-center shrink-0">
+                                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-amber-300">{kycRequests.length} KYC Pending</p>
+                                    <p className="text-xs text-amber-600 mt-0.5">Click to review verifications</p>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-amber-500 shrink-0" />
+                            </button>
                         )}
                     </div>
                 </div>
+            )}
 
-                {/* Market Simulation & Traffic Terminal */}
-                <div className="space-y-10">
-                    <div className="bg-indigo-600/5 border border-indigo-600/10 p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden">
-                        <div className="flex items-center gap-4 relative z-10">
-                            <div className="w-14 h-14 bg-indigo-500/10 rounded-[1.5rem] flex items-center justify-center">
-                                <Zap className="w-8 h-8 text-indigo-500" />
-                            </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">Market Injection</h2>
-                                <p className="text-[10px] font-black uppercase text-indigo-500 tracking-[0.2em]">Sales Simulation & Traffic Burst</p>
-                            </div>
+            {/* ══ KYC ══ */}
+            {tab === "kyc" && (
+                <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+                    <div className="xl:col-span-2 bg-[#0d0d11] border border-white/[0.07] rounded-2xl overflow-hidden">
+                        <div className="px-5 py-4 border-b border-white/[0.06]">
+                            <p className="text-sm font-bold text-white">Pending Verifications</p>
+                            <p className="text-xs text-zinc-500 mt-0.5">{kycRequests.length} in queue</p>
                         </div>
-
-                        <div className="space-y-6 relative z-10">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest pl-1">Target Reseller</Label>
-                                    <select 
-                                        className="w-full bg-zinc-950 border border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white px-4 outline-none focus:border-indigo-500 transition-all"
-                                        value={simTargetUserId}
-                                        onChange={(e) => setSimTargetUserId(e.target.value)}
-                                    >
-                                        <option value="">— SELECT ID —</option>
-                                        {allUsers.map(u => <option key={u.id} value={u.id}>{u.displayName || u.email}</option>)}
-                                    </select>
+                        <div className="divide-y divide-white/[0.04] max-h-[520px] overflow-y-auto">
+                            {kycRequests.length === 0 ? (
+                                <div className="py-16 flex flex-col items-center gap-3">
+                                    <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center">
+                                        <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                                    </div>
+                                    <p className="text-sm font-medium text-zinc-300">All caught up</p>
+                                    <p className="text-xs text-zinc-600">No pending KYC requests</p>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest pl-1">Target Product</Label>
-                                    <select 
-                                        className="w-full bg-zinc-950 border border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white px-4 outline-none focus:border-indigo-500 transition-all"
-                                        value={simProductId}
-                                        onChange={(e) => setSimProductId(e.target.value)}
-                                    >
-                                        <option value="">— SELECT SKU —</option>
-                                        {allProducts.map(p => <option key={p.id} value={p.id}>{p.name || p.productName}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest pl-1">Injection Origin (Country)</Label>
-                                    <Input 
-                                        className="w-full bg-zinc-950 border border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white px-4"
-                                        placeholder="USA"
-                                        value={simCountry}
-                                        onChange={(e) => setSimCountry(e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[9px] font-black uppercase text-zinc-500 tracking-widest pl-1">Volume Count</Label>
-                                    <Input 
-                                        className="w-full bg-zinc-950 border border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white px-4"
-                                        placeholder="20"
-                                        type="number"
-                                        value={simCount}
-                                        onChange={(e) => setSimCount(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <Button 
-                                onClick={handleRunSimulator}
-                                disabled={runningSim}
-                                className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black italic rounded-2xl gap-3 shadow-xl shadow-indigo-500/20 text-[10px] uppercase tracking-widest"
-                            >
-                                {runningSim ? <Loader2 className="w-5 h-5 animate-spin" /> : <TrendingUp className="w-5 h-5" />}
-                                EXECUTE SALES SIMULATION
-                            </Button>
+                            ) : kycRequests.map(k => (
+                                <button key={k.id} onClick={() => setSelectedKyc(selectedKyc?.id === k.id ? null : k)}
+                                    className={cn("w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors",
+                                        selectedKyc?.id === k.id ? "bg-blue-500/[0.07] border-l-2 border-l-blue-500" : "hover:bg-white/[0.03] border-l-2 border-l-transparent")}>
+                                    <div className="w-9 h-9 bg-white/[0.05] border border-white/[0.07] rounded-xl flex items-center justify-center shrink-0">
+                                        <UserCircle className="w-5 h-5 text-zinc-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-white truncate">{k.displayName || k.email?.split("@")[0] || "Unknown"}</p>
+                                        <p className="text-xs text-zinc-500 truncate">{k.email}</p>
+                                    </div>
+                                    <span className="shrink-0 px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded-md text-[10px] font-semibold text-amber-400">Pending</span>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="bg-blue-600/5 border border-blue-600/10 p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden">
-                        <div className="flex items-center gap-4 relative z-10">
-                            <div className="w-14 h-14 bg-blue-500/10 rounded-[1.5rem] flex items-center justify-center">
-                                <Eye className="w-8 h-8 text-blue-500" />
+                    <div className="xl:col-span-3">
+                        {!selectedKyc ? (
+                            <div className="h-full bg-[#0d0d11] border border-white/[0.07] rounded-2xl flex flex-col items-center justify-center gap-3 py-20">
+                                <div className="w-12 h-12 bg-white/[0.04] border border-white/[0.07] rounded-2xl flex items-center justify-center">
+                                    <ShieldCheck className="w-6 h-6 text-zinc-600" />
+                                </div>
+                                <p className="text-sm font-medium text-zinc-400">Select a request to review</p>
+                                <p className="text-xs text-zinc-600">Click any item from the list</p>
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">Store Booster</h2>
-                                <p className="text-[10px] font-black uppercase text-blue-500 tracking-[0.2em]">Views & Visits Injection</p>
+                        ) : (
+                            <div className="bg-[#0d0d11] border border-white/[0.07] rounded-2xl overflow-hidden">
+                                <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-bold text-white">{selectedKyc.displayName || selectedKyc.email}</p>
+                                        <p className="text-xs text-zinc-500 mt-0.5">{selectedKyc.email}</p>
+                                    </div>
+                                    <button onClick={() => setSelectedKyc(null)} className="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 bg-white/[0.04] border border-white/[0.07] rounded-lg transition-colors">Close</button>
+                                </div>
+                                <div className="p-6 space-y-5">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { label: "Full Name",  value: selectedKyc.identification?.fullName || selectedKyc.displayName || "—" },
+                                            { label: "ID Number",  value: selectedKyc.identification?.idNumber || selectedKyc.id.slice(0, 12), mono: true },
+                                            { label: "ID Type",    value: selectedKyc.identification?.idType || "—" },
+                                            { label: "User Role",  value: selectedKyc.role || "—" },
+                                        ].map((field, i) => (
+                                            <div key={i} className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-4">
+                                                <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest mb-1.5">{field.label}</p>
+                                                <p className={cn("text-sm font-semibold text-white", field.mono && "font-mono text-xs")}>{field.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {(selectedKyc.identification?.documentImage || selectedKyc.kycDocUrl) ? (
+                                        <div className="rounded-xl overflow-hidden border border-white/[0.07] aspect-video bg-zinc-950">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={selectedKyc.identification?.documentImage || selectedKyc.kycDocUrl} alt="KYC Document" className="w-full h-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-xl border border-dashed border-white/[0.08] py-10 flex flex-col items-center gap-2">
+                                            <ShieldCheck className="w-8 h-8 text-zinc-700" />
+                                            <p className="text-xs text-zinc-600">No document attached</p>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => handleRejectKyc(selectedKyc.id)} disabled={!!processingId}
+                                            className="h-11 rounded-xl border border-red-500/25 text-red-400 text-sm font-semibold hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                                            {processingId === selectedKyc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                            Reject
+                                        </button>
+                                        <button onClick={() => handleApproveKyc(selectedKyc.id)} disabled={!!processingId}
+                                            className="h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                                            {processingId === selectedKyc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                            Approve
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ══ ORDERS ══ */}
+            {tab === "orders" && (
+                <div className="bg-[#0d0d11] border border-white/[0.07] rounded-2xl overflow-hidden">
+                    <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm font-bold text-white">All Orders</p>
+                            <p className="text-xs text-zinc-500 mt-0.5">{orders.length} total</p>
+                        </div>
+                        <div className="relative w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                            <input type="text" value={orderSearch} onChange={e => setOrderSearch(e.target.value)}
+                                placeholder="Search orders…"
+                                className="w-full h-9 pl-9 pr-3 bg-white/[0.04] border border-white/[0.07] rounded-xl text-[13px] text-white placeholder:text-zinc-600 outline-none focus:border-blue-500/50 transition-all" />
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-white/[0.04]">
+                                    {["Order ID", "Customer", "Product", "Amount", "Profit", "Status"].map(h => (
+                                        <th key={h} className="px-6 py-3 text-left text-[11px] font-semibold text-zinc-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/[0.03]">
+                                {filteredOrders.length === 0 ? (
+                                    <tr><td colSpan={6} className="px-6 py-12 text-center text-xs text-zinc-600">No orders found</td></tr>
+                                ) : filteredOrders.map(o => (
+                                    <tr key={o.id} className="hover:bg-white/[0.02] transition-colors">
+                                        <td className="px-6 py-3.5"><span className="text-[11px] text-zinc-600 font-mono">{o.id.slice(0, 8)}…</span></td>
+                                        <td className="px-6 py-3.5 whitespace-nowrap">
+                                            <p className="text-[13px] text-white font-medium">{o.customerName || "—"}</p>
+                                            {o.customerCountry && <p className="text-[11px] text-zinc-600">{o.customerCountry}</p>}
+                                        </td>
+                                        <td className="px-6 py-3.5 max-w-[180px]">
+                                            <span className="text-[13px] text-zinc-300 truncate block">{o.productName || "—"}</span>
+                                        </td>
+                                        <td className="px-6 py-3.5 whitespace-nowrap">
+                                            <span className="text-[13px] font-semibold text-white">${(o.resellPrice || 0).toFixed(2)}</span>
+                                        </td>
+                                        <td className="px-6 py-3.5 whitespace-nowrap">
+                                            <span className="text-[13px] font-semibold text-emerald-400">+${(o.resellerProfit || 0).toFixed(2)}</span>
+                                        </td>
+                                        <td className="px-6 py-3.5"><StatusBadge status={o.status} /></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* ══ TOOLS ══ */}
+            {tab === "tools" && (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+                    {/* Sales Simulator */}
+                    <div className="bg-[#0d0d11] border border-white/[0.07] rounded-2xl overflow-hidden">
+                        <div className="px-6 py-5 border-b border-white/[0.06]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center">
+                                    <TrendingUp className="w-5 h-5 text-amber-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-white">Sales Simulator</p>
+                                    <p className="text-xs text-zinc-500 mt-0.5">Inject simulated orders for a reseller account</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="space-y-4 relative z-10">
-                             <select 
-                                className="w-full bg-zinc-950 border border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white px-4 outline-none focus:border-blue-500 transition-all"
-                                value={viewsTargetUserId}
-                                onChange={(e) => setViewsTargetUserId(e.target.value)}
-                            >
-                                <option value="">— SELECT TARGET —</option>
-                                {allUsers.map(u => <option key={u.id} value={u.id}>{u.displayName || u.email}</option>)}
-                            </select>
-                            <div className="flex gap-4">
-                                <Input 
-                                    placeholder="VIEWS (e.g. 5000)" 
-                                    type="number"
-                                    className="bg-zinc-950 border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white" 
-                                    value={viewsAmount}
-                                    onChange={(e) => setViewsAmount(e.target.value)}
+                        <div className="p-6 space-y-5">
+                            {/* User selector */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Reseller Account</label>
+                                <SearchableSelect
+                                    value={simUserId}
+                                    onChange={v => {
+                                        setSimUserId(v);
+                                        const u = allUsers.find(u => u.id === v);
+                                        setSimSelectedProducts((u?.storeProducts || []).map((p: any) => p.id));
+                                    }}
+                                    options={userOptions}
+                                    placeholder="Search and select reseller…"
                                 />
-                                <Input 
-                                    placeholder="VISITS (e.g. 1500)" 
-                                    type="number"
-                                    className="bg-zinc-950 border-zinc-800 h-12 rounded-xl text-[10px] font-black uppercase text-white" 
-                                    value={visitsAmount}
-                                    onChange={(e) => setVisitsAmount(e.target.value)}
-                                />
+                                {simUserId && (() => { const u = allUsers.find(x => x.id === simUserId); return u ? (
+                                    <p className="text-[11px] text-zinc-500 font-mono">{u.email}</p>
+                                ) : null; })()}
                             </div>
-                            <Button 
-                                onClick={handleBoostViews}
-                                disabled={boostingViews}
-                                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-black italic rounded-2xl gap-3 shadow-xl shadow-blue-500/20 text-[10px] uppercase tracking-widest"
-                            >
-                                {boostingViews ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-                                INJECT TRAFFIC FLUX
-                            </Button>
+
+                            {/* Product checkboxes */}
+                            {simUserId && (() => {
+                                const u = allUsers.find(x => x.id === simUserId);
+                                const prods: any[] = u?.storeProducts || [];
+                                return (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Select Products</label>
+                                            <button type="button"
+                                                onClick={() => setSimSelectedProducts(simSelectedProducts.length === prods.length ? [] : prods.map((p: any) => p.id))}
+                                                className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold transition-colors">
+                                                {simSelectedProducts.length === prods.length ? "Deselect All" : "Select All"}
+                                            </button>
+                                        </div>
+                                        {prods.length === 0 ? (
+                                            <p className="text-xs text-zinc-600 py-3 text-center border border-dashed border-white/[0.06] rounded-xl">This reseller has no store products yet</p>
+                                        ) : (
+                                            <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+                                                {prods.map((p: any, pi: number) => (
+                                                    <label key={p.id ?? `prod-${pi}`} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.1] cursor-pointer transition-colors">
+                                                        <input type="checkbox"
+                                                            checked={simSelectedProducts.includes(p.id)}
+                                                            onChange={e => {
+                                                                if (e.target.checked) setSimSelectedProducts(prev => [...prev, p.id]);
+                                                                else setSimSelectedProducts(prev => prev.filter(id => id !== p.id));
+                                                            }}
+                                                            className="accent-amber-500 shrink-0"
+                                                        />
+                                                        {p.image && <img src={p.image} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" />}
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs font-medium text-white truncate">{p.name}</p>
+                                                            <p className="text-[10px] text-zinc-500">${(p.resellPrice || p.price || 0).toLocaleString()} · cost ${(p.price || 0).toLocaleString()}</p>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Location rows */}
+                            <div className="space-y-2.5">
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Order Locations</label>
+                                <div className="space-y-2">
+                                    {simLocations.map((loc, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <div className="flex-1 relative">
+                                                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
+                                                <input value={loc.country} onChange={e => updateSimLocation(i, 'country', e.target.value)}
+                                                    placeholder="Country (e.g. United States)"
+                                                    className="w-full h-9 pl-7 pr-3 bg-white/[0.04] border border-white/[0.08] rounded-lg text-xs text-white placeholder:text-zinc-600 outline-none focus:border-amber-500/40 transition-colors" />
+                                            </div>
+                                            <input type="number" value={loc.count} onChange={e => updateSimLocation(i, 'count', e.target.value)}
+                                                placeholder="#"
+                                                className="w-20 h-9 px-3 bg-white/[0.04] border border-white/[0.08] rounded-lg text-xs text-white text-center placeholder:text-zinc-600 outline-none focus:border-amber-500/40 transition-colors" />
+                                            {simLocations.length > 1 && (
+                                                <button onClick={() => removeSimLocation(i)}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] hover:border-rose-500/30 hover:text-rose-400 text-zinc-600 transition-colors shrink-0">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={addSimLocation} className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-white font-medium transition-colors">
+                                    <Plus className="w-3.5 h-3.5" /> Add Location
+                                </button>
+                                <p className="text-[10px] text-zinc-600">
+                                    Total: <span className="text-white font-semibold">{simLocations.reduce((s, l) => s + (Number(l.count) || 0), 0).toLocaleString()}</span> orders across <span className="text-white font-semibold">{simLocations.filter(l => l.country.trim()).length}</span> location(s) — each from a unique buyer
+                                </p>
+                            </div>
+
+                            <button onClick={handleRunSimulator} disabled={runningSim}
+                                className="w-full h-11 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-black text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors">
+                                {runningSim ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+                                {runningSim ? "Simulating orders…" : "Run Simulation"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Store Booster */}
+                    <div className="bg-[#0d0d11] border border-white/[0.07] rounded-2xl overflow-hidden">
+                        <div className="px-6 py-5 border-b border-white/[0.06]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center">
+                                    <Zap className="w-5 h-5 text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-white">Store Booster</p>
+                                    <p className="text-xs text-zinc-500 mt-0.5">Inject views and visits into a reseller&apos;s analytics</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Target Reseller</label>
+                                <SearchableSelect value={boostUserId} onChange={setBoostUserId} options={userOptions} placeholder="Search and select user…" />
+                                {boostUserId && (() => { const u = allUsers.find(x => x.id === boostUserId); return u ? (
+                                    <p className="text-[11px] text-zinc-500 font-mono">{u.email}</p>
+                                ) : null; })()}
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Add Views</label>
+                                    <input type="number" placeholder="e.g. 5,000" value={boostViews} onChange={e => setBoostViews(e.target.value)}
+                                        className="w-full h-10 px-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 outline-none focus:border-blue-500/50 transition-all" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Add Visits</label>
+                                    <input type="number" placeholder="e.g. 1,500" value={boostVisits} onChange={e => setBoostVisits(e.target.value)}
+                                        className="w-full h-10 px-3 bg-white/[0.03] border border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 outline-none focus:border-blue-500/50 transition-all" />
+                                </div>
+                            </div>
+                            {boostUserId && (boostViews || boostVisits) && (
+                                <div className="flex items-center gap-3 px-4 py-3 bg-blue-500/[0.07] border border-blue-500/20 rounded-xl">
+                                    <Eye className="w-4 h-4 text-blue-400 shrink-0" />
+                                    <p className="text-xs text-blue-300">
+                                        Will add {boostViews ? <strong>{Number(boostViews).toLocaleString()} views</strong> : null}
+                                        {boostViews && boostVisits ? " and " : null}
+                                        {boostVisits ? <strong>{Number(boostVisits).toLocaleString()} visits</strong> : null} to the selected store.
+                                    </p>
+                                </div>
+                            )}
+                            <button onClick={handleBoostViews} disabled={boosting}
+                                className="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-40 shadow-lg shadow-blue-500/20">
+                                {boosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                                {boosting ? "Applying…" : "Apply Boost"}
+                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {/* KYC Review Modal */}
-            <Modal isOpen={!!selectedKyc} onClose={() => setSelectedKyc(null)} title="Identity Verification Protocol">
-                {selectedKyc && (
-                    <div className="space-y-8 py-6">
-                        <div className="grid grid-cols-2 gap-8">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-500">Identity Name</Label>
-                                <p className="text-xl font-black italic text-slate-900 uppercase">{selectedKyc.identification?.fullName || selectedKyc.displayName || 'Unnamed Merchant'}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-slate-500">Global ID</Label>
-                                <p className="text-xl font-black italic text-slate-900 uppercase font-mono">{selectedKyc.identification?.idNumber || selectedKyc.id.slice(0,12)}</p>
-                            </div>
-                        </div>
-
-                        <div className="aspect-[16/9] bg-slate-50 border border-slate-200 rounded-3xl overflow-hidden relative group">
-                            {selectedKyc.identification?.documentImage || selectedKyc.kycDocUrl ? (
-                                <img src={selectedKyc.identification?.documentImage || selectedKyc.kycDocUrl} alt="KYC Document" className="w-full h-full object-contain" />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">No document attachment found</p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <Button 
-                                variant="outline" 
-                                onClick={() => handleRejectKyc(selectedKyc.id, "Documents do not meet resolution requirements.")}
-                                className="h-14 border-rose-500/30 text-rose-500 font-black italic rounded-2xl hover:bg-rose-500 hover:text-white transition-all uppercase text-[10px]"
-                            >
-                                REJECT ENTRY
-                            </Button>
-                            <Button 
-                                onClick={() => handleApproveKyc(selectedKyc.id)}
-                                className="h-14 bg-emerald-600 text-white font-black italic rounded-2xl hover:bg-emerald-700 transition-all uppercase text-[10px] shadow-xl shadow-emerald-600/20"
-                            >
-                                VERIFY IDENTITY
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </Modal>
+            )}
         </div>
     );
 }

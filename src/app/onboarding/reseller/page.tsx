@@ -23,7 +23,7 @@ import {
 import { doc, updateDoc, collection, getDocs, writeBatch, query, getDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
-import { products as seedProducts } from "@/lib/seed/products";
+import { products as seedProducts, LOCAL_PRODUCT_IMAGES, CATALOG_VERSION } from "@/lib/seed/products";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -35,7 +35,12 @@ interface Product {
     category: string;
     image: string;
     isPromoted?: boolean;
+    isFeatured?: boolean;
+    sortOrder?: number;
+    catalogVersion?: number;
 }
+
+const FREE_PLAN_LIMIT = 20;
 
 export default function ResellerOnboarding() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -78,19 +83,41 @@ export default function ResellerOnboarding() {
             try {
                 const productsRef = collection(db, "products");
                 const snapshot = await getDocs(productsRef);
-                let fetched: Product[] = [];
-                if (snapshot.empty) {
-                    const batch = writeBatch(db);
+
+                // Check if Firestore is stale: wrong catalogVersion or more docs than our catalog
+                const isStale = snapshot.empty ? false : snapshot.docs.some(
+                    d => (d.data().catalogVersion ?? 0) !== CATALOG_VERSION
+                ) || snapshot.docs.length > seedProducts.length;
+
+                if (snapshot.empty || isStale) {
+                    // Delete all existing docs first (in batches of 500)
+                    if (!snapshot.empty) {
+                        const delBatch = writeBatch(db);
+                        snapshot.docs.forEach(d => delBatch.delete(d.ref));
+                        await delBatch.commit();
+                    }
+                    // Seed fresh with the 21 catalog products
+                    const seedBatch = writeBatch(db);
                     seedProducts.forEach((product) => {
-                        const newDocRef = doc(productsRef);
-                        batch.set(newDocRef, product);
+                        seedBatch.set(doc(productsRef), product);
                     });
-                    await batch.commit();
-                    const newSnapshot = await getDocs(productsRef);
-                    fetched = newSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-                } else {
-                    fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+                    await seedBatch.commit();
                 }
+
+                const fresh = await getDocs(productsRef);
+                let fetched: Product[] = fresh.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+
+                // Deduplicate by name (safety net)
+                const nameMap = new Map<string, Product>();
+                fetched.forEach(p => {
+                    const existing = nameMap.get(p.name);
+                    if (!existing || (p.isFeatured && !existing.isFeatured)) nameMap.set(p.name, p);
+                });
+                fetched = Array.from(nameMap.values());
+
+                // Sort by sortOrder
+                fetched.sort((a, b) => (a.sortOrder ?? 99) - (b.sortOrder ?? 99));
+
                 setProducts(fetched);
             } catch (error) { console.error(error); }
             finally { setLoading(false); }
@@ -115,11 +142,19 @@ export default function ResellerOnboarding() {
         return matchesSearch && matchesCategory && isNotOwned;
     });
 
+    const isFree = !userData?.plan || userData?.plan === "free";
+    const currentStoreCount = userData?.storeProducts?.length || 0;
+    const remainingFreeSlots = Math.max(0, FREE_PLAN_LIMIT - currentStoreCount);
+
     const toggleProduct = (product: Product) => {
         const isSelected = selectedProducts.some(p => p.id === product.id);
         if (isSelected) {
             setSelectedProducts(prev => prev.filter(p => p.id !== product.id));
         } else {
+            if (isFree && selectedProducts.length >= remainingFreeSlots) {
+                toast.error(`Free plan limit: you can only add ${FREE_PLAN_LIMIT} products total. Upgrade to add more.`);
+                return;
+            }
             setSelectedProducts(prev => [...prev, {
                 id: product.id,
                 name: product.name,
@@ -143,8 +178,13 @@ export default function ResellerOnboarding() {
         setSubmitting(true);
         try {
             if (user) {
+                const productImageMap = new Map(products.map(p => [p.id, p.image]));
                 const formattedProducts = selectedProducts.map(p => ({
-                    id: p.id, name: p.name, price: p.price, resellPrice: p.resellPrice
+                    id: p.id,
+                    name: p.name,
+                    price: p.price,
+                    resellPrice: p.resellPrice,
+                    image: productImageMap.get(p.id) || "",
                 }));
 
                 const updates: any = {};
@@ -314,6 +354,25 @@ export default function ResellerOnboarding() {
                                 </div>
                             </div>
 
+                            {isFree && (
+                                <div className="p-5 bg-amber-500/5 border border-amber-500/20 rounded-2xl space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h5 className="text-xs font-bold text-amber-400 uppercase tracking-tight">Free Plan</h5>
+                                        <span className="text-[10px] font-bold text-amber-400">{currentStoreCount + selectedProducts.length}/{FREE_PLAN_LIMIT}</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-amber-500 transition-all duration-500 rounded-full" 
+                                            style={{ width: `${Math.min(100, ((currentStoreCount + selectedProducts.length) / FREE_PLAN_LIMIT) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                                        {remainingFreeSlots - selectedProducts.length > 0
+                                            ? `You can add up to ${FREE_PLAN_LIMIT} products. ${remainingFreeSlots - selectedProducts.length} slot${remainingFreeSlots - selectedProducts.length !== 1 ? "s" : ""} remaining.`
+                                            : "Upgrade to add unlimited products to your store."}
+                                    </p>
+                                </div>
+                            )}
                             <div className="p-5 bg-white/[0.02] border border-white/[0.06] rounded-2xl space-y-4">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
@@ -333,6 +392,15 @@ export default function ResellerOnboarding() {
 
                         {/* Product Grid */}
                         <div className="flex-1 space-y-10">
+                            {/* Free plan limit notice */}
+                            <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-blue-500/10 border border-blue-500/25">
+                                <span className="text-xl">🔒</span>
+                                <p className="text-sm text-white leading-snug">
+                                    <strong className="font-extrabold text-white">Free plan: you can only view and add up to 20 products to your store.</strong>{" "}
+                                    <a href="/dashboard/subscription" className="text-blue-400 font-bold underline underline-offset-2 hover:text-blue-300 transition-colors">Upgrade your plan</a> to unlock unlimited products.
+                                </p>
+                            </div>
+
                             <div className="flex items-center justify-between border-b border-white/[0.04] pb-6">
                                 <h3 className="text-lg font-bold flex items-center gap-2">
                                     {selectedCategory}

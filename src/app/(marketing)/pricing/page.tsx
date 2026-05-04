@@ -24,15 +24,13 @@ import { cn } from "@/lib/utils";
 const plans = [
     {
         name: "Starter",
-        price: "29",
-        description: "Perfect for starting your dropshipping journey.",
+        price: "300",
+        description: "Up to 50 active products.",
         features: [
             "Up to 50 active products",
             "Professional storefront",
             "Real-time order tracking",
-            "Basic analytics",
-            "Standard support",
-            "0% transaction fees"
+            "Standard support"
         ],
         icon: Rocket,
         color: "bg-blue-600/10",
@@ -41,16 +39,13 @@ const plans = [
     },
     {
         name: "Professional",
-        price: "79",
-        description: "Scale your revenue with advanced management tools.",
+        price: "500",
+        description: "Unlimited products with advanced intelligence.",
         features: [
             "Unlimited products",
             "AI product recommendations",
             "Advanced sales analytics",
-            "Priority fulfillment",
-            "Premium store templates",
-            "SEO optimization tools",
-            "24/7 priority support"
+            "SEO optimization tools"
         ],
         icon: Zap,
         color: "bg-indigo-600/10",
@@ -60,16 +55,13 @@ const plans = [
     },
     {
         name: "Scale",
-        price: "199",
-        description: "For established businesses looking to dominate.",
+        price: "1,200",
+        description: "For merchants scaling high-volume operations.",
         features: [
-            "Everything in Professional+",
             "Bulk order processing",
             "Dedicated account manager",
             "White-label packaging",
-            "Custom API access",
-            "Influencer marketing tools",
-            "Bi-weekly strategy calls"
+            "Custom API access"
         ],
         icon: TrendingUp,
         color: "bg-emerald-600/10",
@@ -78,15 +70,12 @@ const plans = [
     },
     {
         name: "Enterprise",
-        price: "499",
-        description: "The ultimate solution for high-volume trade.",
+        price: "5,000",
+        description: "Enterprise-grade infrastructure for large organizations.",
         features: [
-            "Everything in Scale+",
             "Multi-store management",
             "Full legal compliance suite",
             "Automated tax management",
-            "Custom AI model training",
-            "Volume-based rewards",
             "Concierge support 24/7"
         ],
         icon: Building2,
@@ -117,7 +106,7 @@ export default function PricingPage() {
                         <span className="text-zinc-500">pricing for every stage.</span>
                     </h1>
                     <p className="text-lg font-medium text-zinc-500 max-w-2xl mx-auto">
-                        Choose the plan that fits your ambition. No hidden fees, no setup costs. Just world-class infrastructure to help you scale.
+                        Choose the plan that fits your operation. Transparent monthly pricing with secure in-app payment.
                     </p>
                 </div>
 
@@ -170,14 +159,14 @@ export default function PricingPage() {
                             </div>
 
                             <div className="mt-10 pt-8 border-t border-white/[0.04]">
-                                <Link href="/register" className="block">
+                                <Link href="/dashboard/subscription" className="block">
                                     <Button className={cn(
                                         "w-full h-12 rounded-xl font-bold transition-all gap-2",
                                         plan.popular 
                                             ? "bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20" 
                                             : "bg-white text-zinc-950 hover:bg-zinc-200"
                                     )}>
-                                        Get Started
+                                        Upgrade
                                         <ArrowRight className="w-4 h-4" />
                                     </Button>
                                 </Link>

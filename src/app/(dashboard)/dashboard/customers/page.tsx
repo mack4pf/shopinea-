@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { Users, Search, Mail, Phone, BadgeCheck, TrendingUp, Loader2, Calendar } from "lucide-react";
+import { Users, Search, Mail, MapPin, BadgeCheck, TrendingUp, Loader2, Calendar, Globe } from "lucide-react";
 
 export default function CustomersPage() {
     const [user, setUser] = useState<any>(null);
@@ -27,27 +27,32 @@ export default function CustomersPage() {
 
                     const customerMap: Record<string, any> = {};
                     orders.forEach(o => {
-                        const email = o.customerEmail?.toLowerCase() || 'guest';
+                        // Key by name (trimmed lower) — each unique buyer name is its own customer
+                        const key = (o.customerName || 'Guest').trim().toLowerCase();
                         const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
 
-                        if (!customerMap[email]) {
-                            customerMap[email] = {
-                                name: o.customerName || 'Guest', email,
-                                phone: o.customerPhone || 'N/A',
+                        if (!customerMap[key]) {
+                            customerMap[key] = {
+                                name: o.customerName || 'Guest',
+                                email: o.customerEmail || null,
+                                city: o.customerCity || null,
+                                country: o.customerCountry || null,
                                 totalSpent: 0, orderCount: 0, lastOrder: o.createdAt,
                                 isVerified: o.status === 'delivered' || o.status === 'shipped'
                             };
                         }
-                        customerMap[email].totalSpent += Number(o.resellPrice || 0);
-                        customerMap[email].orderCount += 1;
-                        if (o.status === 'delivered' || o.status === 'shipped') customerMap[email].isVerified = true;
+                        customerMap[key].totalSpent += Number(o.resellPrice || 0);
+                        customerMap[key].orderCount += 1;
+                        if (o.status === 'delivered' || o.status === 'shipped') customerMap[key].isVerified = true;
+                        if (!customerMap[key].city && o.customerCity) customerMap[key].city = o.customerCity;
+                        if (!customerMap[key].country && o.customerCountry) customerMap[key].country = o.customerCountry;
 
-                        const currentLastOrderDate = customerMap[email].lastOrder?.toDate ? customerMap[email].lastOrder.toDate() : (customerMap[email].lastOrder ? new Date(customerMap[email].lastOrder) : null);
+                        const currentLastOrderDate = customerMap[key].lastOrder?.toDate ? customerMap[key].lastOrder.toDate() : (customerMap[key].lastOrder ? new Date(customerMap[key].lastOrder) : null);
                         if (orderDate && (!currentLastOrderDate || orderDate > currentLastOrderDate)) {
-                            customerMap[email].lastOrder = o.createdAt;
+                            customerMap[key].lastOrder = o.createdAt;
                         }
                     });
-                    setCustomers(Object.values(customerMap));
+                    setCustomers(Object.values(customerMap).sort((a, b) => b.totalSpent - a.totalSpent));
                 } catch (err) { console.error("Error fetching customers:", err); }
             }
             setLoading(false);
@@ -73,7 +78,9 @@ export default function CustomersPage() {
 
     const filteredCustomers = customers.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (c.city || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.country || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.email || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (loading) return (
@@ -137,7 +144,7 @@ export default function CustomersPage() {
                         <thead>
                             <tr className="border-b border-white/[0.04] text-xs font-medium text-zinc-500">
                                 <th className="py-3 px-5">Customer</th>
-                                <th className="py-3 px-4">Contact</th>
+                                <th className="py-3 px-4">Location</th>
                                 <th className="py-3 px-4">Orders</th>
                                 <th className="py-3 px-4">Total Spent</th>
                                 <th className="py-3 px-5 text-right">Last Order</th>
@@ -168,14 +175,22 @@ export default function CustomersPage() {
                                             </div>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                                                    <Mail className="w-3 h-3 text-zinc-600" /> {c.email}
+                                            {(c.city || c.country) ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <MapPin className="w-3 h-3 text-zinc-600 shrink-0" />
+                                                    <div>
+                                                        {c.city && <p className="text-xs text-zinc-300">{c.city}</p>}
+                                                        {c.country && <p className="text-[10px] text-zinc-500">{c.country}</p>}
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 text-xs text-zinc-600">
-                                                    <Phone className="w-3 h-3" /> {c.phone}
+                                            ) : c.email ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Mail className="w-3 h-3 text-zinc-600" />
+                                                    <span className="text-xs text-zinc-400">{c.email}</span>
                                                 </div>
-                                            </div>
+                                            ) : (
+                                                <span className="text-xs text-zinc-700">—</span>
+                                            )}
                                         </td>
                                         <td className="py-4 px-4">
                                             <span className="text-sm font-medium text-white">{c.orderCount}</span>

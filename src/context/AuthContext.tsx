@@ -26,36 +26,54 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setUser(firebaseUser);
+        let unsubscribe = () => {};
 
-            if (firebaseUser) {
-                // Fetch user role from Firestore
-                try {
-                    const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-                    if (userDoc.exists()) {
-                        setRole(userDoc.data().role as UserRole);
+        try {
+            unsubscribe = onAuthStateChanged(
+                auth,
+                async (firebaseUser) => {
+                    setUser(firebaseUser);
+
+                    if (firebaseUser) {
+                        // Fetch user role from Firestore
+                        try {
+                            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+                            if (userDoc.exists()) {
+                                setRole(userDoc.data().role as UserRole);
+                            } else {
+                                console.warn("User document not found for authorized user");
+                                setRole(null);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching user role:", error);
+                            setRole(null);
+                        }
                     } else {
-                        console.warn("User document not found for authorized user");
-                        // Handle edge case: maybe prompt for onboarding
                         setRole(null);
                     }
-                } catch (error) {
-                    console.error("Error fetching user role:", error);
+
+                    setLoading(false);
+                },
+                (error) => {
+                    console.error("Auth state listener failed:", error);
+                    setUser(null);
                     setRole(null);
+                    setLoading(false);
                 }
-            } else {
-                setRole(null);
-            }
+            );
+        } catch (error) {
+            console.error("Failed to initialize Firebase auth:", error);
+            setUser(null);
+            setRole(null);
             setLoading(false);
-        });
+        }
 
         return () => unsubscribe();
     }, []);
 
     return (
         <AuthContext.Provider value={{ user, role, loading }}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

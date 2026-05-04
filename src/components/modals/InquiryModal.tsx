@@ -20,9 +20,11 @@ interface InquiryModalProps {
 }
 
 export default function InquiryModal({ isOpen, onClose, product, storeUser, onProceedToCheckout }: InquiryModalProps) {
+    const productName = product?.name || product?.productName || "this product";
+    const productPrice = Number(product?.resellPrice ?? product?.price ?? 0);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [message, setMessage] = useState(`Hi, I'm interested in purchasing the ${product?.name}. Is it currently in stock?`);
+    const [message, setMessage] = useState(`Hi, I'm interested in purchasing ${productName}. Is it currently in stock?`);
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
     const [authMode, setAuthMode] = useState<"login" | "register" | "form">("form");
@@ -40,8 +42,10 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                 setName(u.displayName || "");
                 setEmail(u.email || "");
             }
+
+            setMessage(`Hi, I'm interested in purchasing ${productName}. Is it currently in stock?`);
         }
-    }, [isOpen]);
+    }, [isOpen, productName]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -91,8 +95,8 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                 participantsNames: [name || "Buyer", storeUser.displayName || storeUser.storeName || "Reseller"],
                 unread: true,
                 pendingOrderId: product.id,
-                productName: product.name,
-                productPrice: product.resellPrice
+                productName,
+                productPrice
             };
 
             if (chatSnap.exists()) {
@@ -115,7 +119,7 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                 userId: storeUser.uid,
                 type: "new_inquiry",
                 title: "New Product Inquiry!",
-                message: `${name} is interested in ${product.name}.`,
+                message: `${name} is interested in ${productName}.`,
                 emailType: "pending_customer",
                 recipientEmail: storeUser.email,
                 createdAt: serverTimestamp()

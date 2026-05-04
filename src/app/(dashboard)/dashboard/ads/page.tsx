@@ -1,25 +1,37 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import React from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, getDoc, addDoc, serverTimestamp, updateDoc, increment } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
     Megaphone, Target, Sparkles, Plus, Loader2, Rocket, Wallet,
-    Globe, Youtube, Facebook, Zap, Lock, Calendar, Coins,
-    UserCheck, AlertTriangle, Play, Check, ShoppingCart
+    Globe, Zap, Lock, Calendar, Coins,
+    UserCheck, AlertTriangle, Play, Check, ShoppingCart,
+    BarChart3, TrendingUp, MousePointerClick, Eye, MapPin, Activity, ArrowUpRight, Users
 } from "lucide-react";
+import { MetaLogo, TikTokLogo, GoogleLogo, YouTubeLogo } from "@/components/shared/BrandLogos";
 import { Button } from "@/components/ui/button";
-import { AdDepositModal } from "@/components/modals/AdDepositModal";
+import AdDepositModal from "@/components/modals/AdDepositModal";
 import { KYCModal } from "@/components/modals/KYCModal";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/modal";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import {
+    Chart as ChartJS,
+    CategoryScale, LinearScale, PointElement, LineElement,
+    BarElement, ArcElement, Tooltip, Legend, Filler
+} from "chart.js";
+import { Line, Doughnut, Bar } from "react-chartjs-2";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler);
 
 interface Campaign {
     id: string;
+    campaignName?: string;
     productName: string | string[];
     targetType: 'store' | 'products';
     status: string;
@@ -32,6 +44,8 @@ interface Campaign {
     dailyBudget: number;
     isPostpaid: boolean;
     countryReach?: string | string[];
+    totalBudget?: number;
+    createdAt?: any;
 }
 
 export default function AdsPage() {
@@ -96,6 +110,49 @@ export default function AdsPage() {
         setSelectedProducts(p => p.includes(name) ? p.filter(i => i !== name) : [...p, name]);
     };
 
+    const generateCampaignName = (platform: string, target: string, products: string[]): string => {
+        const metaNames = [
+            "Meta Business Suite – Reach Campaign",
+            "Facebook Ads Manager – Awareness Drive",
+            "Instagram Shopping Campaign",
+            "Meta Advantage+ Shopping",
+            "Facebook Dynamic Product Ads",
+            "Instagram Explore Placement",
+            "Meta Retargeting – Warm Audiences",
+            "Facebook Lead Gen Campaign",
+        ];
+        const tiktokNames = [
+            "TikTok For Business – TopView",
+            "TikTok Spark Ads – Brand Lift",
+            "TikTok In-Feed Video Campaign",
+            "TikTok Shopping Ads",
+            "TikTok Creator Marketplace Boost",
+            "TikTok Branded Hashtag Challenge",
+            "TikTok Reach & Frequency Campaign",
+        ];
+        const googleNames = [
+            "Google Performance Max Campaign",
+            "Google Shopping – Product Listing",
+            "Google Display Network – Retarget",
+            "Google Search – Branded Keywords",
+            "Google Smart Campaign",
+            "Google Discovery Campaign",
+            "Google Demand Gen Campaign",
+        ];
+        const youtubeNames = [
+            "YouTube TrueView In-Stream Ads",
+            "YouTube Bumper Ad Campaign",
+            "YouTube Brand Awareness – Skippable",
+            "YouTube Non-Skippable Mid-Roll",
+            "YouTube Masthead Takeover",
+            "YouTube Action Campaign",
+            "YouTube Video Reach Campaign",
+        ];
+        const map: Record<string, string[]> = { meta: metaNames, tiktok: tiktokNames, google: googleNames, youtube: youtubeNames };
+        const pool = map[platform] || metaNames;
+        return pool[Math.floor(Math.random() * pool.length)];
+    };
+
     const handleCreateCampaign = async () => {
         if (targetType === 'products' && selectedProducts.length === 0) { toast.error("Select at least one product."); return; }
         if (!startDate || !endDate) { toast.error("Please pick start and end dates."); return; }
@@ -132,6 +189,7 @@ export default function AdsPage() {
 
             await addDoc(collection(db, "campaigns"), {
                 sellerId: user.uid, targetType,
+                campaignName: generateCampaignName(selectedPlatform, targetType, selectedProducts),
                 productName: targetType === 'products' ? selectedProducts : 'Store Wide',
                 platform: selectedPlatform, totalBudget: budgetNum, dailyBudget: dailySpend,
                 startDate, endDate,
@@ -164,7 +222,9 @@ export default function AdsPage() {
 
     if (loading) return <div className="h-[80vh] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>;
 
-    const platformIcons: Record<string, any> = { meta: Facebook, tiktok: Target, google: Globe };
+    const PlatformLogoMap: Record<string, React.FC<{size?: number; className?: string}>> = {
+        meta: MetaLogo, facebook: MetaLogo, tiktok: TikTokLogo, google: GoogleLogo, youtube: YouTubeLogo
+    };
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in duration-500">
@@ -195,19 +255,307 @@ export default function AdsPage() {
             {/* Platform cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { name: "Meta", icon: Facebook, color: "text-blue-400", bg: "bg-blue-500/10" },
-                    { name: "TikTok", icon: Target, color: "text-rose-400", bg: "bg-rose-500/10" },
-                    { name: "Google", icon: Globe, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-                    { name: "YouTube", icon: Youtube, color: "text-red-400", bg: "bg-red-500/10" },
+                    { name: "Meta",    key: "meta",    Logo: MetaLogo,    desc: "Facebook & Instagram" },
+                    { name: "TikTok",  key: "tiktok",  Logo: TikTokLogo,  desc: "Short-form video ads" },
+                    { name: "Google",  key: "google",  Logo: GoogleLogo,  desc: "Search & display" },
+                    { name: "YouTube", key: "youtube", Logo: YouTubeLogo, desc: "Video campaigns" },
                 ].map((p, i) => (
-                    <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex items-center gap-3 hover:bg-white/[0.05] transition-colors cursor-pointer">
-                        <div className={`w-10 h-10 ${p.bg} rounded-lg flex items-center justify-center`}>
-                            <p.icon className={`w-5 h-5 ${p.color}`} />
+                    <button key={i} onClick={() => { setSelectedPlatform(p.key); setShowCampaignModal(true); }}
+                        className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 flex items-center gap-3 hover:bg-white/[0.06] hover:border-white/[0.12] transition-all cursor-pointer group text-left w-full">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+                            <p.Logo size={32} />
                         </div>
-                        <span className="text-sm font-medium text-zinc-300">{p.name}</span>
-                    </div>
+                        <div className="min-w-0">
+                            <span className="text-sm font-semibold text-white block">{p.name}</span>
+                            <span className="text-xs text-zinc-500 truncate block">{p.desc}</span>
+                        </div>
+                    </button>
                 ))}
             </div>
+
+            {/* ── Ad Performance Analytics ── */}
+            {campaigns.length > 0 && (() => {
+                const totalImpressions = campaigns.reduce((s, c) => s + (c.impressions || 0), 0);
+                const totalClicks = campaigns.reduce((s, c) => s + (c.clicks || 0), 0);
+                const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
+                const totalSpend = campaigns.reduce((s, c) => s + (c.totalBudget || 0), 0);
+                const activeCamps = campaigns.filter(c => c.status === 'active');
+                const reach = Math.round(totalImpressions * 0.68); // estimated unique reach
+
+                // Per-platform stats
+                const platformMap: Record<string, { impressions: number; clicks: number }> = {};
+                campaigns.forEach(c => {
+                    const p = (c.platform || 'other').toLowerCase();
+                    if (!platformMap[p]) platformMap[p] = { impressions: 0, clicks: 0 };
+                    platformMap[p].impressions += c.impressions || 0;
+                    platformMap[p].clicks += c.clicks || 0;
+                });
+                const platforms = Object.entries(platformMap).sort((a, b) => b[1].impressions - a[1].impressions);
+
+                // Countries reached
+                const countrySet = new Set<string>();
+                campaigns.forEach(c => {
+                    if (Array.isArray(c.countryReach)) c.countryReach.forEach((ct: string) => countrySet.add(ct));
+                    else if (c.countryReach) countrySet.add(c.countryReach as string);
+                });
+                const countries = Array.from(countrySet);
+
+                // Build fake-realistic 14-day trend from total impressions + clicks
+                const days14 = Array.from({ length: 14 }, (_, i) => {
+                    const d = new Date(); d.setDate(d.getDate() - (13 - i));
+                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+                // Distribute impressions/clicks across days with a natural bell curve
+                const weights = [0.03,0.04,0.05,0.06,0.07,0.08,0.08,0.09,0.08,0.09,0.09,0.09,0.08,0.07];
+                const dailyImpr = weights.map(w => Math.round(totalImpressions * w));
+                const dailyClicks = weights.map(w => Math.round(totalClicks * w));
+
+                const lineData = {
+                    labels: days14,
+                    datasets: [
+                        {
+                            label: "Impressions",
+                            data: dailyImpr,
+                            borderColor: "rgba(99,102,241,0.9)",
+                            backgroundColor: "rgba(99,102,241,0.08)",
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: "rgba(99,102,241,1)",
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: "Clicks",
+                            data: dailyClicks,
+                            borderColor: "rgba(34,197,94,0.9)",
+                            backgroundColor: "rgba(34,197,94,0.04)",
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: "rgba(34,197,94,1)",
+                            tension: 0.4,
+                            fill: false,
+                            yAxisID: 'y1',
+                        },
+                    ],
+                };
+
+                const lineOptions: any = {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#71717a', font: { size: 11 }, boxWidth: 10, boxHeight: 10 }
+                        },
+                        tooltip: {
+                            backgroundColor: '#18181b',
+                            borderColor: 'rgba(255,255,255,0.08)',
+                            borderWidth: 1,
+                            titleColor: '#fff',
+                            bodyColor: '#a1a1aa',
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#52525b', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#52525b', font: { size: 10 } }, position: 'left' },
+                        y1: { grid: { drawOnChartArea: false }, ticks: { color: '#52525b', font: { size: 10 } }, position: 'right' },
+                    },
+                };
+
+                // Platform donut
+                const platformColors = ['#6366f1','#ec4899','#eab308','#ef4444','#8b5cf6','#71717a'];
+                const donutData = {
+                    labels: platforms.map(([p]) => p.charAt(0).toUpperCase() + p.slice(1)),
+                    datasets: [{
+                        data: platforms.map(([, v]) => v.impressions),
+                        backgroundColor: platformColors,
+                        borderWidth: 0,
+                        hoverOffset: 8,
+                    }],
+                };
+                const donutOptions: any = {
+                    responsive: true,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#18181b',
+                            borderColor: 'rgba(255,255,255,0.08)',
+                            borderWidth: 1,
+                            titleColor: '#fff',
+                            bodyColor: '#a1a1aa',
+                        }
+                    }
+                };
+
+                // Country bar chart (show top 8)
+                const countryFreq: Record<string, number> = {};
+                campaigns.forEach(c => {
+                    const reach = Array.isArray(c.countryReach) ? c.countryReach : (c.countryReach ? [c.countryReach as string] : []);
+                    reach.forEach((ct: string) => { countryFreq[ct] = (countryFreq[ct] || 0) + 1; });
+                });
+                const topCountries = Object.entries(countryFreq).sort((a, b) => b[1] - a[1]).slice(0, 8);
+                const barData = {
+                    labels: topCountries.map(([c]) => c),
+                    datasets: [{
+                        label: 'Campaigns reaching',
+                        data: topCountries.map(([, v]) => v),
+                        backgroundColor: 'rgba(99,102,241,0.7)',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                };
+                const barOptions: any = {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#18181b',
+                            borderColor: 'rgba(255,255,255,0.08)',
+                            borderWidth: 1,
+                            titleColor: '#fff',
+                            bodyColor: '#a1a1aa',
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#52525b', font: { size: 11 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#52525b', font: { size: 11 }, stepSize: 1 } },
+                    },
+                };
+
+                return (
+                    <div className="space-y-5">
+                        {/* Section header */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <Activity className="w-4 h-4 text-indigo-400" />
+                                <h3 className="text-sm font-semibold text-white">Campaign Analytics</h3>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse inline-block" /> Live
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-zinc-600 font-medium">Last 14 days</span>
+                        </div>
+
+                        {/* KPI row */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            {[
+                                { label: "Impressions", value: totalImpressions.toLocaleString(), sub: "Total ad views", icon: Eye, color: "text-indigo-400", bg: "bg-indigo-500/10", trend: "+12.4%" },
+                                { label: "Link Clicks", value: totalClicks.toLocaleString(), sub: "Outbound clicks", icon: MousePointerClick, color: "text-blue-400", bg: "bg-blue-500/10", trend: "+8.1%" },
+                                { label: "CTR", value: `${ctr}%`, sub: "Click-through rate", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", trend: "+0.3%" },
+                                { label: "Reach", value: reach.toLocaleString(), sub: "Estimated unique", icon: Users, color: "text-amber-400", bg: "bg-amber-500/10", trend: "+5.7%" },
+                            ].map(({ label, value, sub, icon: Icon, color, bg, trend }) => (
+                                <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center`}>
+                                            <Icon className={`w-4 h-4 ${color}`} />
+                                        </div>
+                                        <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-0.5">
+                                            <ArrowUpRight className="w-3 h-3" />{trend}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <p className="text-xl font-bold text-white leading-tight">{value}</p>
+                                        <p className="text-[10px] text-zinc-500 mt-0.5">{label} · {sub}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Main chart — impressions & clicks over 14 days */}
+                        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-white">Impressions & Clicks</h4>
+                                    <p className="text-[10px] text-zinc-500 mt-0.5">Daily delivery across all campaigns</p>
+                                </div>
+                                <div className="flex items-center gap-3 text-[10px] font-medium">
+                                    <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-3 h-0.5 bg-indigo-400 rounded inline-block" /> Impressions</span>
+                                    <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-3 h-0.5 bg-emerald-400 rounded inline-block" /> Clicks</span>
+                                </div>
+                            </div>
+                            {totalImpressions > 0 ? (
+                                <div className="h-52">
+                                    <Line data={lineData} options={{ ...lineOptions, maintainAspectRatio: false }} />
+                                </div>
+                            ) : (
+                                <div className="h-52 flex flex-col items-center justify-center text-zinc-600 space-y-2">
+                                    <BarChart3 className="w-8 h-8" />
+                                    <p className="text-xs">Data appears once admin activates your campaign</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            {/* Platform donut */}
+                            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-4">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-white">Platform Split</h4>
+                                    <p className="text-[10px] text-zinc-500 mt-0.5">Traffic by ad network</p>
+                                </div>
+                                {totalImpressions > 0 && platforms.length > 0 ? (
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-36 h-36 relative">
+                                            <Doughnut data={donutData} options={donutOptions} />
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                <p className="text-lg font-bold text-white">{platforms.length}</p>
+                                                <p className="text-[9px] text-zinc-500 uppercase tracking-wider">networks</p>
+                                            </div>
+                                        </div>
+                                        <div className="w-full space-y-2">
+                                            {platforms.map(([p, v], i) => (
+                                                <div key={p} className="flex items-center justify-between text-xs">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: platformColors[i] }} />
+                                                        <span className="text-zinc-300 capitalize">{p}</span>
+                                                    </div>
+                                                    <span className="text-zinc-500">{totalImpressions > 0 ? Math.round((v.impressions / totalImpressions) * 100) : 0}%</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="h-40 flex flex-col items-center justify-center text-zinc-700 space-y-2">
+                                        <Globe className="w-8 h-8" />
+                                        <p className="text-xs text-center">Platform data appears once campaigns go live</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Location bar chart */}
+                            <div className="lg:col-span-2 bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="w-3.5 h-3.5 text-zinc-500" />
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-white">Audience Location</h4>
+                                        <p className="text-[10px] text-zinc-500 mt-0.5">Countries reached by your campaigns</p>
+                                    </div>
+                                </div>
+                                {topCountries.length > 0 ? (
+                                    <div className="h-40">
+                                        <Bar data={barData} options={{ ...barOptions, maintainAspectRatio: false }} />
+                                    </div>
+                                ) : (
+                                    <div className="h-40 flex flex-col items-center justify-center text-zinc-700 space-y-2">
+                                        <MapPin className="w-8 h-8" />
+                                        <p className="text-xs text-center text-zinc-600">Location data appears once admin injects reach</p>
+                                    </div>
+                                )}
+                                {countries.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {countries.slice(0, 16).map((c, i) => (
+                                            <span key={c} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/[0.04] border border-white/[0.06] rounded-md text-[10px] font-medium text-zinc-300">
+                                                <Globe className="w-2.5 h-2.5 text-zinc-600" />{c}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Campaigns Table */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden">
@@ -245,19 +593,19 @@ export default function AdsPage() {
                                     {campaigns.map((camp) => {
                                         const isExpired = camp.endDate && camp.endDate < todayStr;
                                         const displayStatus = isExpired ? 'completed' : camp.status;
-                                        const PlatformIcon = platformIcons[camp.platform] || Globe;
+                                        const PlatformLogo = PlatformLogoMap[camp.platform] || null;
                                         return (
                                             <tr key={camp.id} className="hover:bg-white/[0.02] transition-colors">
                                                 <td className="py-4 px-5">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center">
-                                                            <PlatformIcon className="w-4 h-4 text-zinc-400" />
+                                                        <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center overflow-hidden">
+                                                            {PlatformLogo ? <PlatformLogo size={22} /> : <Globe className="w-4 h-4 text-zinc-400" />}
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-medium text-white truncate max-w-[200px]">
-                                                                {Array.isArray(camp.productName) ? camp.productName.join(", ") : camp.productName}
+                                                                {camp.campaignName || (Array.isArray(camp.productName) ? camp.productName.join(", ") : camp.productName)}
                                                             </p>
-                                                            <p className="text-xs text-zinc-600">{camp.platform} • {camp.startDate?.slice(5)} → {camp.endDate?.slice(5)}</p>
+                                                            <p className="text-xs text-zinc-600 capitalize">{camp.platform} · {camp.startDate?.slice(5)} → {camp.endDate?.slice(5)}</p>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -296,16 +644,16 @@ export default function AdsPage() {
                             {campaigns.map((camp) => {
                                 const isExpired = camp.endDate && camp.endDate < todayStr;
                                 const displayStatus = isExpired ? 'completed' : camp.status;
-                                const PlatformIcon = platformIcons[camp.platform] || Globe;
+                                const PlatformLogoM = PlatformLogoMap[camp.platform] || null;
                                 return (
                                     <div key={camp.id} className="p-4 bg-white/[0.02] border border-white/[0.04] rounded-xl space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center">
-                                                    <PlatformIcon className="w-4 h-4 text-zinc-400" />
+                                                <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center overflow-hidden">
+                                                    {PlatformLogoM ? <PlatformLogoM size={20} /> : <Globe className="w-4 h-4 text-zinc-400" />}
                                                 </div>
                                                 <p className="text-sm font-medium text-white truncate max-w-[180px]">
-                                                    {Array.isArray(camp.productName) ? camp.productName.join(", ") : camp.productName}
+                                                    {camp.campaignName || (Array.isArray(camp.productName) ? camp.productName.join(", ") : camp.productName)}
                                                 </p>
                                             </div>
                                             <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded capitalize",
@@ -387,11 +735,16 @@ export default function AdsPage() {
                         <div className="space-y-2">
                             <Label className="text-xs font-medium text-zinc-400">Platform</Label>
                             <div className="grid grid-cols-3 gap-2">
-                                {['meta', 'tiktok', 'google'].map((p) => (
-                                    <button key={p} onClick={() => setSelectedPlatform(p)}
-                                        className={cn("py-3 rounded-lg border text-xs font-medium capitalize transition-colors",
-                                            selectedPlatform === p ? 'bg-blue-600 border-blue-600 text-white' : 'border-white/[0.08] bg-white/[0.03] text-zinc-500 hover:text-zinc-300')}>
-                                        {p}
+                                {[
+                                    { key: 'meta', Logo: MetaLogo, label: 'Meta' },
+                                    { key: 'tiktok', Logo: TikTokLogo, label: 'TikTok' },
+                                    { key: 'google', Logo: GoogleLogo, label: 'Google' },
+                                ].map(({ key, Logo, label }) => (
+                                    <button key={key} onClick={() => setSelectedPlatform(key)}
+                                        className={cn("py-3 rounded-lg border text-xs font-medium capitalize transition-colors flex flex-col items-center gap-1.5",
+                                            selectedPlatform === key ? 'bg-blue-600 border-blue-600 text-white' : 'border-white/[0.08] bg-white/[0.03] text-zinc-500 hover:text-zinc-300')}>
+                                        <Logo size={20} />
+                                        {label}
                                     </button>
                                 ))}
                             </div>
@@ -484,11 +837,17 @@ export default function AdsPage() {
                             )}
                         </div>
 
-                        <Button onClick={handleCreateCampaign} disabled={creatingCampaign}
-                            className={cn("w-full h-12 font-medium rounded-lg text-sm gap-2",
-                                paymentMode === 'later' ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white")}>
-                            {creatingCampaign ? <Loader2 className="w-4 h-4 animate-spin" /> : "Launch Campaign"}
-                        </Button>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowCampaignModal(false)}
+                                className="flex-1 h-12 rounded-lg border border-white/[0.08] text-zinc-400 text-sm font-medium hover:bg-white/[0.05] hover:text-white transition-colors">
+                                Cancel
+                            </button>
+                            <Button onClick={handleCreateCampaign} disabled={creatingCampaign}
+                                className={cn("flex-1 h-12 font-medium rounded-lg text-sm gap-2",
+                                    paymentMode === 'later' ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white")}>
+                                {creatingCampaign ? <Loader2 className="w-4 h-4 animate-spin" /> : "Launch Campaign"}
+                            </Button>
+                        </div>
                     </div>
                 )}
             </Modal>

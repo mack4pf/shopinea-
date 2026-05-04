@@ -177,36 +177,27 @@ export default function AdCommandPage() {
     );
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 pb-20">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Megaphone className="w-5 h-5 text-indigo-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500 leading-none">Marketing Ops</span>
-                    </div>
-                    <h1 className="text-5xl font-black tracking-tight italic uppercase text-white">Ad Network Hub</h1>
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] pl-1">Campaign Propagation • Wallet Refuels • Traffic Approval</p>
-                </div>
+        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+            <div>
+                <h1 className="text-2xl font-bold text-white">Ad Network</h1>
+                <p className="text-sm text-zinc-500 mt-1">Manage campaigns, ad deposits, and performance metrics.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Meta & TikTok Campaigns */}
-                <div className="bg-indigo-600/5 border border-indigo-600/10 p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden h-fit">
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/5 rounded-full blur-[100px] -mr-40 -mt-40" />
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 bg-indigo-500/10 rounded-[1.5rem] flex items-center justify-center">
-                            <Target className="w-8 h-8 text-indigo-500" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Campaigns */}
+                <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-4 h-fit">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-indigo-400" />
+                            <h2 className="text-sm font-semibold text-white">Campaigns</h2>
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">AI Ad Propagation</h2>
-                            <p className="text-[10px] font-black uppercase text-indigo-500 tracking-[0.2em]">Live Traffic Requests ({campaigns.filter(c => c.status === 'scheduled' || c.status === 'reviewing').length})</p>
-                        </div>
+                        <span className="text-xs text-zinc-500 bg-white/[0.04] px-2.5 py-1 rounded border border-white/[0.06]">{campaigns.filter(c => c.status === 'scheduled' || c.status === 'reviewing').length} pending</span>
                     </div>
 
-                    <div className="space-y-4 relative z-10">
+                    <div className="space-y-3">
                         {campaigns.length === 0 ? (
-                            <div className="py-10 text-center bg-zinc-950/50 rounded-[2rem] border border-zinc-800 border-dashed">
-                                <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest italic">No active traffic requests</p>
+                            <div className="py-8 text-center">
+                                <p className="text-sm text-zinc-600">No campaigns found</p>
                             </div>
                         ) : (
                             campaigns.map((c) => {
@@ -214,54 +205,53 @@ export default function AdCommandPage() {
                                 const isExpired = c.endDate && c.endDate < todayStr;
                                 const dStatus = isExpired ? 'completed' : c.status;
                                 return (
-                                <div key={c.id} className="bg-zinc-950 border border-zinc-800 p-6 rounded-[2rem] group hover:border-indigo-500/50 transition-all">
-                                    <div className="flex justify-between items-start mb-4">
+                                <div key={c.id} className="bg-white/[0.02] border border-white/[0.04] p-4 rounded-lg group hover:border-indigo-500/30 transition-colors">
+                                    <div className="flex justify-between items-start mb-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center font-black text-[10px] text-zinc-500 border border-zinc-800 uppercase group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 transition-all">
+                                            <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center text-xs font-semibold text-zinc-400 border border-white/[0.06] uppercase">
                                                 {c.platform?.slice(0,1) || 'A'}
                                             </div>
                                             <div>
-                                                <p className="text-xs font-black italic text-white leading-none mb-1 uppercase tracking-tight">{c.productName || 'Global Campaign'}</p>
-                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{c.platform || 'General'} Network • {c.totalBudget ? `$${c.totalBudget.toLocaleString()}` : 'Custom Budget'}</p>
+                                                <p className="text-sm font-medium text-white">{c.productName || 'Campaign'}</p>
+                                                <p className="text-xs text-zinc-500">{c.platform || 'General'} • {c.totalBudget ? `$${c.totalBudget.toLocaleString()}` : 'Custom'}</p>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col items-end gap-2">
-                                            <div className={cn(
-                                                "inline-flex items-center gap-1.5 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full border",
+                                        <div className="flex flex-col items-end gap-1.5">
+                                            <span className={cn(
+                                                "inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded border",
                                                 dStatus === 'active' 
-                                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' 
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
                                                     : (dStatus === 'scheduled' || dStatus === 'reviewing')
-                                                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/10 animate-pulse'
+                                                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                     : dStatus === 'completed'
-                                                    ? 'bg-blue-500/10 text-blue-500 border-blue-500/10'
-                                                    : 'bg-rose-500/10 text-rose-500 border-rose-500/10'
+                                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                    : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                                             )}>
-                                                {dStatus?.toUpperCase() || 'QUEUED'}
-                                            </div>
+                                                {dStatus || 'queued'}
+                                            </span>
                                             <button 
                                                 onClick={() => handleDeleteCampaign(c.id)}
-                                                className="text-zinc-600 hover:text-rose-500 transition-colors p-1"
-                                                title="Delete Campaign"
+                                                className="text-zinc-600 hover:text-rose-400 transition-colors p-1"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
                                     </div>
 
                                     {(dStatus === 'scheduled' || dStatus === 'reviewing') && (
-                                        <Button 
+                                        <button
                                             onClick={() => handleApproveCampaign(c)}
                                             disabled={!!processingId}
-                                            className="w-full h-12 bg-white text-black font-black italic rounded-xl gap-2 shadow-xl shadow-white/5 text-[9px] uppercase tracking-widest mt-2"
+                                            className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
                                         >
                                             {processingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                                            ACTIVATE CAMPAIGN
-                                        </Button>
+                                            Activate Campaign
+                                        </button>
                                     )}
 
                                     {dStatus === 'active' && (
-                                        <div className="mt-4 pt-4 border-t border-zinc-800 space-y-3">
-                                            <p className="text-[8px] font-black text-zinc-500 uppercase tracking-widest italic">Inject Performance Metrics</p>
+                                        <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-2">
+                                            <p className="text-xs text-zinc-500">Inject performance metrics</p>
                                             <form 
                                                 onSubmit={(e) => {
                                                     e.preventDefault();
@@ -281,24 +271,24 @@ export default function AdCommandPage() {
                                                         type="number" 
                                                         name="impressions"
                                                         placeholder="+ Impressions" 
-                                                        className="w-full h-10 bg-zinc-900 border-zinc-800 rounded-lg text-[10px] font-black text-white px-3 focus:border-indigo-500 transition-colors uppercase placeholder:text-zinc-600"
+                                                        className="w-full h-9 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 focus:border-indigo-500/40 transition-colors placeholder:text-zinc-600"
                                                     />
                                                     <input 
                                                         type="number" 
                                                         name="clicks"
-                                                        placeholder="+ Conversions" 
-                                                        className="w-full h-10 bg-zinc-900 border-zinc-800 rounded-lg text-[10px] font-black text-white px-3 focus:border-indigo-500 transition-colors uppercase placeholder:text-zinc-600"
+                                                        placeholder="+ Clicks" 
+                                                        className="w-full h-9 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 focus:border-indigo-500/40 transition-colors placeholder:text-zinc-600"
                                                     />
                                                 </div>
                                                 <input 
                                                     type="text" 
                                                     name="countries"
-                                                    placeholder="Add Countries (e.g. US, UK, CA)" 
-                                                    className="w-full h-10 bg-zinc-900 border-zinc-800 rounded-lg text-[10px] font-black text-white px-3 focus:border-indigo-500 transition-colors uppercase placeholder:text-zinc-600"
+                                                    placeholder="Countries (e.g. US, UK, CA)" 
+                                                    className="w-full h-9 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 focus:border-indigo-500/40 transition-colors placeholder:text-zinc-600"
                                                 />
-                                                <Button type="submit" variant="secondary" className="w-full h-10 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white font-black text-[9px] uppercase tracking-widest">
-                                                    INJECT DATA PROTOCOL
-                                                </Button>
+                                                <button type="submit" className="w-full h-9 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white text-xs font-medium rounded-lg transition-colors">
+                                                    Inject Metrics
+                                                </button>
                                             </form>
                                             {c.countryReach && c.countryReach.length > 0 && (
                                                 <div className="mt-2 text-[8px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 p-2 rounded-lg break-words">
@@ -313,51 +303,42 @@ export default function AdCommandPage() {
                     </div>
                 </div>
 
-                {/* Ad Wallet Refuels */}
-                <div className="bg-indigo-600/5 border border-indigo-600/10 p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden h-fit">
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/5 rounded-full blur-[100px] -mr-40 -mt-40" />
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 bg-blue-500/10 rounded-[1.5rem] flex items-center justify-center">
-                            <Wallet className="w-8 h-8 text-blue-500" />
+                {/* Ad Wallet Deposits */}
+                <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-4 h-fit">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Wallet className="w-4 h-4 text-blue-400" />
+                            <h2 className="text-sm font-semibold text-white">Ad Deposits</h2>
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">Capital Inflow</h2>
-                            <p className="text-[10px] font-black uppercase text-blue-500 tracking-[0.2em]">Merchant Ad Refuels ({adDeposits.length})</p>
-                        </div>
+                        <span className="text-xs text-zinc-500 bg-white/[0.04] px-2.5 py-1 rounded border border-white/[0.06]">{adDeposits.length} pending</span>
                     </div>
 
-                    <div className="space-y-4 relative z-10">
+                    <div className="space-y-3">
                         {adDeposits.length === 0 ? (
-                            <div className="py-10 text-center bg-zinc-950/50 rounded-[2rem] border border-zinc-800 border-dashed">
-                                <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest italic">No pending refuel operations</p>
+                            <div className="py-8 text-center">
+                                <p className="text-sm text-zinc-600">No pending deposits</p>
                             </div>
                         ) : (
                             adDeposits.map((d) => (
-                                <div key={d.id} className="bg-zinc-950 border border-zinc-800 p-8 rounded-[2.5rem] space-y-6 group hover:border-blue-500/50 transition-all shadow-xl">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center font-black text-[10px] text-zinc-500 border border-zinc-800 uppercase group-hover:bg-blue-600 group-hover:text-white transition-all shadow-md">
-                                                <DollarSign className="w-6 h-6" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-black italic text-white leading-none mb-1 uppercase tracking-tight">{d.userName || 'Merchant'}</p>
-                                                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">{d.method?.toUpperCase() || 'TRANSFER'} • {d.asset?.toUpperCase()}</p>
-                                            </div>
+                                <div key={d.id} className="bg-white/[0.02] border border-white/[0.04] p-4 rounded-lg">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <p className="text-sm font-medium text-white">{d.userName || 'Merchant'}</p>
+                                            <p className="text-xs text-zinc-500">{d.method?.toUpperCase() || 'Transfer'} • {d.asset?.toUpperCase()}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-lg font-black italic text-white tracking-tighter">${d.amount?.toLocaleString()}</p>
-                                            {d.bonus > 0 && <p className="text-[9px] font-black text-emerald-500 uppercase">Bonus +${d.bonus}</p>}
+                                            <p className="text-sm font-semibold text-white">${d.amount?.toLocaleString()}</p>
+                                            {d.bonus > 0 && <p className="text-xs text-emerald-400">+${d.bonus} bonus</p>}
                                         </div>
                                     </div>
-
-                                    <Button 
+                                    <button
                                         onClick={() => handleApproveAdDeposit(d)}
                                         disabled={!!processingId}
-                                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black italic rounded-xl gap-2 shadow-xl shadow-blue-500/20 text-[9px] uppercase tracking-widest"
+                                        className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
                                     >
-                                        {processingId === d.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                        CONFIRM CAPITAL INFLOW
-                                    </Button>
+                                        {processingId === d.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                        Approve Deposit
+                                    </button>
                                 </div>
                             ))
                         )}
@@ -365,30 +346,33 @@ export default function AdCommandPage() {
                 </div>
             </div>
 
-            {/* Performance Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="p-10 bg-indigo-600/5 border border-indigo-600/10 rounded-[3rem] shadow-2xl space-y-4">
-                    <BarChart3 className="w-10 h-10 text-indigo-500" />
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <BarChart3 className="w-5 h-5 text-indigo-400" />
+                    </div>
                     <div>
-                        <h4 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">Global Impression Flux</h4>
-                        <p className="text-4xl font-black text-white italic tracking-tighter">142.8M+</p>
-                        <p className="text-zinc-600 font-bold text-[9px] uppercase tracking-widest mt-2">Active AI-Optimized AI Ad Delivery Instances</p>
+                        <p className="text-xs text-zinc-500">Total Impressions</p>
+                        <p className="text-xl font-bold text-white">142.8M+</p>
                     </div>
                 </div>
-                <div className="p-10 bg-blue-600/5 border border-blue-600/10 rounded-[3rem] shadow-2xl space-y-4">
-                    <TrendingUp className="w-10 h-10 text-blue-500" />
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <TrendingUp className="w-5 h-5 text-blue-400" />
+                    </div>
                     <div>
-                        <h4 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">Conversion Velocity</h4>
-                        <p className="text-4xl font-black text-white italic tracking-tighter">8.4%</p>
-                        <p className="text-zinc-600 font-bold text-[9px] uppercase tracking-widest mt-2">Avg merchant scaling ROI across Meta & TikTok</p>
+                        <p className="text-xs text-zinc-500">Avg Conversion Rate</p>
+                        <p className="text-xl font-bold text-white">8.4%</p>
                     </div>
                 </div>
-                <div className="p-10 bg-rose-600/5 border border-rose-600/10 rounded-[3rem] shadow-2xl space-y-4">
-                    <CheckCircle2 className="w-10 h-10 text-rose-500" />
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    </div>
                     <div>
-                        <h4 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">Active Ad Units</h4>
-                        <p className="text-4xl font-black text-white italic tracking-tighter">{campaigns.filter(c => c.status === 'active').length}</p>
-                        <p className="text-zinc-600 font-bold text-[9px] uppercase tracking-widest mt-2">Validated merchant campaigns in high-burn rotation</p>
+                        <p className="text-xs text-zinc-500">Active Campaigns</p>
+                        <p className="text-xl font-bold text-white">{campaigns.filter(c => c.status === 'active').length}</p>
                     </div>
                 </div>
             </div>

@@ -21,7 +21,9 @@ import {
     ArrowRight,
     SearchX,
     MessageCircle,
-    ShoppingCart
+    ShoppingCart,
+    Flame,
+    TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InquiryModal from "@/components/modals/InquiryModal";
@@ -39,6 +41,8 @@ export default function StorePage() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
+    const [productViewsMap, setProductViewsMap] = useState<Record<string, number>>({});
 
     // Modal State
     const [inquiryProduct, setInquiryProduct] = useState<any>(null);
@@ -60,12 +64,26 @@ export default function StorePage() {
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     const uDoc = querySnapshot.docs[0];
-                    setStoreUser({ uid: uDoc.id, ...uDoc.data() });
+                    const uData = { uid: uDoc.id, ...uDoc.data() } as any;
+                    setStoreUser(uData);
 
                     // Increment store view
                     await updateDoc(doc(db, "users", uDoc.id), {
                         "stats.views": increment(1)
                     });
+
+                    // Fetch order counts per product
+                    const ordersSnap = await getDocs(query(collection(db, "orders"), where("resellerId", "==", uDoc.id)));
+                    const counts: Record<string, number> = {};
+                    ordersSnap.docs.forEach(d => {
+                        const pid = d.data().productId;
+                        if (pid) counts[pid] = (counts[pid] || 0) + 1;
+                    });
+                    setOrderCounts(counts);
+
+                    // Read per-product view counts
+                    const pvMap: Record<string, number> = uData.productViews || {};
+                    setProductViewsMap(pvMap);
                 }
             } catch (error) {
                 console.error("Error fetching store:", error);
@@ -99,35 +117,56 @@ export default function StorePage() {
     }
 
     const products = Array.isArray(storeUser.storeProducts) ? storeUser.storeProducts : [];
-    const filteredProducts = products.filter((p: any) =>
-        p && p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Top products for hero: those with an image, up to 4
+    const heroProducts = products.filter((p: any) => p?.image).slice(0, 4);
+    const filteredProducts = products.filter((p: any) => {
+        if (!p) return false;
+        const productLabel = (p.name || p.productName || "").toString().toLowerCase();
+        return productLabel.includes(searchQuery.toLowerCase());
+    });
+
+    // Top sellers: products with the most orders
+    const topSellers = [...products]
+        .filter((p: any) => p && (orderCounts[p.id] || 0) > 0)
+        .sort((a: any, b: any) => (orderCounts[b.id] || 0) - (orderCounts[a.id] || 0))
+        .slice(0, 4);
+
+    const handleProductView = async (product: any) => {
+        if (!product?.id || !storeUser?.uid) return;
+        // Increment local state immediately
+        setProductViewsMap(prev => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }));
+        try {
+            await updateDoc(doc(db, "users", storeUser.uid), {
+                [`productViews.${product.id}`]: increment(1)
+            });
+        } catch { /* silent */ }
+    };
 
     return (
-        <div className="min-h-screen bg-[#09090b] text-white selection:bg-blue-500/30">
+        <div className="min-h-screen bg-[#f4f7fb] text-slate-900 selection:bg-emerald-200/70">
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-[#09090b]/80 backdrop-blur-md border-b border-white/[0.06] py-3">
+            <header className="sticky top-0 z-50 bg-[#f4f7fb]/90 backdrop-blur-md border-b border-slate-200 py-3">
                 <div className="container mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-zinc-950 border border-white/[0.08] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-xl">
+                        <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-xl">
                             {storeUser.storeName?.[0] || "S"}
                         </div>
                         <div>
-                            <h1 className="text-lg font-bold tracking-tight text-white leading-none">{storeUser.storeName}</h1>
+                            <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-none">{storeUser.storeName}</h1>
                             <div className="flex items-center gap-1.5 mt-1">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500/80">Verified Local Merchant</span>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-700">Verified Storefront</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="hidden md:flex flex-1 max-w-md mx-12">
                         <div className="relative w-full group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-white transition-colors" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-700 transition-colors" />
                             <input
                                 type="text"
                                 placeholder="Search collection..."
-                                className="w-full h-10 pl-11 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm font-medium placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50 transition-all"
+                                className="w-full h-10 pl-11 rounded-lg bg-white border border-slate-200 text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500/60 transition-all"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -138,7 +177,7 @@ export default function StorePage() {
                         {user ? (
                             <div className="flex items-center gap-2">
                                 <Link href="/buyer-orders">
-                                    <Button variant="ghost" className="rounded-lg h-10 px-4 gap-2 text-zinc-400 hover:text-white hover:bg-white/[0.04] text-xs font-bold uppercase tracking-tight">
+                                    <Button variant="ghost" className="rounded-lg h-10 px-4 gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold uppercase tracking-tight">
                                         <Package className="w-4 h-4" />
                                         <span className="hidden sm:inline">My Orders</span>
                                     </Button>
@@ -146,14 +185,14 @@ export default function StorePage() {
                                 <Button
                                     onClick={() => signOut(auth)}
                                     variant="ghost"
-                                    className="rounded-lg h-10 w-10 p-0 flex items-center justify-center text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                    className="rounded-lg h-10 w-10 p-0 flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-100 transition-colors"
                                 >
                                     <LogOut className="w-4 h-4" />
                                 </Button>
                             </div>
                         ) : (
                             <Link href="/">
-                                <Button className="rounded-lg font-bold h-10 px-6 bg-white text-zinc-950 hover:bg-zinc-200 transition-all text-xs">
+                                <Button className="rounded-lg font-bold h-10 px-6 brand-gradient text-white hover:opacity-90 transition-all text-xs">
                                     Sign In
                                 </Button>
                             </Link>
@@ -164,29 +203,122 @@ export default function StorePage() {
 
             <main className="container mx-auto px-6 py-12 max-w-7xl space-y-24">
                 {/* Hero Banner */}
-                <section className="relative rounded-[2rem] overflow-hidden bg-zinc-900/50 border border-white/[0.06] flex flex-col items-center justify-center text-center py-20 px-6 sm:py-32">
-                    <div className="absolute inset-0 z-0 opacity-10 flex items-center justify-center">
-                        <div className="w-[600px] h-[400px] bg-blue-600/30 rounded-full blur-[150px]" />
-                        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
-                    </div>
-                    
-                    <div className="relative z-10 space-y-6 max-w-3xl flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/[0.04] rounded-full border border-white/[0.1] text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                            Professional Experience
+                <section className="relative rounded-[2rem] overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-900 border border-slate-700/50 min-h-[420px] flex items-center">
+                    {/* Background product image collage */}
+                    {heroProducts.length > 0 && (
+                        <div className="absolute inset-0 flex overflow-hidden opacity-25">
+                            {heroProducts.map((p: any, i: number) => (
+                                <div key={i} className="flex-1 relative min-w-0">
+                                    <Image
+                                        src={p.image}
+                                        alt={p.name || "product"}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+                            ))}
                         </div>
-                        <h2 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
-                            Carefully curated essentials <br className="hidden sm:block" />
-                            <span className="text-zinc-500">for your lifestyle.</span>
-                        </h2>
-                        <p className="text-zinc-500 font-medium sm:text-lg max-w-xl mx-auto leading-relaxed">
-                            Discover high-quality products from verified global suppliers. Professional service, guaranteed delivery.
-                        </p>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/70 to-slate-900/40 z-[1]" />
+
+                    <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12 w-full px-8 sm:px-16 py-16">
+                        {/* Left: Text */}
+                        <div className="flex-1 space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/[0.07] rounded-full border border-white/[0.18] text-[10px] font-bold uppercase tracking-widest text-slate-200">
+                                Professional Experience
+                            </div>
+                            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] text-white">
+                                Carefully curated essentials{" "}
+                                <span className="text-emerald-300">for your lifestyle.</span>
+                            </h2>
+                            <p className="text-slate-200/80 font-medium text-lg leading-relaxed">
+                                Discover high-quality products from verified global suppliers. Professional service, guaranteed delivery.
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <a href="#collection" className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-sm shadow-lg">
+                                    <ShoppingBag className="w-4 h-4" /> Shop Now
+                                </a>
+                                <div className="flex items-center gap-1.5 text-slate-300 text-xs font-bold">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                    Escrow Protected
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right: Product Showcase Grid */}
+                        {heroProducts.length > 0 && (
+                            <div className={`shrink-0 grid gap-3 ${heroProducts.length >= 4 ? 'grid-cols-2' : 'grid-cols-1'}`} style={{ width: heroProducts.length >= 4 ? 340 : 200 }}>
+                                {heroProducts.slice(0, 4).map((p: any, i: number) => (
+                                    <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 shadow-2xl group cursor-pointer" onClick={() => setInquiryProduct(p)}>
+                                        <Image
+                                            src={p.image}
+                                            alt={p.name || "Product"}
+                                            fill
+                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                                            <p className="text-white text-[10px] font-bold line-clamp-1 leading-tight">{p.name}</p>
+                                            <p className="text-emerald-300 text-[9px] font-bold mt-0.5">${(p.resellPrice || p.price || 0).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </section>
 
                 {/* Products Section */}
-                <div className="space-y-12">
-                    <div className="flex items-end justify-between border-b border-white/[0.04] pb-6">
+                <div id="collection" className="space-y-12">
+                    {/* Top Sellers strip */}
+                    {topSellers.length > 0 && (
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-400/20 flex items-center justify-center">
+                                    <Flame className="w-4 h-4 text-amber-500" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900">Top Sellers</h3>
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Most purchased in this store</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {topSellers.map((product: any, i: number) => (
+                                    <div
+                                        key={product.id}
+                                        className="relative group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md hover:border-amber-300 transition-all"
+                                        onClick={() => { handleProductView(product); setInquiryProduct(product); }}
+                                    >
+                                        {i === 0 && (
+                                            <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-white text-[9px] font-bold rounded-full uppercase tracking-wider shadow">
+                                                <Flame className="w-2.5 h-2.5" /> #1 Best Seller
+                                            </div>
+                                        )}
+                                        <div className="relative aspect-square overflow-hidden bg-slate-100">
+                                            {product.image && (
+                                                <Image src={product.image} alt={product.name || ""} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            )}
+                                        </div>
+                                        <div className="p-3">
+                                            <p className="text-xs font-bold text-slate-800 line-clamp-1 mb-1">{product.name}</p>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-bold text-slate-900">${(product.resellPrice || product.price || 0).toLocaleString()}</span>
+                                                <span className="flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                                                    <ShoppingCart className="w-2.5 h-2.5" /> {(orderCounts[product.id] || 0).toLocaleString()} sold
+                                                </span>
+                                            </div>
+                                            {(productViewsMap[product.id] || 0) > 0 && (
+                                                <div className="flex items-center gap-1 mt-1.5 text-[9px] text-zinc-400 font-medium">
+                                                    <Eye className="w-2.5 h-2.5" /> {(productViewsMap[product.id] || 0).toLocaleString()} views
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    <div className="flex items-end justify-between border-b border-slate-200 pb-6">
                         <div>
                             <h3 className="text-2xl font-bold">The Collection</h3>
                             <p className="text-xs font-bold text-zinc-600 uppercase tracking-widest mt-1">
@@ -212,8 +344,10 @@ export default function StorePage() {
                             filteredProducts.map((product: any) => (
                                 <ProductCard 
                                     key={product.id} 
-                                    product={product} 
-                                    onInquiry={() => setInquiryProduct(product)} 
+                                    product={product}
+                                    salesCount={orderCounts[product.id] || 0}
+                                    viewCount={productViewsMap[product.id] || 0}
+                                    onInquiry={() => { handleProductView(product); setInquiryProduct(product); }}
                                 />
                             ))
                         )}
@@ -221,18 +355,18 @@ export default function StorePage() {
                 </div>
 
                 {/* Features Footer */}
-                <section className="grid grid-cols-1 md:grid-cols-3 gap-8 py-20 border-t border-white/[0.04]">
+                <section className="grid grid-cols-1 md:grid-cols-3 gap-8 py-20 border-t border-slate-200">
                     {[
                         { title: "Escrow Protection", desc: "Your payment is held securely and only released once your order is successfully delivered.", icon: ShieldCheck },
                         { title: "Verified Sourcing", desc: "Every product in this store is sourced from quality-vetted global manufacturers.", icon: ShoppingCart },
                         { title: "24/7 Assistance", desc: "Need help? Contact the merchant directly through our secure messaging system.", icon: MessageCircle }
                     ].map((f, i) => (
-                        <div key={i} className="flex flex-col items-center text-center gap-4 p-8 bg-zinc-900/30 rounded-3xl border border-white/[0.04] hover:bg-zinc-900/50 transition-colors">
-                            <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-2">
-                                <f.icon className="w-6 h-6 text-blue-500" />
+                        <div key={i} className="flex flex-col items-center text-center gap-4 p-8 bg-white rounded-3xl border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">
+                            <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-2">
+                                <f.icon className="w-6 h-6 text-emerald-700" />
                             </div>
-                            <h4 className="text-lg font-bold text-white tracking-tight">{f.title}</h4>
-                            <p className="text-sm text-zinc-500 font-medium leading-relaxed">{f.desc}</p>
+                            <h4 className="text-lg font-bold text-slate-900 tracking-tight">{f.title}</h4>
+                            <p className="text-sm text-slate-600 font-medium leading-relaxed">{f.desc}</p>
                         </div>
                     ))}
                 </section>
@@ -257,23 +391,23 @@ export default function StorePage() {
                 storeUser={storeUser}
             />
 
-            <footer className="border-t border-white/[0.04] p-12 text-center text-zinc-700 text-[10px] font-bold uppercase tracking-[0.3em]">
-                &copy; 2026 {storeUser.storeName}. Powered by Restock.
+            <footer className="border-t border-slate-200 p-12 text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
+                &copy; 2026 {storeUser.storeName}. Powered by Shopinea.
             </footer>
         </div>
     );
 }
 
-function ProductCard({ product, onInquiry }: { product: any, onInquiry: () => void }) {
+function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0 }: { product: any; onInquiry: () => void; salesCount?: number; viewCount?: number }) {
     const [imageLoaded, setImageLoaded] = useState(false);
 
     return (
-        <div className="group bg-zinc-900/30 border border-white/[0.06] rounded-2xl overflow-hidden hover:bg-zinc-900/60 hover:border-white/[0.12] transition-all duration-300 flex flex-col">
-            <div className="relative aspect-[4/5] overflow-hidden bg-zinc-950 cursor-pointer" onClick={onInquiry}>
+        <div className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 flex flex-col shadow-sm">
+            <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 cursor-pointer" onClick={onInquiry}>
                 {product.image ? (
                     <Image 
                         src={product.image} 
-                        alt={product.name} 
+                        alt={product.name || product.productName || "Product image"} 
                         fill 
                         className={cn(
                             "object-cover transition-transform duration-700 group-hover:scale-105",
@@ -287,18 +421,26 @@ function ProductCard({ product, onInquiry }: { product: any, onInquiry: () => vo
                     </div>
                 )}
                 
-                {/* Popularity Badge */}
-                <div className="absolute top-4 left-4 z-10">
-                    <div className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/[0.08] text-[9px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                        <Eye className="w-3 h-3 text-blue-500" />
-                        {(product.engagementViews || 0).toLocaleString()} Views
-                    </div>
+                {/* Views + Sales badge */}
+                <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
+                    {viewCount > 0 && (
+                        <div className="px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full border border-slate-200 text-[9px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                            <Eye className="w-3 h-3 text-emerald-600" />
+                            {viewCount.toLocaleString()} views
+                        </div>
+                    )}
+                    {salesCount > 0 && (
+                        <div className="px-2.5 py-1 bg-amber-500/90 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                            <Flame className="w-3 h-3" />
+                            {salesCount.toLocaleString()} sold
+                        </div>
+                    )}
                 </div>
 
                 <div className="absolute bottom-4 left-4 right-4 translate-y-20 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out z-20">
                     <Button
                         onClick={(e) => { e.stopPropagation(); onInquiry(); }}
-                        className="w-full h-12 bg-white text-zinc-950 font-bold rounded-xl shadow-2xl hover:bg-zinc-200 text-xs"
+                        className="w-full h-12 brand-gradient text-white font-bold rounded-xl shadow-2xl hover:opacity-90 text-xs"
                     >
                         Secure Purchase
                     </Button>
@@ -307,16 +449,16 @@ function ProductCard({ product, onInquiry }: { product: any, onInquiry: () => vo
             
             <div className="p-6 flex flex-col flex-1">
                 <div className="flex-1 space-y-2 cursor-pointer" onClick={onInquiry}>
-                   <h4 className="font-bold text-sm text-white line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">{product.name}</h4>
-                   <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{product.category || 'Lifestyle'}</p>
+                   <h4 className="font-bold text-sm text-slate-900 line-clamp-2 leading-tight group-hover:text-emerald-700 transition-colors">{product.name || product.productName || "Untitled product"}</h4>
+                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{product.category || 'Lifestyle'}</p>
                 </div>
                 
-                <div className="flex justify-between items-end mt-6 pt-4 border-t border-white/[0.04]">
+                <div className="flex justify-between items-end mt-6 pt-4 border-t border-slate-200">
                     <div>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 leading-none mb-1">Price</p>
-                        <p className="text-2xl font-bold tracking-tight text-white">${product.resellPrice?.toLocaleString() || '0'}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 leading-none mb-1">Price</p>
+                        <p className="text-2xl font-bold tracking-tight text-slate-900">${(product.resellPrice ?? product.price ?? 0).toLocaleString()}</p>
                     </div>
-                    <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-zinc-500 group-hover:bg-blue-600 group-hover:text-white transition-all transform group-hover:rotate-45">
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 group-hover:bg-emerald-600 group-hover:text-white transition-all transform group-hover:rotate-45">
                         <ArrowUpRight className="w-4 h-4" />
                     </div>
                 </div>

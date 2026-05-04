@@ -21,7 +21,7 @@ import {
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { toast } from "sonner";
-import { AdDepositModal } from "@/components/modals/AdDepositModal";
+import AdDepositModal from "@/components/modals/AdDepositModal";
 
 interface WithdrawalModalProps {
     isOpen: boolean;

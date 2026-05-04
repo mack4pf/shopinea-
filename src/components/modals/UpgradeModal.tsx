@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { 
     X, 
     Zap, 
@@ -21,16 +21,33 @@ interface UpgradeModalProps {
 }
 
 export function UpgradeModal({ isOpen, onClose, currentPlan }: UpgradeModalProps) {
+    useEffect(() => {
+        if (!isOpen) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = prev; };
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <div 
-                className="absolute inset-0 bg-black/80 backdrop-blur-xl animate-in fade-in duration-500" 
-                onClick={onClose} 
-            />
+        <div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            onClick={onClose}
+        >
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
             
-            <div className="relative w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.2)] animate-in zoom-in-95 duration-500">
+            <div 
+                className="relative w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden shadow-[0_0_100px_rgba(37,99,235,0.2)] animate-in zoom-in-95 duration-500"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Background Glow */}
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] -mr-32 -mt-32" />
                 

@@ -24,7 +24,12 @@ import {
     CheckCircle2,
     XCircle,
     ArrowUpRight,
-    Play
+    Play,
+    MapPin,
+    Plus,
+    X,
+    BarChart3,
+    Package
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, cn } from "@/components/ui/button";
@@ -35,6 +40,26 @@ import { Modal } from "@/components/ui/modal";
 import { where, addDoc, serverTimestamp, getDoc, collection, doc, getDocs, increment, orderBy, query, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/config";
 import { useState, useEffect } from "react";
+
+// ─── City API helper ──────────────────────────────────────────────────────────
+const cityCache: Record<string, string[]> = {};
+async function fetchCitiesForCountry(country: string): Promise<string[]> {
+    const key = country.trim().toLowerCase();
+    if (cityCache[key]) return cityCache[key];
+    try {
+        const res = await fetch("https://countriesnow.space/api/v0.1/countries/cities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ country: country.trim() }),
+        });
+        const json = await res.json();
+        if (!json.error && Array.isArray(json.data) && json.data.length > 0) {
+            cityCache[key] = json.data;
+            return json.data;
+        }
+    } catch { /* fall through */ }
+    return [];
+}
 
 export default function UserMatrixPage() {
     const [users, setUsers] = useState<any[]>([]);
@@ -49,8 +74,19 @@ export default function UserMatrixPage() {
     const [userProducts, setUserProducts] = useState<any[]>([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [boostingSales, setBoostingSales] = useState(false);
-    const [boostCount, setBoostCount] = useState("10");
-    const [simCountry, setSimCountry] = useState("USA");
+
+    // Sales Simulator
+    const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
+    const [selectedSimProducts, setSelectedSimProducts] = useState<string[]>([]);
+    const addSimLocation = () => setSimLocations(prev => [...prev, { country: "", count: "5" }]);
+    const removeSimLocation = (i: number) => setSimLocations(prev => prev.filter((_, idx) => idx !== i));
+    const updateSimLocation = (i: number, field: 'country' | 'count', val: string) =>
+        setSimLocations(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: val } : l));
+
+    // Store Booster
+    const [storeBoostViews, setStoreBoostViews] = useState("5000");
+    const [storeBoostVisits, setStoreBoostVisits] = useState("1500");
+    const [boostingStore, setBoostingStore] = useState(false);
 
     // Email Module
     const [adminTemplate, setAdminTemplate] = useState("custom");
@@ -74,6 +110,9 @@ export default function UserMatrixPage() {
     const fetchUserDetails = async (user: any) => {
         setLoadingDetails(true);
         setSelectedUser(user);
+        // Pre-select all store products for the simulator
+        setSelectedSimProducts((user.storeProducts || []).map((p: any) => p.id));
+        setSimLocations([{ country: "United States", count: "10" }]);
         try {
             // Fetch Pending Transactions
             const transSnap = await getDocs(query(
@@ -105,64 +144,134 @@ export default function UserMatrixPage() {
         }
     };
 
-    const FAKE_BUYERS = [
-        { name: "Liam Smith", country: "USA" }, 
-        { name: "Emma Wilson", country: "United Kingdom" }, 
-        { name: "Oliver Brown", country: "Australia" },
-        { name: "Sophia Muller", country: "Germany" }, 
-        { name: "Noah Johnson", country: "USA" }, 
-        { name: "Mia Davies", country: "Australia" },
-        { name: "Lucas Dubois", country: "France" }, 
-        { name: "Isabella Rossi", country: "Italy" }, 
-        { name: "Ethan White", country: "Canada" },
-        { name: "Charlotte Taylor", country: "USA" }, 
-        { name: "Max Schmidt", country: "Germany" }, 
-        { name: "Ava Thompson", country: "Australia" },
+    // 100 first names × 100 last names = 10,000 unique buyer identities
+    const FIRST_NAMES = [
+        "Liam","Emma","Noah","Olivia","James","Sophia","Oliver","Ava","Ethan","Isabella",
+        "Lucas","Mia","Mason","Charlotte","Logan","Amelia","Aiden","Harper","Jack","Evelyn",
+        "Carter","Abigail","Sebastian","Emily","Owen","Ella","Caleb","Elizabeth","Ryan","Camila",
+        "Nathan","Luna","Wyatt","Sofia","Luke","Avery","Isaiah","Mila","Gabriel","Aria",
+        "Benjamin","Scarlett","Elijah","Penelope","Julian","Layla","Adrian","Chloe","Levi","Victoria",
+        "Aaron","Madison","Charles","Eleanor","Thomas","Grace","Jaxon","Nora","Kai","Riley",
+        "Hunter","Zoey","Dominic","Hannah","Jordan","Lily","Ian","Aubrey","Carson","Lillian",
+        "Axel","Addison","Adam","Ellie","Miles","Stella","Asher","Natalie","Xavier","Zoe",
+        "Mateo","Leah","Nolan","Hazel","Ezra","Violet","Leo","Aurora","Micah","Savannah",
+        "Max","Audrey","Finn","Brooklyn","Tobias","Bella","Remi","Claire","Zach","Skylar"
+    ];
+    const LAST_NAMES = [
+        "Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Wilson","Taylor",
+        "Anderson","Thomas","Jackson","White","Harris","Martin","Thompson","Moore","Young","Allen",
+        "King","Wright","Scott","Torres","Nguyen","Hill","Flores","Green","Adams","Nelson",
+        "Baker","Hall","Rivera","Campbell","Mitchell","Carter","Roberts","Gomez","Phillips","Evans",
+        "Turner","Diaz","Parker","Cruz","Edwards","Collins","Reyes","Stewart","Morris","Morales",
+        "Murphy","Cook","Rogers","Gutierrez","Ortiz","Morgan","Cooper","Peterson","Bailey","Reed",
+        "Kelly","Howard","Ramos","Kim","Cox","Ward","Richardson","Watson","Brooks","Chavez",
+        "Wood","James","Bennett","Gray","Mendoza","Ruiz","Hughes","Price","Alvarez","Castillo",
+        "Sanders","Patel","Myers","Long","Ross","Foster","Jimenez","Powell","Jenkins","Perry",
+        "Russell","Sullivan","Bell","Coleman","Butler","Henderson","Barnes","Gonzalez","Fisher","Simmons"
     ];
 
     const handleBoostSales = async () => {
-        if (!selectedUser || userProducts.length === 0) {
-            toast.error("Merchant must have at least one product history to boost.");
+        const storeProds = (selectedUser?.storeProducts || []).filter((p: any) => selectedSimProducts.includes(p.id));
+        if (!selectedUser || storeProds.length === 0) {
+            toast.error("Select at least one product to simulate orders for.");
+            return;
+        }
+        const validLocations = simLocations.filter(l => l.country.trim() && Number(l.count) > 0);
+        if (validLocations.length === 0) {
+            toast.error("Add at least one location with an order count.");
             return;
         }
         setBoostingSales(true);
         try {
-            const count = Number(boostCount) || 10;
-            for (let i = 0; i < count; i++) {
-                const buyer = FAKE_BUYERS[Math.floor(Math.random() * FAKE_BUYERS.length)];
-                const product = userProducts[Math.floor(Math.random() * userProducts.length)];
+            // Pre-fetch cities for all locations
+            const locCities: Record<string, string[]> = {};
+            await Promise.all(validLocations.map(async loc => {
+                locCities[loc.country] = await fetchCitiesForCountry(loc.country);
+            }));
 
-                // Fetch actual product details for profit calc
-                const pDoc = await getDoc(doc(db, "products", product.id));
-                const pData = pDoc.exists() ? pDoc.data() : { price: 200, cost: 150 };
-                const profit = (pData.resellPrice || pData.price) - (pData.initialPrice || pData.cost || pData.price * 0.7);
+            const usedNames = new Set<string>();
+            const getUniqueName = (): string => {
+                for (let attempt = 0; attempt < 500; attempt++) {
+                    const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+                    const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+                    const name = `${first} ${last}`;
+                    if (!usedNames.has(name)) { usedNames.add(name); return name; }
+                }
+                const n = `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]} ${Math.floor(Math.random() * 99)}`;
+                usedNames.add(n);
+                return n;
+            };
 
-                const createdAt = new Date(Date.now() - (Math.floor(Math.random() * 5) * 86400000));
-
-                await addDoc(collection(db, "orders"), {
-                    resellerId: selectedUser.id,
-                    customerName: buyer.name,
-                    customerCountry: simCountry || buyer.country,
-                    productId: product.id,
-                    productName: product.name,
-                    resellPrice: pData.resellPrice || pData.price,
-                    resellerProfit: profit,
-                    status: 'shipped',
-                    isSimulated: true,
-                    createdAt
-                });
-
-                await updateDoc(doc(db, "users", selectedUser.id), {
-                    pendingPayout: increment(profit)
-                });
+            let totalOrders = 0;
+            for (const loc of validLocations) {
+                const count = Math.min(Number(loc.count) || 0, 2000);
+                const cities = locCities[loc.country] || [];
+                for (let i = 0; i < count; i++) {
+                    const product = storeProds[Math.floor(Math.random() * storeProds.length)];
+                    const profit = (product.resellPrice || 0) - (product.price || 0);
+                    const createdAt = new Date(Date.now() - (Math.floor(Math.random() * 7) * 86400000) - (Math.floor(Math.random() * 86400000)));
+                    const randomCity = cities.length > 0 ? cities[Math.floor(Math.random() * cities.length)] : null;
+                    await addDoc(collection(db, "orders"), {
+                        resellerId: selectedUser.id,
+                        customerName: getUniqueName(),
+                        customerCountry: loc.country,
+                        ...(randomCity ? { customerCity: randomCity } : {}),
+                        productId: product.id,
+                        productName: product.name,
+                        resellPrice: product.resellPrice || product.price || 0,
+                        resellerProfit: profit > 0 ? profit : (product.price || 0) * 0.3,
+                        status: 'shipped',
+                        createdAt
+                    });
+                    await updateDoc(doc(db, "users", selectedUser.id), {
+                        pendingPayout: increment(profit > 0 ? profit : (product.price || 0) * 0.3)
+                    });
+                    totalOrders++;
+                }
             }
-            toast.success(`Succesfully injected ${count} sales into merchant terminal!`);
+            toast.success(`Injected ${totalOrders} orders across ${validLocations.length} location(s)!`);
             fetchUserDetails(selectedUser);
         } catch (err) {
             console.error(err);
-            toast.error("Market injection failed.");
+            toast.error("Simulation failed.");
         } finally {
             setBoostingSales(false);
+        }
+    };
+
+    const handleBoostStore = async () => {
+        if (!selectedUser) return;
+        setBoostingStore(true);
+        try {
+            const views = Number(storeBoostViews) || 0;
+            const visits = Number(storeBoostVisits) || 0;
+            const updates: Record<string, any> = {
+                storeViews: increment(views),
+                storeVisits: increment(visits),
+            };
+            // Distribute views across all store products
+            const prods: any[] = selectedUser.storeProducts || [];
+            if (prods.length > 0 && views > 0) {
+                // Random weights so distribution looks natural
+                const weights = prods.map(() => Math.random());
+                const weightSum = weights.reduce((s, w) => s + w, 0);
+                let distributed = 0;
+                prods.forEach((p: any, i: number) => {
+                    if (!p?.id) return;
+                    const share = i === prods.length - 1
+                        ? views - distributed  // last one gets remainder
+                        : Math.round((weights[i] / weightSum) * views);
+                    updates[`productViews.${p.id}`] = increment(share);
+                    distributed += share;
+                });
+            }
+            await updateDoc(doc(db, "users", selectedUser.id), updates);
+            toast.success(`Injected ${views.toLocaleString()} views + ${visits.toLocaleString()} visits — distributed across ${prods.length} product(s)!`);
+        } catch (err) {
+            console.error(err);
+            toast.error("Store boost failed.");
+        } finally {
+            setBoostingStore(false);
         }
     };
 
@@ -253,131 +362,118 @@ export default function UserMatrixPage() {
     );
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 pb-20">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Users className="w-5 h-5 text-blue-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 leading-none">Personnel Matrix</span>
-                    </div>
-                    <h1 className="text-5xl font-black tracking-tight italic uppercase text-white">Merchant Registry</h1>
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] pl-1">Global User Oversight • Privilege Management • Account Auditing</p>
+        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-white">Users</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Manage accounts, roles, and permissions across the platform.</p>
                 </div>
 
-                <div className="relative w-full md:w-80">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <div className="relative w-full md:w-72">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                     <Input
-                        placeholder="Search by Identity or ID..."
+                        placeholder="Search users..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-12 bg-zinc-900 border-zinc-800 h-14 rounded-2xl font-bold text-white shadow-xl italic text-xs"
+                        className="pl-10 bg-white/[0.04] border-white/[0.08] h-10 rounded-lg text-white text-sm placeholder:text-zinc-600"
                     />
                 </div>
             </div>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-[3rem] overflow-hidden shadow-2xl">
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-zinc-950/50 border-b border-zinc-800">
-                            <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
-                                <th className="p-10">Identity</th>
-                                <th className="p-6">Status/Role</th>
-                                <th className="p-6">Capital Assets</th>
-                                <th className="p-6">Network Tier</th>
-                                <th className="p-10 text-right">Actions</th>
+                        <thead className="border-b border-white/[0.06]">
+                            <tr className="text-xs font-semibold text-zinc-500">
+                                <th className="px-5 py-4">User</th>
+                                <th className="px-4 py-4">Status</th>
+                                <th className="px-4 py-4">Balances</th>
+                                <th className="px-4 py-4">Plan</th>
+                                <th className="px-5 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-800/30">
+                        <tbody className="divide-y divide-white/[0.04]">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="p-20 text-center">
-                                        <p className="text-[10px] font-black uppercase text-zinc-600 tracking-widest italic">No matching identity records found in personnel matrix</p>
+                                    <td colSpan={5} className="px-5 py-16 text-center">
+                                        <p className="text-sm text-zinc-600">No users found</p>
                                     </td>
                                 </tr>
                             ) : (
                                 filtered.map((u) => (
-                                    <tr key={u.id} className="hover:bg-zinc-800/20 transition-all group">
-                                        <td className="p-10">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-blue-600/10 group-hover:border-blue-600/30 transition-all overflow-hidden relative">
+                                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0 overflow-hidden">
                                                     {u.photoURL ? (
                                                         <img src={u.photoURL} alt="" className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <span className="text-xs font-black text-zinc-500 group-hover:text-blue-500 uppercase">{u.displayName?.slice(0, 2) || u.email?.slice(0, 2) || '??'}</span>
+                                                        <span className="text-xs font-semibold text-zinc-400">{(u.displayName?.slice(0, 2) || u.email?.slice(0, 2) || '??').toUpperCase()}</span>
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black italic text-white leading-none mb-1 uppercase tracking-tight">{u.displayName || 'Anonymous Merchant'}</p>
-                                                    <div className="flex items-center gap-2">
-                                                        <Mail className="w-3 h-3 text-zinc-600" />
-                                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{u.email}</p>
-                                                    </div>
+                                                    <p className="text-sm font-medium text-white">{u.displayName || 'Anonymous'}</p>
+                                                    <p className="text-xs text-zinc-500">{u.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-6">
-                                            <div className="flex flex-col gap-1.5">
+                                        <td className="px-4 py-4">
+                                            <div className="flex flex-col gap-1">
                                                 {u.isAdmin && (
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full w-fit shadow-lg shadow-blue-600/20">
-                                                        <Shield className="w-2.5 h-2.5" /> SUPERUSER
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-medium rounded w-fit border border-blue-500/20">
+                                                        <Shield className="w-2.5 h-2.5" /> Admin
                                                     </span>
                                                 )}
                                                 <span className={cn(
-                                                    "inline-flex items-center gap-1.5 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full w-fit border",
+                                                    "inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded w-fit border",
                                                     u.kycStatus === 'verified'
-                                                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10'
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                                         : u.kycStatus === 'pending'
-                                                            ? 'bg-amber-500/10 text-amber-500 border-amber-500/10'
-                                                            : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/10'
+                                                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                            : 'bg-white/[0.04] text-zinc-500 border-white/[0.06]'
                                                 )}>
-                                                    <ShieldCheck className="w-2.5 h-2.5" /> {u.kycStatus || 'UNVERIFIED'}
+                                                    <ShieldCheck className="w-2.5 h-2.5" /> {u.kycStatus || 'Unverified'}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="p-6">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2">
+                                        <td className="px-4 py-4">
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-1.5">
                                                     <Wallet className="w-3 h-3 text-zinc-600" />
-                                                    <p className="text-xs font-black text-white italic tracking-tighter">${(u.walletBalance || 0).toLocaleString()}</p>
+                                                    <p className="text-xs text-white">${(u.walletBalance || 0).toLocaleString()}</p>
                                                 </div>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1.5">
                                                     <Megaphone className="w-3 h-3 text-zinc-600" />
-                                                    <p className="text-xs font-black text-blue-500 italic tracking-tighter">${(u.adWalletBalance || 0).toLocaleString()}</p>
+                                                    <p className="text-xs text-blue-400">${(u.adWalletBalance || 0).toLocaleString()}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-6">
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl w-fit group-hover:border-blue-500/30 transition-all">
-                                                <Crown className={cn("w-4 h-4", u.plan ? 'text-amber-500' : 'text-zinc-600')} />
-                                                <span className="text-[10px] font-black italic uppercase text-white">{u.planName || 'BASIC_ID'}</span>
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white/[0.04] border border-white/[0.06] rounded-lg w-fit">
+                                                <Crown className={cn("w-3 h-3", u.plan ? 'text-amber-400' : 'text-zinc-600')} />
+                                                <span className="text-xs text-zinc-300">{u.planName || 'Free'}</span>
                                             </div>
                                         </td>
-                                        <td className="p-10 text-right">
-                                            <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                                                <Button
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
                                                     onClick={() => fetchUserDetails(u)}
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-10 px-6 rounded-xl bg-white text-black font-black uppercase hover:bg-blue-600 hover:text-white transition-all text-[9px] shadow-xl"
+                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
                                                 >
-                                                    Audit
-                                                </Button>
-                                                <Button
+                                                    View
+                                                </button>
+                                                <button
                                                     onClick={() => toggleAdminStatus(u.id, !!u.isAdmin)}
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-10 w-10 p-0 rounded-xl bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                                    className="w-8 h-8 flex items-center justify-center bg-white/[0.04] border border-white/[0.06] rounded-lg hover:bg-blue-500/10 hover:border-blue-500/20 text-zinc-500 hover:text-blue-400 transition-colors"
                                                 >
                                                     <Shield className="w-3.5 h-3.5" />
-                                                </Button>
-                                                <Button
+                                                </button>
+                                                <button
                                                     onClick={() => deleteUserRecord(u.id)}
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="h-10 w-10 p-0 rounded-xl bg-zinc-950 border-zinc-800 text-zinc-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                                                    className="w-8 h-8 flex items-center justify-center bg-white/[0.04] border border-white/[0.06] rounded-lg hover:bg-rose-500/10 hover:border-rose-500/20 text-zinc-500 hover:text-rose-400 transition-colors"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
-                                                </Button>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -388,125 +484,102 @@ export default function UserMatrixPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="p-10 bg-blue-600/5 border border-blue-600/10 rounded-[3rem] shadow-2xl space-y-4">
-                    <TrendingUp className="w-10 h-10 text-blue-500" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <TrendingUp className="w-5 h-5 text-blue-400" />
+                    </div>
                     <div>
-                        <h4 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">Total Network Strength</h4>
-                        <p className="text-4xl font-black text-white italic tracking-tighter">{(users.length * 1.8).toFixed(1)}K+</p>
-                        <p className="text-zinc-600 font-bold text-[9px] uppercase tracking-widest mt-2">Active connections across Global Subnets</p>
+                        <p className="text-xs text-zinc-500">Total Users</p>
+                        <p className="text-xl font-bold text-white">{users.length}</p>
                     </div>
                 </div>
-                <div className="p-10 bg-emerald-500/5 border border-emerald-500/10 rounded-[3rem] shadow-2xl space-y-4">
-                    <DollarSign className="w-10 h-10 text-emerald-500" />
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <DollarSign className="w-5 h-5 text-emerald-400" />
+                    </div>
                     <div>
-                        <h4 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">Combined Equity</h4>
-                        <p className="text-4xl font-black text-white italic tracking-tighter">${users.reduce((acc, curr) => acc + (curr.walletBalance || 0), 0).toLocaleString()}</p>
-                        <p className="text-zinc-600 font-bold text-[9px] uppercase tracking-widest mt-2">Total merchant liquid capital on-platform</p>
+                        <p className="text-xs text-zinc-500">Total Wallet Balance</p>
+                        <p className="text-xl font-bold text-white">${users.reduce((acc, curr) => acc + (curr.walletBalance || 0), 0).toLocaleString()}</p>
                     </div>
                 </div>
-                <div className="p-10 bg-indigo-500/5 border border-indigo-500/10 rounded-[3rem] shadow-2xl space-y-4">
-                    <Megaphone className="w-10 h-10 text-indigo-500" />
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <Megaphone className="w-5 h-5 text-indigo-400" />
+                    </div>
                     <div>
-                        <h4 className="text-xl font-black text-white italic tracking-tighter uppercase leading-none mb-1">Ad Network Liquidity</h4>
-                        <p className="text-4xl font-black text-white italic tracking-tighter">${users.reduce((acc, curr) => acc + (curr.adWalletBalance || 0), 0).toLocaleString()}</p>
-                        <p className="text-zinc-600 font-bold text-[9px] uppercase tracking-widest mt-2">Reserved capital for global market scaling</p>
+                        <p className="text-xs text-zinc-500">Total Ad Wallet</p>
+                        <p className="text-xl font-bold text-white">${users.reduce((acc, curr) => acc + (curr.adWalletBalance || 0), 0).toLocaleString()}</p>
                     </div>
                 </div>
             </div>
 
-            {/* Merchant Management Modal */}
-            <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title="Merchant Control Terminal">
+            {/* User Detail Modal */}
+            <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title="User Details">
                 {selectedUser && (
-                    <div className="space-y-10 py-6 animate-in fade-in zoom-in duration-500">
+                    <div className="space-y-6 py-2 animate-in fade-in duration-300">
                         {/* Header Section */}
-                        <div className="flex items-start gap-6 bg-slate-50 border border-slate-200 p-8 rounded-[2.5rem] relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-blue-600/5 rounded-full blur-[50px] -mr-20 -mt-20" />
-                            <div className="w-20 h-20 rounded-[1.8rem] bg-white border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden shadow-sm group-hover:scale-105 transition-all">
+                        <div className="flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                            <div className="w-14 h-14 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0 overflow-hidden">
                                 {selectedUser.photoURL ? (
                                     <img src={selectedUser.photoURL} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                    <Users className="w-10 h-10 text-slate-400" />
+                                    <Users className="w-7 h-7 text-zinc-500" />
                                 )}
                             </div>
-                            <div className="space-y-1 py-1 relative z-10">
-                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.3em] leading-none mb-2">Authenticated Official</p>
-                                <h2 className="text-3xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">{selectedUser.displayName || 'Merchant'}</h2>
-                                <div className="flex items-center gap-3">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{selectedUser.email}</p>
-                                    <span className="w-1 h-1 rounded-full bg-slate-300" />
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">ID: {selectedUser.id.slice(0, 10)}</p>
-                                </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-white">{selectedUser.displayName || 'Anonymous'}</h2>
+                                <p className="text-sm text-zinc-500">{selectedUser.email}</p>
+                                <p className="text-xs text-zinc-600 mt-0.5 font-mono">ID: {selectedUser.id.slice(0, 12)}</p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Pending Capital Hub */}
-                            <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                                        <Clock className="w-5 h-5 text-amber-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight italic">Pending Capital</h3>
-                                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Awaiting clearing protocol</p>
-                                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Pending Transactions */}
+                            <div className="bg-white/[0.03] border border-white/[0.06] p-4 rounded-xl space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-amber-400" />
+                                    <h3 className="text-sm font-semibold text-white">Pending Transactions</h3>
                                 </div>
-
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {loadingDetails ? (
-                                        <div className="h-20 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                                        <div className="h-16 flex items-center justify-center">
+                                            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
                                         </div>
                                     ) : userTransactions.length === 0 ? (
-                                        <div className="p-6 bg-white border border-slate-200 border-dashed rounded-xl text-center">
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">No pending transactions</p>
-                                        </div>
+                                        <p className="text-xs text-zinc-600 py-4 text-center">No pending transactions</p>
                                     ) : (
                                         userTransactions.map(t => (
-                                            <div key={t.id} className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between group hover:border-amber-500/30 transition-all shadow-sm">
-                                                <div className="space-y-0.5">
-                                                    <p className="text-[10px] font-black text-slate-900 uppercase italic tracking-tight">{t.type?.replace('_', ' ')}</p>
-                                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Recent'}</p>
+                                            <div key={t.id} className="p-3 bg-white/[0.03] border border-white/[0.04] rounded-lg flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-xs font-medium text-white capitalize">{t.type?.replace('_', ' ')}</p>
+                                                    <p className="text-[10px] text-zinc-500">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Recent'}</p>
                                                 </div>
-                                                <p className="text-xs font-black text-amber-600 tracking-tighter">${t.amount?.toLocaleString()}</p>
+                                                <p className="text-xs font-semibold text-amber-400">${t.amount?.toLocaleString()}</p>
                                             </div>
                                         ))
                                     )}
                                 </div>
                             </div>
 
-                            {/* Store Analytics Hub */}
-                            <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                        <Box className="w-5 h-5 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight italic">Inventory Core</h3>
-                                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Active SKU rotations</p>
-                                    </div>
+                            {/* Store Products */}
+                            <div className="bg-white/[0.03] border border-white/[0.06] p-4 rounded-xl space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <Box className="w-4 h-4 text-blue-400" />
+                                    <h3 className="text-sm font-semibold text-white">Store Products</h3>
                                 </div>
-
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     {loadingDetails ? (
-                                        <div className="h-20 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                                        <div className="h-16 flex items-center justify-center">
+                                            <Loader2 className="w-5 h-5 animate-spin text-zinc-500" />
                                         </div>
                                     ) : userProducts.length === 0 ? (
-                                        <div className="p-6 bg-white border border-slate-200 border-dashed rounded-xl text-center">
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">No active inventory records</p>
-                                        </div>
+                                        <p className="text-xs text-zinc-600 py-4 text-center">No products found</p>
                                     ) : (
                                         userProducts.map(p => (
-                                            <div key={p.id} className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between group hover:border-blue-500/30 transition-all shadow-sm">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden">
-                                                        <Eye className="w-4 h-4 text-slate-500" />
-                                                    </div>
-                                                    <p className="text-[10px] font-black text-slate-900 uppercase italic tracking-tight">{p.name || 'Global SKU'}</p>
-                                                </div>
-                                                <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-all" />
+                                            <div key={p.id} className="p-3 bg-white/[0.03] border border-white/[0.04] rounded-lg flex items-center justify-between">
+                                                <p className="text-xs font-medium text-white">{p.name || 'Unnamed Product'}</p>
+                                                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-600" />
                                             </div>
                                         ))
                                     )}
@@ -514,72 +587,167 @@ export default function UserMatrixPage() {
                             </div>
                         </div>
 
-                        {/* Market Injection Engine */}
-                        <div className="bg-slate-50 border border-slate-200 p-10 rounded-[2.5rem] space-y-8 shadow-sm relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-50 rounded-full blur-[100px] -mr-40 -mt-40 opacity-0 group-hover:opacity-100 transition-all duration-1000" />
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="w-14 h-14 bg-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-lg shadow-blue-600/20">
-                                    <Zap className="w-8 h-8 text-white animate-pulse" />
+                        {/* Sales Simulator */}
+                        <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-5">
+                            <div className="flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-amber-400" />
+                                <h3 className="text-sm font-semibold text-white">Sales Simulator</h3>
+                                <span className="ml-auto text-[10px] font-mono text-zinc-500 truncate max-w-[180px]">{selectedUser.email}</span>
+                            </div>
+                            <p className="text-xs text-zinc-500 -mt-2">Inject simulated orders. Each order gets a unique buyer name from a different location.</p>
+
+                            {/* Product Selector */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                        <Package className="w-3.5 h-3.5 text-zinc-500" />
+                                        <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Select Products</span>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const prods = selectedUser?.storeProducts || [];
+                                            if (selectedSimProducts.length === prods.length) setSelectedSimProducts([]);
+                                            else setSelectedSimProducts(prods.map((p: any) => p.id));
+                                        }}
+                                        className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                                    >
+                                        {selectedSimProducts.length === (selectedUser?.storeProducts?.length || 0) ? "Deselect All" : "Select All"}
+                                    </button>
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-slate-900 italic tracking-tight leading-none mb-1">Market Injection</h2>
-                                    <p className="text-[10px] font-black uppercase text-blue-600 tracking-[0.2em]">Artificial Demand Acceleration</p>
-                                </div>
+                                {(selectedUser?.storeProducts?.length ?? 0) === 0 ? (
+                                    <p className="text-xs text-zinc-600 py-3 text-center border border-dashed border-white/[0.06] rounded-lg">No products in store yet</p>
+                                ) : (
+                                    <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+                                        {(selectedUser?.storeProducts || []).map((p: any) => (
+                                            <label key={p.id} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.1] cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedSimProducts.includes(p.id)}
+                                                    onChange={e => {
+                                                        if (e.target.checked) setSelectedSimProducts(prev => [...prev, p.id]);
+                                                        else setSelectedSimProducts(prev => prev.filter(id => id !== p.id));
+                                                    }}
+                                                    className="accent-amber-500 shrink-0"
+                                                />
+                                                {p.image && <img src={p.image} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" />}
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-medium text-white truncate">{p.name}</p>
+                                                    <p className="text-[10px] text-zinc-500">${(p.resellPrice || p.price || 0).toLocaleString()} sell · ${(p.price || 0).toLocaleString()} cost</p>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex flex-col md:flex-row gap-6 items-end relative z-10">
-                                <div className="flex-1 space-y-2 w-full">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Injection Origin (Country)</Label>
-                                    <Input
-                                        value={simCountry}
-                                        onChange={e => setSimCountry(e.target.value)}
-                                        className="h-14 bg-white border-slate-200 rounded-2xl font-black text-slate-900 text-xl italic"
-                                        placeholder="USA"
-                                    />
+                            {/* Location Distribution */}
+                            <div className="space-y-2.5">
+                                <div className="flex items-center gap-1.5">
+                                    <MapPin className="w-3.5 h-3.5 text-zinc-500" />
+                                    <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Order Locations</span>
                                 </div>
-                                <div className="flex-1 space-y-2 w-full">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Injection Volume</Label>
-                                    <Input
-                                        type="number"
-                                        value={boostCount}
-                                        onChange={e => setBoostCount(e.target.value)}
-                                        className="h-14 bg-white border-slate-200 rounded-2xl font-black text-slate-900 text-xl italic"
-                                        placeholder="10"
-                                    />
+                                <div className="space-y-2">
+                                    {simLocations.map((loc, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <div className="flex-1 relative">
+                                                <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
+                                                <input
+                                                    value={loc.country}
+                                                    onChange={e => updateSimLocation(i, 'country', e.target.value)}
+                                                    placeholder="Country (e.g. United States)"
+                                                    className="w-full h-9 pl-7 pr-3 bg-white/[0.04] border border-white/[0.08] rounded-lg text-xs text-white placeholder:text-zinc-600 outline-none focus:border-amber-500/40 transition-colors"
+                                                />
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={loc.count}
+                                                onChange={e => updateSimLocation(i, 'count', e.target.value)}
+                                                placeholder="#"
+                                                className="w-20 h-9 px-3 bg-white/[0.04] border border-white/[0.08] rounded-lg text-xs text-white placeholder:text-zinc-600 outline-none focus:border-amber-500/40 transition-colors text-center"
+                                            />
+                                            {simLocations.length > 1 && (
+                                                <button
+                                                    onClick={() => removeSimLocation(i)}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] hover:border-rose-500/30 hover:text-rose-400 text-zinc-600 transition-colors shrink-0"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                                <Button
-                                    onClick={handleBoostSales}
-                                    disabled={boostingSales || userProducts.length === 0}
-                                    className="h-14 bg-blue-600 hover:bg-blue-700 text-white font-black italic rounded-2xl px-10 gap-3 shadow-xl shadow-blue-600/20 transition-all duration-500 uppercase text-[10px]"
+                                <button
+                                    onClick={addSimLocation}
+                                    className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-white font-medium transition-colors"
                                 >
-                                    {boostingSales ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5 fill-current" />}
-                                    EXECUTE PROTOCOL
-                                </Button>
-                            </div>
-                            {userProducts.length === 0 && (
-                                <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest text-center italic animate-pulse">
-                                    Critical: No merchant product history detected. Manual injection restricted.
+                                    <Plus className="w-3.5 h-3.5" /> Add Location
+                                </button>
+                                <p className="text-[10px] text-zinc-600 pt-0.5">
+                                    Total: <span className="text-white font-semibold">{simLocations.reduce((s, l) => s + (Number(l.count) || 0), 0).toLocaleString()}</span> orders across <span className="text-white font-semibold">{simLocations.filter(l => l.country.trim()).length}</span> location(s) — each from a unique buyer
                                 </p>
-                            )}
+                            </div>
+
+                            <button
+                                onClick={handleBoostSales}
+                                disabled={boostingSales || selectedSimProducts.length === 0}
+                                className="w-full h-10 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-black text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                            >
+                                {boostingSales ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                                {boostingSales ? "Simulating orders..." : "Run Simulation"}
+                            </button>
                         </div>
 
-                        {/* Admin Communications Hub */}
-                        <div className="bg-slate-50 border border-slate-200 p-8 rounded-[2rem] space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
-                                    <Mail className="w-5 h-5 text-purple-600" />
+                        {/* Store Booster */}
+                        <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <BarChart3 className="w-4 h-4 text-blue-400" />
+                                <h3 className="text-sm font-semibold text-white">Store Booster</h3>
+                                <span className="ml-auto text-[10px] font-mono text-zinc-500 truncate max-w-[180px]">{selectedUser.email}</span>
+                            </div>
+                            <p className="text-xs text-zinc-500 -mt-1">Inject views and visits into this reseller&apos;s store analytics dashboard.</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Add Views</Label>
+                                    <Input
+                                        type="number"
+                                        value={storeBoostViews}
+                                        onChange={e => setStoreBoostViews(e.target.value)}
+                                        placeholder="e.g. 5000"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                    />
                                 </div>
-                                <div>
-                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight italic">Direct Transmission</h3>
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Send specialized billing or store emails to this merchant</p>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Add Visits</Label>
+                                    <Input
+                                        type="number"
+                                        value={storeBoostVisits}
+                                        onChange={e => setStoreBoostVisits(e.target.value)}
+                                        placeholder="e.g. 1500"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                    />
                                 </div>
                             </div>
-                            
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Template Selection</Label>
+                            <button
+                                onClick={handleBoostStore}
+                                disabled={boostingStore}
+                                className="w-full h-10 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                            >
+                                {boostingStore ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+                                {boostingStore ? "Boosting..." : "Inject Analytics"}
+                            </button>
+                        </div>
+
+                        {/* Send Email */}
+                        <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Mail className="w-4 h-4 text-purple-400" />
+                                <h3 className="text-sm font-semibold text-white">Send Email</h3>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-500">Template</Label>
                                     <select 
-                                        className="w-full h-12 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-sm px-4 outline-none focus:border-purple-500/50"
+                                        className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm px-3 outline-none focus:border-purple-500/40"
                                         value={adminTemplate}
                                         onChange={(e) => {
                                             setAdminTemplate(e.target.value);
@@ -592,45 +760,45 @@ export default function UserMatrixPage() {
                                             }
                                         }}
                                     >
-                                        <option value="custom">Freeform Custom Transmission</option>
-                                        <option value="billing">Billing/Fee/Subscription Request</option>
+                                        <option value="custom" className="bg-zinc-900">Custom Message</option>
+                                        <option value="billing" className="bg-zinc-900">Billing / Fee Request</option>
                                     </select>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Transmission Subject</Label>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-500">Subject</Label>
                                     <Input
                                         value={adminSubject}
                                         onChange={e => setAdminSubject(e.target.value)}
-                                        className="h-12 bg-white border-slate-200 rounded-xl font-bold text-slate-900 text-sm focus:border-purple-500/50"
-                                        placeholder="E.g. Action Required: Billing Issue"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                        placeholder="Email subject"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest pl-1">Secure Message Body</Label>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-500">Message</Label>
                                     <textarea
                                         value={adminBody}
                                         onChange={e => setAdminBody(e.target.value)}
-                                        className="w-full h-32 bg-white border border-slate-200 rounded-xl font-medium text-slate-900 text-sm p-4 outline-none focus:border-purple-500/50 focus:ring-4 focus:ring-purple-500/10 transition-all resize-none shadow-sm"
-                                        placeholder="Write your professional message here..."
+                                        className="w-full h-28 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm p-3 outline-none focus:border-purple-500/40 transition-colors resize-none"
+                                        placeholder="Write your message..."
                                     />
                                 </div>
-                                <Button
+                                <button
                                     onClick={handleSendCustomEmail}
                                     disabled={adminSending}
-                                    className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl gap-2 transition-all shadow-lg shadow-purple-600/20"
+                                    className="w-full h-10 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
                                 >
                                     {adminSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                                    DISPATCH TRANSMISSION
-                                </Button>
+                                    Send Email
+                                </button>
                             </div>
                         </div>
 
-                        <div className="pt-6 border-t border-slate-200 flex justify-between items-center">
+                        <div className="pt-4 border-t border-white/[0.06] flex justify-between items-center">
                             <div className="flex items-center gap-2">
-                                <ShieldAlert className="w-4 h-4 text-slate-400" />
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authorized Operations Only • All Injections are Logged</p>
+                                <ShieldAlert className="w-3.5 h-3.5 text-zinc-600" />
+                                <p className="text-xs text-zinc-600">All actions are logged</p>
                             </div>
-                            <Button onClick={() => setSelectedUser(null)} variant="ghost" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-900 hover:bg-slate-100 transition-all">Close Terminal</Button>
+                            <button onClick={() => setSelectedUser(null)} className="text-sm text-zinc-500 hover:text-white transition-colors">Close</button>
                         </div>
                     </div>
                 )}

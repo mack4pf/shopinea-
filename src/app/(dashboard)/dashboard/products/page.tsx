@@ -55,6 +55,10 @@ export default function ProductsPage() {
         p.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const FREE_PLAN_LIMIT = 20;
+    const isFree = !userData?.plan || userData?.plan === "free";
+    const atLimit = isFree && products.length >= FREE_PLAN_LIMIT;
+
     const totalMargin = products.reduce((acc: number, p: any) => acc + ((p.resellPrice || 0) - (p.price || 0)), 0);
     const avgMargin = products.length ? (totalMargin / products.reduce((acc: number, p: any) => acc + (p.price || 0), 0) * 100).toFixed(0) : "0";
 
@@ -82,14 +86,56 @@ export default function ProductsPage() {
                         View Store
                     </button>
                     <button
-                        onClick={() => window.location.href = '/onboarding/reseller'}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                        onClick={() => {
+                            if (atLimit) {
+                                window.location.href = '/dashboard/subscription';
+                            } else {
+                                window.location.href = '/onboarding/reseller';
+                            }
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                            atLimit 
+                                ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20' 
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
                     >
                         <Plus className="w-4 h-4" />
-                        Add Products
+                        {atLimit ? 'Upgrade to Add More' : 'Add Products'}
                     </button>
                 </div>
             </div>
+
+            {/* Free Plan Limit Banner */}
+            {isFree && (
+                <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-5 py-4 rounded-xl border ${atLimit ? 'bg-amber-500/5 border-amber-500/20' : 'bg-blue-500/5 border-blue-500/20'}`}>
+                    <div className="flex items-start gap-3 flex-1">
+                        <span className="text-lg mt-0.5">🔒</span>
+                        <div className="flex-1">
+                            <p className="text-sm text-white leading-snug">
+                                <strong className="font-extrabold text-white">Free plan: you can only view and add up to 20 products to your store.</strong>{" "}
+                                <a href="/dashboard/subscription" className="text-blue-400 font-bold underline underline-offset-2 hover:text-blue-300 transition-colors">Upgrade your plan</a> to get more products.
+                            </p>
+                            <div className="flex items-center gap-3 mt-2">
+                                <div className="w-40 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                                    <div 
+                                        className={`h-full transition-all duration-500 rounded-full ${atLimit ? 'bg-amber-500' : 'bg-blue-600'}`}
+                                        style={{ width: `${Math.min(100, (products.length / FREE_PLAN_LIMIT) * 100)}%` }}
+                                    />
+                                </div>
+                                <span className={`text-xs font-bold ${atLimit ? 'text-amber-400' : 'text-zinc-400'}`}>{products.length}/{FREE_PLAN_LIMIT} used</span>
+                            </div>
+                        </div>
+                    </div>
+                    {atLimit && (
+                        <button 
+                            onClick={() => window.location.href = '/dashboard/subscription'}
+                            className="shrink-0 px-4 py-2 text-xs font-bold rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                        >
+                            Upgrade Plan
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Search + Stats */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

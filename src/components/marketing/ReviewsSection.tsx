@@ -62,39 +62,53 @@ const reviews = [
 
 export function ReviewsSection() {
     return (
-        <section className="py-24 bg-gray-50 overflow-hidden">
-            <div className="container px-4 md:px-6 mb-12 text-center">
-                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-gray-900">
-                    Trusted by <span className="text-blue-600">Thousands</span>
+        <section className="py-24 bg-[#07060f] overflow-hidden">
+            <div className="container px-4 md:px-6 mb-14 text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-[11px] font-bold uppercase tracking-widest mb-6">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> Real Reviews
+                </div>
+                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
+                    Loved by <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">32,000+</span> merchants
                 </h2>
-                <p className="mt-4 text-gray-500">
-                    See what our community of Suppliers and Resellers is saying.
+                <p className="text-zinc-500 text-lg font-medium">
+                    Don&apos;t take our word for it. See what our community is saying.
                 </p>
             </div>
 
             <div className="relative w-full">
-                <div className="flex animate-scroll hover:pause gap-6 w-[max-content]">
+                {/* Left fade */}
+                <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#07060f] to-transparent z-10 pointer-events-none" />
+                {/* Right fade */}
+                <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#07060f] to-transparent z-10 pointer-events-none" />
+
+                <div className="flex animate-scroll gap-5 w-[max-content]">
                     {[...reviews, ...reviews].map((review, i) => (
                         <div
                             key={i}
-                            className="w-[350px] flex-shrink-0 bg-white p-6 rounded-xl border border-gray-100 shadow-sm"
+                            className="w-[320px] flex-shrink-0 bg-white/[0.03] p-6 rounded-2xl border border-white/[0.06] hover:border-purple-500/30 transition-colors"
                         >
                             <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h4 className="font-bold text-gray-900">{review.name}</h4>
-                                    <p className="text-xs text-gray-400">{review.email}</p>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                                        style={{ background: `hsl(${(i * 37) % 360}, 65%, 45%)` }}>
+                                        {review.name[0]}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-white text-sm">{review.name}</h4>
+                                        <p className="text-[11px] text-zinc-600">{review.email}</p>
+                                    </div>
                                 </div>
-                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${review.type === 'Supplier'
-                                    ? 'bg-purple-100 text-purple-700'
-                                    : 'bg-blue-100 text-blue-700'
+                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${review.type === 'Supplier'
+                                    ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
+                                    : 'bg-purple-500/20 text-purple-400 border border-purple-500/20'
                                     }`}>
                                     {review.type}
                                 </span>
                             </div>
-                            <div className="flex mb-3">
-                                {[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)}
+                            <div className="flex mb-3 gap-0.5">
+                                {[1, 2, 3, 4, 5].map(s => <Star key={s} className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />)}
                             </div>
-                            <p className="text-sm text-gray-600 italic">"{review.text}"</p>
+                            <p className="text-sm text-zinc-400 leading-relaxed">"{review.text}"</p>
                         </div>
                     ))}
                 </div>

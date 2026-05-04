@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { addDoc, collection, serverTimestamp, doc, getDoc, setDoc, updateDoc, increment } from "firebase/firestore";
-import { Loader2, User, Lock, Mail, CreditCard, Truck, ShieldCheck, CheckCircle2, Clock as HistoryIcon, ChevronRight, MapPin, Phone } from "lucide-react";
+import { Loader2, User, Lock, Mail, CreditCard, Truck, ShieldCheck, CheckCircle2, Clock as HistoryIcon, ChevronRight, MapPin, Phone, Globe } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { COUNTRY_NAMES } from "@/lib/countries";
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -26,8 +28,14 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
     const [user, setUser] = useState<any>(null);
     const [authMode, setAuthMode] = useState<"login" | "register">("register");
     const [authData, setAuthData] = useState({ email: "", password: "" });
+    const [copied, setCopied] = useState(false);
+
+    const productName = product?.name || product?.productName || "Selected Product";
+    const productImage = product?.image || product?.productImage || null;
+    const basePrice = Number(product?.price ?? product?.initialPrice ?? 0);
+    const sellPrice = Number(product?.resellPrice ?? product?.price ?? 0);
     const [formData, setFormData] = useState({
-        name: "", email: "", phone: "", address: "", zip: "", city: "",
+        name: "", email: "", phone: "", address: "", zip: "", city: "", country: "United States",
         cardNumber: "", expiry: "", cvv: ""
     });
 
@@ -80,18 +88,18 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
         try {
             const orderData = {
                 productId: product.id,
-                productName: product.name,
-                productImage: product.image || null,
+                productName,
+                productImage,
                 category: product.category || "General",
-                initialPrice: product.price,
-                resellPrice: paymentMethod === "crypto" ? product.resellPrice * 0.95 : product.resellPrice,
-                resellerProfit: product.resellPrice - product.price,
+                initialPrice: basePrice,
+                resellPrice: paymentMethod === "crypto" ? sellPrice * 0.95 : sellPrice,
+                resellerProfit: sellPrice - basePrice,
                 resellerId: storeUser.uid,
                 customerId: user?.uid || "guest",
                 customerName: formData.name,
                 customerEmail: formData.email,
                 customerPhone: formData.phone,
-                customerAddress: `${formData.address}, ${formData.city}, ${formData.zip}`,
+                customerAddress: `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`,
                 deliveryService: "UPS",
                 paymentType: paymentMethod,
                 isPod: paymentMethod === "pod",
@@ -107,6 +115,46 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
             setStep(5);
         } catch (error) { console.error(error); }
         finally { setLoading(false); setVerifying(false); }
+    };
+
+    const copyToClipboard = async (text: string) => {
+        if (!text) return false;
+
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+        } catch {
+            // fallback below
+        }
+
+        try {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.setAttribute("readonly", "");
+            textArea.style.position = "absolute";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.select();
+            const copiedWithExecCommand = document.execCommand("copy");
+            document.body.removeChild(textArea);
+            return copiedWithExecCommand;
+        } catch {
+            return false;
+        }
+    };
+
+    const handleCopy = async (text: string) => {
+        const didCopy = await copyToClipboard(text);
+        if (!didCopy) {
+            toast.error("Unable to copy. Please copy manually.");
+            return;
+        }
+
+        setCopied(true);
+        toast.success("Payment destination copied!");
+        setTimeout(() => setCopied(false), 2000);
     };
 
     if (verifying) {
@@ -209,6 +257,18 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
                                 <Input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="City" />
                                 <Input value={formData.zip} onChange={e => setFormData({ ...formData, zip: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="Zip Code" />
                             </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Globe className="w-3 h-3"/> Country</label>
+                                <select
+                                    value={formData.country}
+                                    onChange={e => setFormData({ ...formData, country: e.target.value })}
+                                    className="w-full h-11 bg-zinc-950/50 border border-white/[0.06] rounded-xl px-4 text-sm font-medium text-white outline-none focus:border-blue-500/50 appearance-none cursor-pointer"
+                                >
+                                    {COUNTRY_NAMES.map(c => (
+                                        <option key={c} value={c} className="bg-zinc-900">{c}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <Button onClick={() => setStep(2)} className="w-full h-12 rounded-xl bg-blue-600 font-bold flex items-center justify-center gap-2 shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all">
                             Next: Select Payment <ChevronRight className="w-4 h-4" />
@@ -253,12 +313,12 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
                             </div>
                             <div className="flex justify-between items-start gap-4">
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-sm text-white line-clamp-1">{product.name}</h4>
+                                    <h4 className="font-bold text-sm text-white line-clamp-1">{productName}</h4>
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-1">Qty: 1 Unit</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-lg font-bold text-white tracking-tight">
-                                        ${(paymentMethod === 'crypto' ? product.resellPrice * 0.95 : product.resellPrice).toLocaleString()}
+                                        ${(paymentMethod === 'crypto' ? sellPrice * 0.95 : sellPrice).toLocaleString()}
                                     </p>
                                     {paymentMethod === 'crypto' && <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">5% Crypto Discount</p>}
                                 </div>
@@ -279,14 +339,24 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
                             </div>
                         ) : (
                             <div className="space-y-4">
+                                {(() => {
+                                    const paymentDestination = paymentMethod === 'crypto'
+                                        ? "bc1qxy2kgdygjrsqtzq2n0yrf..."
+                                        : "merchant@restock-global.com";
+
+                                    return (
                                 <div className="p-5 bg-zinc-950/50 border border-white/[0.06] rounded-xl space-y-2">
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Payment Info</p>
                                     <p className="text-sm font-bold text-white">{paymentMethod === 'crypto' ? 'Send ETH/BTC to:' : 'Send Payment to:'}</p>
                                     <div className="flex gap-2">
-                                        <Input readOnly value={paymentMethod === 'crypto' ? "bc1qxy2kgdygjrsqtzq2n0yrf..." : "merchant@restock-global.com"} className="h-10 bg-zinc-900 border-none rounded-lg text-xs font-mono" />
-                                        <Button className="h-10 bg-zinc-800 hover:bg-zinc-700 text-zinc-400">Copy</Button>
+                                        <Input readOnly value={paymentDestination} className="h-10 bg-zinc-900 border-none rounded-lg text-xs font-mono" />
+                                        <Button onClick={() => handleCopy(paymentDestination)} className="h-10 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 min-w-[88px]">
+                                            {copied ? "Copied" : "Copy"}
+                                        </Button>
                                     </div>
                                 </div>
+                                    );
+                                })()}
                             </div>
                         )}
 

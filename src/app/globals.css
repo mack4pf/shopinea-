@@ -1,27 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 220 24% 97%;
+    --foreground: 220 18% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 18% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 221 83% 53%;
+    --popover-foreground: 220 18% 14%;
+    --primary: 155 64% 41%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 220 21% 95%;
+    --secondary-foreground: 220 18% 18%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 9% 42%;
+    --accent: 157 44% 94%;
+    --accent-foreground: 155 64% 25%;
+    --destructive: 0 73% 47%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 221 83% 53%;
+    --border: 220 16% 88%;
+    --input: 220 16% 88%;
+    --ring: 155 64% 41%;
     --radius: 0.625rem;
   }
 
@@ -54,13 +54,15 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    background-color: #09090b;
+    background-color: #f5f7fb;
+    background-image: radial-gradient(rgba(23, 30, 52, 0.04) 1px, transparent 1px);
+    background-size: 18px 18px;
     color: hsl(var(--foreground));
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
@@ -73,6 +75,30 @@
 }
 
 @layer utilities {
+  .surface-card {
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(214, 219, 231, 0.85);
+    box-shadow: 0 14px 44px rgba(20, 34, 58, 0.08);
+  }
+
+  .surface-dark {
+    background: linear-gradient(145deg, #121827, #0e1322);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 14px 36px rgba(4, 8, 18, 0.45);
+  }
+
+  .brand-gradient {
+    background-image: linear-gradient(120deg, #0f9d76, #2d7ff9);
+  }
+
+  .text-brand-gradient {
+    background-image: linear-gradient(120deg, #0f9d76, #2d7ff9);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

@@ -5,16 +5,15 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { User, Menu, X, ArrowRight, Store, ShieldCheck, ShoppingBag, Info, Zap, CreditCard, ChevronRight } from "lucide-react";
+import { User, Menu, X, ChevronRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ShopineaLogo } from "@/components/shared/ShopineaLogo";
 
 export function Navbar() {
     const { user, loading } = useAuth();
     const pathname = usePathname();
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-    const isHome = pathname === "/";
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -23,8 +22,8 @@ export function Navbar() {
     }, []);
 
     useEffect(() => {
-        if (mobileMenuOpen) document.body.style.overflow = "hidden";
-        else document.body.style.overflow = "unset";
+        document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+        return () => { document.body.style.overflow = ""; };
     }, [mobileMenuOpen]);
 
     const navLinks = [
@@ -35,139 +34,173 @@ export function Navbar() {
         { href: "/resellers", label: "Resellers" },
     ];
 
-    return (
-        <header
-            className={cn(
-                "fixed top-0 z-[100] w-full transition-all duration-300",
-                scrolled
-                    ? "bg-white/70 backdrop-blur-md border-b border-zinc-200/50 py-3"
-                    : "bg-transparent py-5"
-            )}
-        >
-            <div className="container flex h-14 max-w-7xl items-center justify-between px-6 mx-auto">
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 group relative z-[110]">
-                    <div className="h-9 w-9 rounded-lg bg-zinc-950 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                        <span className="text-white font-bold text-xl">R</span>
-                    </div>
-                    <span className={cn(
-                        "font-bold text-xl tracking-tight transition-colors",
-                        scrolled ? "text-zinc-950" : "text-white"
-                    )}>
-                        Restock
-                    </span>
-                </Link>
+    const close = () => setMobileMenuOpen(false);
 
-                {/* Desktop Nav */}
-                <nav className="hidden md:flex items-center gap-8">
+    return (
+        <>
+            {/* ── Top Bar ── */}
+            <header
+                className={cn(
+                    "fixed top-0 left-0 right-0 z-[200] transition-all duration-300",
+                    scrolled
+                        ? "bg-white/80 backdrop-blur-xl border-b border-zinc-200/60 shadow-sm py-3"
+                        : "bg-transparent py-5"
+                )}
+            >
+                <div className="max-w-7xl mx-auto px-5 flex items-center justify-between h-12">
+                    {/* Logo */}
+                    <Link href="/" onClick={close} className="flex items-center gap-2.5">
+                        <ShopineaLogo size={32} />
+                        <span className={cn(
+                            "font-extrabold text-[1.15rem] tracking-tight transition-colors",
+                            scrolled ? "text-zinc-900" : "text-white"
+                        )}>
+                            shopinea
+                        </span>
+                    </Link>
+
+                    {/* Desktop Links */}
+                    <nav className="hidden md:flex items-center gap-1">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                className={cn(
+                                    "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                                    pathname === link.href
+                                        ? scrolled ? "bg-zinc-100 text-zinc-900" : "bg-white/15 text-white"
+                                        : scrolled ? "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100" : "text-zinc-300 hover:text-white hover:bg-white/10"
+                                )}
+                            >
+                                {link.label}
+                            </Link>
+                        ))}
+                    </nav>
+
+                    {/* Desktop Actions */}
+                    <div className="hidden md:flex items-center gap-2">
+                        {!loading && (
+                            user ? (
+                                <Link href="/dashboard">
+                                    <Button className={cn(
+                                        "h-9 px-5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-all",
+                                        scrolled ? "bg-zinc-900 text-white hover:bg-zinc-700" : "bg-white text-zinc-900 hover:bg-zinc-100"
+                                    )}>
+                                        <User className="h-3.5 w-3.5" />
+                                        Dashboard
+                                    </Button>
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link href="/login">
+                                        <Button variant="ghost" className={cn(
+                                            "h-9 px-4 rounded-lg text-sm font-medium",
+                                            scrolled ? "text-zinc-600 hover:bg-zinc-100" : "text-zinc-300 hover:text-white hover:bg-white/10"
+                                        )}>
+                                            Sign In
+                                        </Button>
+                                    </Link>
+                                    <Link href="/register">
+                                        <Button className="h-9 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-500/25 border-none">
+                                            Get Started
+                                        </Button>
+                                    </Link>
+                                </>
+                            )
+                        )}
+                    </div>
+
+                    {/* Mobile Hamburger */}
+                    <button
+                        aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                        onClick={() => setMobileMenuOpen(v => !v)}
+                        className={cn(
+                            "md:hidden w-10 h-10 flex items-center justify-center rounded-xl transition-colors",
+                            scrolled
+                                ? "text-zinc-800 hover:bg-zinc-100"
+                                : "text-white hover:bg-white/10"
+                        )}
+                    >
+                        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                </div>
+            </header>
+
+            {/* ── Mobile Drawer ── */}
+            {/* Backdrop */}
+            <div
+                onClick={close}
+                className={cn(
+                    "fixed inset-0 z-[150] bg-black/40 backdrop-blur-sm md:hidden transition-opacity duration-300",
+                    mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                )}
+            />
+
+            {/* Drawer panel — slides in from right */}
+            <div className={cn(
+                "fixed top-0 right-0 bottom-0 z-[160] w-[300px] bg-white md:hidden flex flex-col shadow-2xl transition-transform duration-300 ease-in-out",
+                mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+            )}>
+                {/* Drawer header */}
+                <div className="flex items-center justify-between px-5 h-[72px] border-b border-zinc-100 shrink-0">
+                    <Link href="/" onClick={close} className="flex items-center gap-2">
+                        <ShopineaLogo size={28} />
+                        <span className="font-extrabold text-base text-zinc-900">shopinea</span>
+                    </Link>
+                    <button
+                        onClick={close}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {/* Nav links */}
+                <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
                     {navLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
+                            onClick={close}
                             className={cn(
-                                "text-sm font-medium transition-colors hover:text-blue-500",
-                                scrolled ? "text-zinc-600" : "text-zinc-300 hover:text-white"
+                                "flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-semibold transition-colors",
+                                pathname === link.href
+                                    ? "bg-blue-50 text-blue-600"
+                                    : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900"
                             )}
                         >
                             {link.label}
+                            <ChevronRight className="w-4 h-4 opacity-40" />
                         </Link>
                     ))}
                 </nav>
 
-                {/* Actions */}
-                <div className="flex items-center gap-3 relative z-[110]">
-                    <div className="hidden md:flex items-center gap-3">
-                        {!loading && (
+                {/* Drawer footer CTA */}
+                <div className="px-4 pb-8 pt-4 border-t border-zinc-100 space-y-2.5 shrink-0">
+                    {!loading && (
+                        user ? (
+                            <Link href="/dashboard" onClick={close}>
+                                <Button className="w-full h-12 rounded-xl bg-zinc-900 hover:bg-zinc-700 text-white font-bold flex items-center gap-2">
+                                    <User className="w-4 h-4" /> Go to Dashboard
+                                </Button>
+                            </Link>
+                        ) : (
                             <>
-                                {user ? (
-                                    <Link href="/dashboard">
-                                        <Button
-                                            className={cn(
-                                                "h-10 px-6 rounded-lg font-semibold text-sm transition-all flex items-center gap-2",
-                                                scrolled ? "bg-zinc-950 text-white" : "bg-white text-zinc-950 hover:bg-zinc-100"
-                                            )}
-                                        >
-                                            <User className="h-4 w-4" />
-                                            Dashboard
-                                        </Button>
-                                    </Link>
-                                ) : (
-                                    <>
-                                        <Link href="/login">
-                                            <Button
-                                                variant="ghost"
-                                                className={cn(
-                                                    "h-10 px-4 rounded-lg font-semibold text-sm transition-colors",
-                                                    scrolled ? "text-zinc-600 hover:bg-zinc-100" : "text-zinc-300 hover:text-white"
-                                                )}
-                                            >
-                                                Sign In
-                                            </Button>
-                                        </Link>
-                                        <Link href="/register">
-                                            <Button className="h-10 px-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 border-none transition-all active:scale-[0.98]">
-                                                Get Started
-                                            </Button>
-                                        </Link>
-                                    </>
-                                )}
+                                <Link href="/register" onClick={close}>
+                                    <Button className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2">
+                                        Get Started <ArrowRight className="w-4 h-4" />
+                                    </Button>
+                                </Link>
+                                <Link href="/login" onClick={close}>
+                                    <Button variant="outline" className="w-full h-12 rounded-xl font-semibold text-zinc-700 border-zinc-200">
+                                        Sign In
+                                    </Button>
+                                </Link>
                             </>
-                        )}
-                    </div>
-
-                    {/* Mobile Toggle */}
-                    <button
-                        className={cn(
-                            "md:hidden w-10 h-10 flex items-center justify-center rounded-lg transition-colors",
-                            scrolled ? "hover:bg-zinc-100 text-zinc-950" : "hover:bg-white/10 text-white"
-                        )}
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    >
-                        {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Menu */}
-            <div className={cn(
-                "fixed inset-0 bg-white z-[100] md:hidden transition-all duration-500 px-6 pt-24 pb-12 flex flex-col justify-between",
-                mobileMenuOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full pointer-events-none"
-            )}>
-                <nav className="space-y-4">
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest ml-2 mb-4">Menu</p>
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl group transition-all active:scale-[0.98]"
-                        >
-                            <span className="text-xl font-bold text-zinc-900">{link.label}</span>
-                            <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-zinc-900 group-hover:translate-x-1 transition-all" />
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="space-y-3">
-                    {!loading && !user && (
-                        <div className="grid grid-cols-2 gap-3">
-                            <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex-1">
-                                <Button variant="outline" className="w-full h-14 rounded-2xl text-zinc-950 font-bold border-2">Sign In</Button>
-                            </Link>
-                            <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="flex-1">
-                                <Button className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xl shadow-blue-500/20">Get Started</Button>
-                            </Link>
-                        </div>
-                    )}
-                    {user && (
-                        <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                            <Button className="w-full h-14 rounded-2xl bg-zinc-950 text-white font-bold flex gap-2">
-                                <User className="h-5 w-5" /> Go to Dashboard
-                            </Button>
-                        </Link>
+                        )
                     )}
                 </div>
             </div>
-        </header>
+        </>
     );
 }

@@ -80,132 +80,85 @@ export default function GatewaysPage() {
     );
 
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-12 animate-in fade-in duration-700 pb-20">
-            <div className="space-y-1">
-                <div className="flex items-center gap-3 mb-2">
-                    <Wallet className="w-5 h-5 text-emerald-500" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 leading-none">Financial Config</span>
-                </div>
-                <h1 className="text-5xl font-black tracking-tight italic uppercase text-white">Global Gateways</h1>
-                <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] pl-1">Merchant Inbound Channels • Deposit Routing • Payment Endpoints</p>
+        <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
+            <div>
+                <h1 className="text-2xl font-bold text-white">Payment Gateways</h1>
+                <p className="text-sm text-zinc-500 mt-1">Configure payment methods and deposit addresses.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* Traditonal Banking Section */}
-                <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden h-fit">
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/5 rounded-full blur-[100px] -mr-40 -mt-40" />
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 bg-blue-500/10 rounded-[1.5rem] flex items-center justify-center">
-                            <Building2 className="w-8 h-8 text-blue-500" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Bank / PayPal */}
+                <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                            <Building2 className="w-4.5 h-4.5 text-blue-400" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">Tier 1: Liquidity</h2>
-                            <p className="text-[10px] font-black uppercase text-blue-500 tracking-[0.2em]">Bank & PayPal Interface</p>
+                            <h2 className="text-sm font-semibold text-white">Bank Transfer</h2>
+                            <p className="text-xs text-zinc-500">Banking & PayPal details</p>
                         </div>
                     </div>
-
-                    <div className="space-y-6 relative z-10">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Bank Institution Name</Label>
-                                <Input 
-                                    className="bg-zinc-950 border-zinc-800 h-14 rounded-2xl font-bold text-white shadow-xl italic" 
-                                    value={paymentConfig.bankName}
-                                    onChange={(e) => setPaymentConfig({...paymentConfig, bankName: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Account Number / IBAN</Label>
-                                <Input 
-                                    className="bg-zinc-950 border-zinc-800 h-14 rounded-2xl font-bold text-white shadow-xl" 
-                                    value={paymentConfig.bankAccount}
-                                    onChange={(e) => setPaymentConfig({...paymentConfig, bankAccount: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Swift / Routing Code</Label>
-                                <Input 
-                                    className="bg-zinc-950 border-zinc-800 h-14 rounded-2xl font-bold text-white shadow-xl" 
-                                    value={paymentConfig.bankSwift}
-                                    onChange={(e) => setPaymentConfig({...paymentConfig, bankSwift: e.target.value})}
-                                />
-                            </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs text-zinc-500">Bank Name</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={paymentConfig.bankName} onChange={(e) => setPaymentConfig({...paymentConfig, bankName: e.target.value})} />
                         </div>
-
-                        <div className="pt-6 border-t border-zinc-800/50">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-indigo-500 tracking-widest pl-1">PayPal Checkout Recipient</Label>
-                                <Input 
-                                    className="bg-zinc-950 border-indigo-500/10 h-14 rounded-2xl font-bold text-white shadow-xl text-center placeholder:text-zinc-800 focus:border-indigo-500 transition-all" 
-                                    placeholder="Enter verified PayPal email"
-                                    value={paymentConfig.paypalEmail}
-                                    onChange={(e) => setPaymentConfig({...paymentConfig, paypalEmail: e.target.value})}
-                                />
-                            </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs text-zinc-500">Account Number / IBAN</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={paymentConfig.bankAccount} onChange={(e) => setPaymentConfig({...paymentConfig, bankAccount: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs text-zinc-500">SWIFT / Routing Code</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={paymentConfig.bankSwift} onChange={(e) => setPaymentConfig({...paymentConfig, bankSwift: e.target.value})} />
+                        </div>
+                        <div className="pt-3 border-t border-white/[0.06] space-y-1">
+                            <Label className="text-xs text-zinc-500">PayPal Email</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" placeholder="paypal@example.com" value={paymentConfig.paypalEmail} onChange={(e) => setPaymentConfig({...paymentConfig, paypalEmail: e.target.value})} />
                         </div>
                     </div>
                 </div>
 
-                {/* Crypto Assets Section */}
-                <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] space-y-8 shadow-2xl relative overflow-hidden h-fit">
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-orange-600/5 rounded-full blur-[100px] -mr-40 -mt-40" />
-                    <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 bg-orange-500/10 rounded-[1.5rem] flex items-center justify-center">
-                            <Bitcoin className="w-8 h-8 text-orange-500" />
+                {/* Crypto */}
+                <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                            <Bitcoin className="w-4.5 h-4.5 text-orange-400" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black text-white italic tracking-tight leading-none mb-1">Tier 2: Assets</h2>
-                            <p className="text-[10px] font-black uppercase text-orange-500 tracking-[0.2em]">Cold Wallet Addresses</p>
+                            <h2 className="text-sm font-semibold text-white">Crypto Wallets</h2>
+                            <p className="text-xs text-zinc-500">Wallet addresses for deposits</p>
                         </div>
                     </div>
-
-                    <div className="space-y-6 relative z-10">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Bitcoin (BTC) Network</Label>
-                                <Input 
-                                    className="bg-zinc-950 border-zinc-800 h-14 rounded-2xl font-bold text-white shadow-xl" 
-                                    value={paymentConfig.btcAddress}
-                                    onChange={(e) => setPaymentConfig({...paymentConfig, btcAddress: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Ethereum (ETH / ERC20)</Label>
-                                <Input 
-                                    className="bg-zinc-950 border-zinc-800 h-14 rounded-2xl font-bold text-white shadow-xl" 
-                                    value={paymentConfig.ethAddress}
-                                    onChange={(e) => setPaymentConfig({...paymentConfig, ethAddress: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-emerald-500 tracking-widest pl-1">USDT (ERC20 / TRC20)</Label>
-                                <Input 
-                                    className="bg-zinc-950 border-emerald-500/10 h-14 rounded-2xl font-bold text-emerald-500 shadow-xl placeholder:text-zinc-800 focus:border-emerald-500 transition-all font-mono text-xs" 
-                                    value={paymentConfig.usdtAddress}
-                                    onChange={(e) => setPaymentConfig({...paymentConfig, usdtAddress: e.target.value})}
-                                />
-                            </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs text-zinc-500">Bitcoin (BTC)</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm font-mono" value={paymentConfig.btcAddress} onChange={(e) => setPaymentConfig({...paymentConfig, btcAddress: e.target.value})} />
                         </div>
-
-                        <div className="bg-orange-500/5 border border-orange-500/10 p-5 rounded-2xl flex gap-4 mt-6">
-                            <Lock className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
-                            <p className="text-[10px] font-bold text-orange-500/80 uppercase leading-relaxed italic tracking-widest">
-                                Ensure all assets are on high-liquidity networks. Cross-network deposits are non-recoverable.
-                            </p>
+                        <div className="space-y-1">
+                            <Label className="text-xs text-zinc-500">Ethereum (ETH / ERC20)</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm font-mono" value={paymentConfig.ethAddress} onChange={(e) => setPaymentConfig({...paymentConfig, ethAddress: e.target.value})} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs text-zinc-500">USDT (ERC20 / TRC20)</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm font-mono" value={paymentConfig.usdtAddress} onChange={(e) => setPaymentConfig({...paymentConfig, usdtAddress: e.target.value})} />
+                        </div>
+                        <div className="flex items-start gap-2 p-3 bg-orange-500/5 border border-orange-500/10 rounded-lg mt-2">
+                            <Lock className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
+                            <p className="text-xs text-orange-400/80">Ensure addresses are on supported networks. Cross-network deposits are non-recoverable.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="flex justify-end pt-8">
-                <Button 
+            <div className="flex justify-end">
+                <button
                     onClick={handleUpdatePaymentConfig}
                     disabled={saving}
-                    className="h-16 bg-white text-black font-black italic rounded-3xl gap-4 px-12 shadow-2xl shadow-white/5 hover:scale-[1.02] active:scale-95 transition-all text-xs uppercase"
+                    className="h-10 px-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
                 >
-                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                    PROPAGATE GLOBAL PARAMETERS
-                </Button>
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Changes
+                </button>
             </div>
         </div>
     );

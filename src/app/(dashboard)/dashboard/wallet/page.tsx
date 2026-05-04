@@ -11,7 +11,7 @@ import {
 import DepositModal from "@/components/modals/DepositModal";
 import RefundModal from "@/components/modals/RefundModal";
 import WithdrawalModal from "@/components/modals/WithdrawalModal";
-import { AdDepositModal } from "@/components/modals/AdDepositModal";
+import AdDepositModal from "@/components/modals/AdDepositModal";
 
 export default function WalletPage() {
     const [user, setUser] = useState<any>(null);
