@@ -18,20 +18,113 @@ import { cn } from "@/lib/utils";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement, Filler);
 
+function computeChartData(orders: any[], timeframe: string): { labels: string[]; data: number[] } {
+    const now = new Date();
+    const toDate = (v: any): Date | null => {
+        if (!v) return null;
+        if (v?.toDate) return v.toDate();
+        if (v instanceof Date) return v;
+        if (typeof v === 'string' || typeof v === 'number') { const d = new Date(v); return isNaN(d.getTime()) ? null : d; }
+        return null;
+    };
+
+    if (timeframe === '1H') {
+        const BUCKETS = 12; const STEP = 5; // 5-min buckets
+        const labels = Array.from({ length: BUCKETS }, (_, i) => {
+            const d = new Date(now.getTime() - (BUCKETS - 1 - i) * STEP * 60000);
+            return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        });
+        const data = Array(BUCKETS).fill(0);
+        orders.forEach(o => {
+            const t = toDate(o.createdAt); if (!t) return;
+            const diffMin = (now.getTime() - t.getTime()) / 60000;
+            if (diffMin >= 0 && diffMin < BUCKETS * STEP) {
+                const idx = BUCKETS - 1 - Math.floor(diffMin / STEP);
+                if (idx >= 0) data[idx] += o.resellPrice || 0;
+            }
+        });
+        return { labels, data };
+    }
+
+    if (timeframe === '4H') {
+        const BUCKETS = 8; const STEP = 30; // 30-min buckets
+        const labels = Array.from({ length: BUCKETS }, (_, i) => {
+            const d = new Date(now.getTime() - (BUCKETS - 1 - i) * STEP * 60000);
+            return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        });
+        const data = Array(BUCKETS).fill(0);
+        orders.forEach(o => {
+            const t = toDate(o.createdAt); if (!t) return;
+            const diffMin = (now.getTime() - t.getTime()) / 60000;
+            if (diffMin >= 0 && diffMin < BUCKETS * STEP) {
+                const idx = BUCKETS - 1 - Math.floor(diffMin / STEP);
+                if (idx >= 0) data[idx] += o.resellPrice || 0;
+            }
+        });
+        return { labels, data };
+    }
+
+    if (timeframe === '7D') {
+        const DAYS = 7;
+        const labels = Array.from({ length: DAYS }, (_, i) => {
+            const d = new Date(now); d.setDate(d.getDate() - (DAYS - 1 - i)); d.setHours(0, 0, 0, 0);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const data = Array(DAYS).fill(0);
+        orders.forEach(o => {
+            const t = toDate(o.createdAt); if (!t) return;
+            const diff = Math.floor((now.getTime() - t.getTime()) / 86400000);
+            if (diff >= 0 && diff < DAYS) data[DAYS - 1 - diff] += o.resellPrice || 0;
+        });
+        return { labels, data };
+    }
+
+    if (timeframe === '30D') {
+        const DAYS = 30;
+        const labels = Array.from({ length: DAYS }, (_, i) => {
+            const d = new Date(now); d.setDate(d.getDate() - (DAYS - 1 - i)); d.setHours(0, 0, 0, 0);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const data = Array(DAYS).fill(0);
+        orders.forEach(o => {
+            const t = toDate(o.createdAt); if (!t) return;
+            const diff = Math.floor((now.getTime() - t.getTime()) / 86400000);
+            if (diff >= 0 && diff < DAYS) data[DAYS - 1 - diff] += o.resellPrice || 0;
+        });
+        return { labels, data };
+    }
+
+    // All — monthly, last 6 months
+    const MONTHS = 6;
+    const labels = Array.from({ length: MONTHS }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (MONTHS - 1 - i), 1);
+        return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    });
+    const data = Array(MONTHS).fill(0);
+    orders.forEach(o => {
+        const t = toDate(o.createdAt); if (!t) return;
+        const mDiff = (now.getFullYear() - t.getFullYear()) * 12 + (now.getMonth() - t.getMonth());
+        if (mDiff >= 0 && mDiff < MONTHS) data[MONTHS - 1 - mDiff] += o.resellPrice || 0;
+    });
+    return { labels, data };
+}
+
 export default function AnalyticsPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [timeframe, setTimeframe] = useState("7D");
+    const [rawOrders, setRawOrders] = useState<any[]>([]);
 
     const [stats, setStats] = useState({
         totalRevenue: 0, totalOrders: 0, totalImpressions: 0,
         conversionRate: 0, avgOrderValue: 0,
-        salesTrends: [0, 0, 0, 0, 0, 0, 0],
         topProducts: [] as any[],
         categoryDistribution: {} as Record<string, number>,
         recentOrders: [] as any[]
     });
+
+    const chartData = computeChartData(rawOrders, timeframe);
 
     const getCurrencySymbol = (code: string = "USD") => {
         switch (code) { case "EUR": return "€"; case "GBP": return "£"; default: return "$"; }
@@ -54,19 +147,12 @@ export default function AnalyticsPage() {
                     );
                     const ordersSnap = await getDocs(ordersQuery);
                     const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+                    setRawOrders(orders);
 
                     const totalRev = orders.reduce((acc, curr) => acc + (curr.resellPrice || 0), 0);
                     const impressions = uData?.impressions || uData?.stats?.views || 0;
                     const convRate = impressions > 0 ? (orders.length / impressions) * 100 : 0;
                     const avgVal = orders.length > 0 ? totalRev / orders.length : 0;
-
-                    const trends = [0, 0, 0, 0, 0, 0, 0];
-                    const now = new Date();
-                    orders.forEach(order => {
-                        const orderDate = order.createdAt?.toDate ? order.createdAt.toDate() : new Date();
-                        const diffDays = Math.floor(Math.abs(now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
-                        if (diffDays < 7) trends[6 - diffDays] += order.resellPrice || 0;
-                    });
 
                     const productMap: Record<string, { sales: number, revenue: number }> = {};
                     orders.forEach(order => {
@@ -88,7 +174,7 @@ export default function AnalyticsPage() {
                     setStats({
                         totalRevenue: totalRev, totalOrders: orders.length,
                         totalImpressions: impressions, conversionRate: convRate,
-                        avgOrderValue: avgVal, salesTrends: trends,
+                        avgOrderValue: avgVal,
                         topProducts: topProds, categoryDistribution: catMap,
                         recentOrders: orders.slice(0, 5)
                     });
@@ -127,9 +213,9 @@ export default function AnalyticsPage() {
     };
 
     const salesData = {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        labels: chartData.labels,
         datasets: [{
-            data: stats.salesTrends,
+            data: chartData.data,
             borderColor: '#3b82f6',
             backgroundColor: (context: any) => {
                 const chart = context.chart;
@@ -164,9 +250,9 @@ export default function AnalyticsPage() {
                     <p className="text-sm text-zinc-500 mt-1">Track your store performance and sales data.</p>
                 </div>
                 <div className="flex items-center gap-1 bg-white/[0.04] border border-white/[0.06] rounded-lg p-1">
-                    {['7D', '30D', 'All'].map(t => (
+                    {['1H', '4H', '7D', '30D', 'All'].map(t => (
                         <button key={t} onClick={() => setTimeframe(t)}
-                            className={cn("px-4 py-1.5 rounded-md text-xs font-medium transition-colors",
+                            className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                                 timeframe === t ? "bg-white/[0.1] text-white" : "text-zinc-500 hover:text-zinc-300")}>
                             {t}
                         </button>
@@ -240,7 +326,12 @@ export default function AnalyticsPage() {
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h3 className="text-base font-semibold text-white">Revenue Trend</h3>
-                            <p className="text-xs text-zinc-500 mt-0.5">Daily revenue over the last 7 days.</p>
+                            <p className="text-xs text-zinc-500 mt-0.5">
+                                {timeframe === '1H' ? 'Last hour (5-min intervals)' :
+                                 timeframe === '4H' ? 'Last 4 hours (30-min intervals)' :
+                                 timeframe === '7D' ? 'Daily revenue — last 7 days' :
+                                 timeframe === '30D' ? 'Daily revenue — last 30 days' : 'Monthly revenue — all time'}
+                            </p>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-blue-500" />

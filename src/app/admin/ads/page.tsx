@@ -382,6 +382,46 @@ export default function AdCommandPage() {
 
                                     {dStatus === 'active' && (
                                         <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-2">
+                                            {/* Promotion suggestions */}
+                                            {(() => {
+                                                const cpmMap: Record<string, number> = { meta: 5, facebook: 5, tiktok: 3, google: 8, youtube: 6 };
+                                                const ctrMap: Record<string, number> = { meta: 0.019, facebook: 0.019, tiktok: 0.009, google: 0.035, youtube: 0.005 };
+                                                const convMap: Record<string, number> = { meta: 0.02, facebook: 0.02, tiktok: 0.015, google: 0.03, youtube: 0.01 };
+                                                const p = (c.platform || 'meta').toLowerCase();
+                                                const cpm = cpmMap[p] || 5;
+                                                const ctr = ctrMap[p] || 0.019;
+                                                const conv = convMap[p] || 0.02;
+                                                const daily = c.dailyBudget || (c.totalBudget || 0);
+                                                const sugImpr = Math.round((daily / cpm) * 1000);
+                                                const sugClicks = Math.round(sugImpr * ctr);
+                                                const sugConv = Math.round(sugClicks * conv);
+                                                const todayEnd = new Date().toISOString().split('T')[0];
+                                                const daysLeft = c.endDate ? Math.max(0, Math.ceil((new Date(c.endDate).getTime() - Date.now()) / 86400000)) : 0;
+                                                return (
+                                                    <div className="mb-3 p-3 bg-indigo-500/5 border border-indigo-500/15 rounded-lg space-y-2">
+                                                        <div className="flex items-center gap-1.5 mb-2">
+                                                            <Zap className="w-3 h-3 text-indigo-400" />
+                                                            <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Daily Projection</span>
+                                                            {daysLeft > 0 && <span className="ml-auto text-[9px] text-zinc-500">{daysLeft}d left</span>}
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-2 text-center">
+                                                            <div className="bg-white/[0.03] rounded p-2">
+                                                                <p className="text-sm font-bold text-white">{sugImpr.toLocaleString()}</p>
+                                                                <p className="text-[9px] text-zinc-500">Impressions</p>
+                                                            </div>
+                                                            <div className="bg-white/[0.03] rounded p-2">
+                                                                <p className="text-sm font-bold text-white">{sugClicks.toLocaleString()}</p>
+                                                                <p className="text-[9px] text-zinc-500">Est. Clicks</p>
+                                                            </div>
+                                                            <div className="bg-white/[0.03] rounded p-2">
+                                                                <p className="text-sm font-bold text-emerald-400">{sugConv}</p>
+                                                                <p className="text-[9px] text-zinc-500">Est. Sales</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-[9px] text-zinc-600">Based on ${cpm} CPM / {(ctr * 100).toFixed(1)}% CTR / {(conv * 100).toFixed(0)}% conv. rate for {p}</p>
+                                                    </div>
+                                                );
+                                            })()}
                                             <p className="text-xs text-zinc-500">Inject performance metrics</p>
                                             <form 
                                                 onSubmit={(e) => {

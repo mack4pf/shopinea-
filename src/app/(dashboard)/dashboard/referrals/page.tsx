@@ -158,24 +158,17 @@ export default function ReferralsPage() {
                         <div className="space-y-3">
                             <div className="flex justify-between items-center p-3 bg-white/[0.03] rounded-lg">
                                 <div>
-                                    <p className="text-sm font-medium text-white">Direct Referrals</p>
-                                    <p className="text-xs text-zinc-600">People you invite</p>
+                                    <p className="text-sm font-medium text-white">Per Sale Commission</p>
+                                    <p className="text-xs text-zinc-600">5% of every sale your referrals make</p>
                                 </div>
-                                <span className="text-lg font-bold text-blue-400">10%</span>
-                            </div>
-                            <div className="flex justify-between items-center p-3 bg-white/[0.03] rounded-lg opacity-60">
-                                <div>
-                                    <p className="text-sm font-medium text-white">Level 2</p>
-                                    <p className="text-xs text-zinc-600">Their referrals</p>
-                                </div>
-                                <span className="text-lg font-bold text-zinc-400">2%</span>
+                                <span className="text-lg font-bold text-blue-400">5%</span>
                             </div>
                         </div>
                     </div>
                     <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-5">
                         <h4 className="text-sm font-semibold text-zinc-300 mb-2">How it works</h4>
                         <p className="text-xs text-zinc-500 leading-relaxed">
-                            You earn 10% of the sale price from every successful order completed by people you refer. Earnings are credited to your wallet instantly.
+                            You earn <strong className="text-white">5%</strong> of the sale price from every successful order placed by people you refer. Earnings are automatically credited to your wallet the moment a sale is recorded.
                         </p>
                     </div>
                 </div>

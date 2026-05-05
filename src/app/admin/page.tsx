@@ -246,7 +246,11 @@ export default function AdminDashboard() {
                 for (let i = 0; i < count; i++) {
                     const product = storeProds[Math.floor(Math.random() * storeProds.length)];
                     const profit = (product.resellPrice || 0) - (product.price || 0);
-                    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 7) * 86400000 - Math.floor(Math.random() * 86400000));
+                    const resellerProfit = profit > 0 ? profit : (product.price || 0) * 0.3;
+                    // All simulated orders are spread across today's hours only
+                    const hoursAgo = Math.floor(Math.random() * 23);
+                    const minsAgo = Math.floor(Math.random() * 60);
+                    const createdAt = new Date(Date.now() - hoursAgo * 3600000 - minsAgo * 60000);
                     const randomCity = cities.length > 0 ? cities[Math.floor(Math.random() * cities.length)] : null;
                     await addDoc(collection(db, "orders"), {
                         resellerId: simUserId,
@@ -256,13 +260,23 @@ export default function AdminDashboard() {
                         productId: product.id,
                         productName: product.name,
                         resellPrice: product.resellPrice || product.price || 0,
-                        resellerProfit: profit > 0 ? profit : (product.price || 0) * 0.3,
+                        resellerProfit,
                         status: 'shipped',
                         createdAt,
                     });
                     await updateDoc(doc(db, "users", simUserId), {
-                        pendingPayout: increment(profit > 0 ? profit : (product.price || 0) * 0.3)
+                        pendingPayout: increment(resellerProfit)
                     });
+                    // 5% referral commission — credit the person who referred this seller
+                    if (simUser.referredBy) {
+                        const commission = (product.resellPrice || product.price || 0) * 0.05;
+                        if (commission > 0) {
+                            await updateDoc(doc(db, "users", simUser.referredBy), {
+                                walletBalance: increment(commission),
+                                referralEarnings: increment(commission)
+                            });
+                        }
+                    }
                     total++;
                 }
             }

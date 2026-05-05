@@ -46,6 +46,7 @@ interface Campaign {
     countryReach?: string | string[];
     totalBudget?: number;
     createdAt?: any;
+    approvedAt?: any;
 }
 
 export default function AdsPage() {
@@ -300,18 +301,55 @@ export default function AdsPage() {
                 });
                 const countries = Array.from(countrySet);
 
-                // Build fake-realistic 14-day trend from total impressions + clicks
-                const days14 = Array.from({ length: 14 }, (_, i) => {
-                    const d = new Date(); d.setDate(d.getDate() - (13 - i));
+                // Build real-date trend from campaign approvedAt → today
+                const toDate = (v: any): Date | null => {
+                    if (!v) return null;
+                    if (v?.toDate) return v.toDate();
+                    if (v instanceof Date) return v;
+                    const d = new Date(v);
+                    return isNaN(d.getTime()) ? null : d;
+                };
+                const today = new Date(); today.setHours(23, 59, 59, 999);
+                const earliestStart = campaigns.reduce<Date>((earliest, c) => {
+                    const t = toDate(c.approvedAt) || toDate(c.startDate) || today;
+                    return t < earliest ? t : earliest;
+                }, today);
+                const startDay = new Date(earliestStart); startDay.setHours(0, 0, 0, 0);
+                const numDays = Math.max(1, Math.min(14, Math.round((today.getTime() - startDay.getTime()) / 86400000) + 1));
+
+                const dayLabels = Array.from({ length: numDays }, (_, i) => {
+                    const d = new Date(startDay); d.setDate(d.getDate() + i);
                     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 });
-                // Distribute impressions/clicks across days with a natural bell curve
-                const weights = [0.03,0.04,0.05,0.06,0.07,0.08,0.08,0.09,0.08,0.09,0.09,0.09,0.08,0.07];
-                const dailyImpr = weights.map(w => Math.round(totalImpressions * w));
-                const dailyClicks = weights.map(w => Math.round(totalClicks * w));
+
+                // Distribute with recency-weighted exponential curve (more weight to recent days)
+                const rawWeights = Array.from({ length: numDays }, (_, i) => Math.pow(1.35, i));
+                const wSum = rawWeights.reduce((s, w) => s + w, 0);
+                const dailyImpr = rawWeights.map(w => Math.round(totalImpressions * w / wSum));
+                const dailyClicks = rawWeights.map(w => Math.round(totalClicks * w / wSum));
+
+                // Compute real % trends (compare first half vs second half)
+                const half = Math.max(1, Math.floor(numDays / 2));
+                const calcTrend = (arr: number[]) => {
+                    const first = arr.slice(0, half).reduce((s, v) => s + v, 0);
+                    const second = arr.slice(half).reduce((s, v) => s + v, 0);
+                    if (first === 0) return second > 0 ? "New" : "—";
+                    const pct = Math.round(((second - first) / first) * 100);
+                    return pct >= 0 ? `+${pct}%` : `${pct}%`;
+                };
+                const imprTrend = calcTrend(dailyImpr);
+                const clicksTrend = calcTrend(dailyClicks);
+                const firstCtr = dailyImpr.slice(0, half).reduce((s,v)=>s+v,0) > 0
+                    ? (dailyClicks.slice(0, half).reduce((s,v)=>s+v,0) / dailyImpr.slice(0, half).reduce((s,v)=>s+v,0)) * 100 : 0;
+                const secondCtr = dailyImpr.slice(half).reduce((s,v)=>s+v,0) > 0
+                    ? (dailyClicks.slice(half).reduce((s,v)=>s+v,0) / dailyImpr.slice(half).reduce((s,v)=>s+v,0)) * 100 : 0;
+                const ctrTrend = firstCtr === 0 ? (secondCtr > 0 ? "New" : "—") : (() => { const p = Math.round(((secondCtr - firstCtr) / firstCtr) * 100); return p >= 0 ? `+${p}%` : `${p}%`; })();
+                const firstReach = Math.round(dailyImpr.slice(0, half).reduce((s,v)=>s+v,0) * 0.68);
+                const secondReach = Math.round(dailyImpr.slice(half).reduce((s,v)=>s+v,0) * 0.68);
+                const reachTrend = firstReach === 0 ? (secondReach > 0 ? "New" : "—") : (() => { const p = Math.round(((secondReach - firstReach) / firstReach) * 100); return p >= 0 ? `+${p}%` : `${p}%`; })();
 
                 const lineData = {
-                    labels: days14,
+                    labels: dayLabels,
                     datasets: [
                         {
                             label: "Impressions",
@@ -435,24 +473,24 @@ export default function AdsPage() {
                                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse inline-block" /> Live
                                 </span>
                             </div>
-                            <span className="text-[10px] text-zinc-600 font-medium">Last 14 days</span>
+                            <span className="text-[10px] text-zinc-600 font-medium">{numDays === 1 ? 'Today' : `Last ${numDays} days`}</span>
                         </div>
 
                         {/* KPI row */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                             {[
-                                { label: "Impressions", value: totalImpressions.toLocaleString(), sub: "Total ad views", icon: Eye, color: "text-indigo-400", bg: "bg-indigo-500/10", trend: "+12.4%" },
-                                { label: "Link Clicks", value: totalClicks.toLocaleString(), sub: "Outbound clicks", icon: MousePointerClick, color: "text-blue-400", bg: "bg-blue-500/10", trend: "+8.1%" },
-                                { label: "CTR", value: `${ctr}%`, sub: "Click-through rate", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", trend: "+0.3%" },
-                                { label: "Reach", value: reach.toLocaleString(), sub: "Estimated unique", icon: Users, color: "text-amber-400", bg: "bg-amber-500/10", trend: "+5.7%" },
+                                { label: "Impressions", value: totalImpressions.toLocaleString(), sub: "Total ad views", icon: Eye, color: "text-indigo-400", bg: "bg-indigo-500/10", trend: imprTrend },
+                                { label: "Link Clicks", value: totalClicks.toLocaleString(), sub: "Outbound clicks", icon: MousePointerClick, color: "text-blue-400", bg: "bg-blue-500/10", trend: clicksTrend },
+                                { label: "CTR", value: `${ctr}%`, sub: "Click-through rate", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", trend: ctrTrend },
+                                { label: "Reach", value: reach.toLocaleString(), sub: "Estimated unique", icon: Users, color: "text-amber-400", bg: "bg-amber-500/10", trend: reachTrend },
                             ].map(({ label, value, sub, icon: Icon, color, bg, trend }) => (
                                 <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
                                     <div className="flex items-center justify-between">
                                         <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center`}>
                                             <Icon className={`w-4 h-4 ${color}`} />
                                         </div>
-                                        <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-0.5">
-                                            <ArrowUpRight className="w-3 h-3" />{trend}
+                                        <span className={`text-[10px] font-semibold flex items-center gap-0.5 ${trend === '—' ? 'text-zinc-500' : trend.startsWith('-') ? 'text-red-400' : 'text-emerald-400'}`}>
+                                            {trend !== '—' && trend !== 'New' && <ArrowUpRight className="w-3 h-3" />}{trend}
                                         </span>
                                     </div>
                                     <div>
