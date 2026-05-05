@@ -288,8 +288,26 @@ export default function EscrowOpsPage() {
                 updatedAt: serverTimestamp()
             });
             await syncTransactionStatus(payout.id, "pending", payout.userId, payout.amount);
+
+            const userDoc = await getDoc(doc(db, "users", payout.userId));
+            if (userDoc.exists() && userDoc.data().email) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: userDoc.data().email,
+                        data: {
+                            subject: "Withdrawal Status Updated",
+                            html: `<p>Your withdrawal request for <strong>$${payout.amount?.toLocaleString()}</strong> is now back under review.</p>
+                                <p><strong>Status:</strong> Pending</p>
+                                <p>We will email you again once the request is approved or declined.</p>`
+                        }
+                    })
+                });
+            }
             
-            toast.success("Payout set back to Pending.");
+            toast.success("Payout set back to Pending & Email Sent.");
             fetchData();
         } catch (err) {
             toast.error("Status update failed.");

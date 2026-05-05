@@ -74,6 +74,7 @@ export default function UserMatrixPage() {
     const [userProducts, setUserProducts] = useState<any[]>([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [boostingSales, setBoostingSales] = useState(false);
+    const [transactionProcessingId, setTransactionProcessingId] = useState<string | null>(null);
 
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
@@ -314,6 +315,104 @@ export default function UserMatrixPage() {
         }
     };
 
+    const sendTransactionStatusEmail = async (user: any, subject: string, body: string) => {
+        if (!user?.email) return;
+        await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                type: "custom",
+                to: user.email,
+                data: { subject, html: body }
+            })
+        });
+    };
+
+    const handleApproveTransaction = async (transaction: any) => {
+        if (!selectedUser) return;
+        setTransactionProcessingId(transaction.id);
+        try {
+            const amount = Number(transaction.amount || 0);
+            const creditAmount = transaction.type === "ad_deposit"
+                ? Number(transaction.totalCredits || amount + (transaction.bonus || 0))
+                : amount;
+
+            if (transaction.type === "deposit") {
+                await updateDoc(doc(db, "users", selectedUser.id), {
+                    walletBalance: increment(creditAmount)
+                });
+            } else if (transaction.type === "ad_deposit") {
+                await updateDoc(doc(db, "users", selectedUser.id), {
+                    adWalletBalance: increment(creditAmount)
+                });
+            } else {
+                toast.error("This transaction type is managed from another admin page.");
+                return;
+            }
+
+            await updateDoc(doc(db, "transactions", transaction.id), {
+                status: "completed",
+                approvedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+
+            await sendTransactionStatusEmail(
+                selectedUser,
+                transaction.type === "ad_deposit" ? "Ad Wallet Deposit Approved" : "Wallet Deposit Approved",
+                `<p>Hello ${selectedUser.displayName || selectedUser.fullName || "Merchant"},</p>
+                <p>Your ${transaction.type === "ad_deposit" ? "ad wallet" : "wallet"} deposit has been approved.</p>
+                <p><strong>Amount credited:</strong> $${creditAmount.toLocaleString()}</p>
+                <p><strong>Status:</strong> Completed</p>`
+            );
+
+            toast.success("Transaction approved & email sent.");
+            await fetchUsers();
+            await fetchUserDetails(selectedUser);
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to approve transaction.");
+        } finally {
+            setTransactionProcessingId(null);
+        }
+    };
+
+    const handleRejectTransaction = async (transaction: any) => {
+        if (!selectedUser) return;
+        const reason = window.prompt("Enter the rejection reason. This will be emailed to the user:");
+        const cleanReason = reason?.trim();
+        if (!cleanReason) {
+            toast.error("A rejection reason is required.");
+            return;
+        }
+
+        setTransactionProcessingId(`reject-${transaction.id}`);
+        try {
+            await updateDoc(doc(db, "transactions", transaction.id), {
+                status: "declined",
+                declineReason: cleanReason,
+                declinedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+
+            await sendTransactionStatusEmail(
+                selectedUser,
+                transaction.type === "ad_deposit" ? "Ad Wallet Deposit Rejected" : "Wallet Deposit Rejected",
+                `<p>Hello ${selectedUser.displayName || selectedUser.fullName || "Merchant"},</p>
+                <p>Your ${transaction.type === "ad_deposit" ? "ad wallet" : "wallet"} deposit request for <strong>$${Number(transaction.amount || 0).toLocaleString()}</strong> was rejected.</p>
+                <p><strong>Reason:</strong> ${cleanReason}</p>
+                <p>Please submit a new receipt after correcting the issue.</p>`
+            );
+
+            toast.success("Transaction rejected & email sent.");
+            await fetchUserDetails(selectedUser);
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to reject transaction.");
+        } finally {
+            setTransactionProcessingId(null);
+        }
+    };
+
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (u) => {
             if (u) {
@@ -550,12 +649,34 @@ export default function UserMatrixPage() {
                                         <p className="text-xs text-zinc-600 py-4 text-center">No pending transactions</p>
                                     ) : (
                                         userTransactions.map(t => (
-                                            <div key={t.id} className="p-3 bg-white/[0.03] border border-white/[0.04] rounded-lg flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-xs font-medium text-white capitalize">{t.type?.replace('_', ' ')}</p>
-                                                    <p className="text-[10px] text-zinc-500">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Recent'}</p>
+                                            <div key={t.id} className="p-3 bg-white/[0.03] border border-white/[0.04] rounded-lg space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-xs font-medium text-white capitalize">{t.type?.replace('_', ' ')}</p>
+                                                        <p className="text-[10px] text-zinc-500">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Recent'}</p>
+                                                    </div>
+                                                    <p className="text-xs font-semibold text-amber-400">${t.amount?.toLocaleString()}</p>
                                                 </div>
-                                                <p className="text-xs font-semibold text-amber-400">${t.amount?.toLocaleString()}</p>
+                                                {(t.type === "deposit" || t.type === "ad_deposit") && (
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <button
+                                                            onClick={() => handleApproveTransaction(t)}
+                                                            disabled={!!transactionProcessingId}
+                                                            className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                                                        >
+                                                            {transactionProcessingId === t.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectTransaction(t)}
+                                                            disabled={!!transactionProcessingId}
+                                                            className="h-8 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                                                        >
+                                                            {transactionProcessingId === `reject-${t.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))
                                     )}

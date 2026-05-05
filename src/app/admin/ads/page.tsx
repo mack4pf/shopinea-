@@ -109,6 +109,60 @@ export default function AdCommandPage() {
         }
     };
 
+    const handleRejectCampaign = async (camp: any) => {
+        const reason = window.prompt("Enter the rejection reason. This will be emailed to the merchant:");
+        const cleanReason = reason?.trim();
+        if (!cleanReason) {
+            toast.error("A rejection reason is required.");
+            return;
+        }
+
+        setProcessingId(`reject-${camp.id}`);
+        try {
+            const refundAmount = Number(camp.totalBudget || 0);
+            await updateDoc(doc(db, "campaigns", camp.id), {
+                status: "rejected",
+                rejectionReason: cleanReason,
+                rejectedAt: serverTimestamp()
+            });
+
+            if (camp.sellerId && refundAmount > 0) {
+                await updateDoc(doc(db, "users", camp.sellerId), camp.isPostpaid ? {
+                    pendingAdDebt: increment(-refundAmount)
+                } : {
+                    adWalletBalance: increment(refundAmount)
+                });
+            }
+
+            const sellerDoc = await getDoc(doc(db, "users", camp.sellerId));
+            if (sellerDoc.exists() && sellerDoc.data().email) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: sellerDoc.data().email,
+                        data: {
+                            subject: `Ad Campaign Rejected - ${camp.platform?.toUpperCase() || "ADS"}`,
+                            html: `<p>Your ${camp.platform?.toUpperCase() || "ad"} campaign was rejected during review.</p>
+                                <p><strong>Reason:</strong> ${cleanReason}</p>
+                                ${refundAmount > 0 ? `<p><strong>Refund:</strong> $${refundAmount.toLocaleString()} has been ${camp.isPostpaid ? "removed from your pending ad debt" : "returned to your ad wallet"}.</p>` : ""}
+                                <p>You can make the required changes and submit a new campaign anytime.</p>`
+                        }
+                    })
+                });
+            }
+
+            toast.success("Campaign rejected, funds refunded, and email sent.");
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to reject campaign.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
     const handleBoost = async (campId: string, impressions: number, clicks: number, countryText: string) => {
         try {
             const updates: any = {};
@@ -161,10 +215,77 @@ export default function AdCommandPage() {
                 approvedAt: serverTimestamp()
             });
 
-            toast.success("Merchant Ad Wallet Credited!");
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists() && userDoc.data().email) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: userDoc.data().email,
+                        data: {
+                            subject: "Ad Wallet Deposit Approved",
+                            html: `<p>Hello ${userDoc.data().displayName || userDoc.data().fullName || "Merchant"},</p>
+                                <p>Your ad wallet deposit has been approved.</p>
+                                <p><strong>Amount:</strong> $${dep.amount?.toLocaleString()}</p>
+                                ${(dep.bonus || 0) > 0 ? `<p><strong>Bonus:</strong> $${dep.bonus.toLocaleString()}</p>` : ""}
+                                <p><strong>Total credited:</strong> $${(dep.amount + (dep.bonus || 0)).toLocaleString()}</p>`
+                        }
+                    })
+                });
+            }
+
+            toast.success("Merchant Ad Wallet Credited & Email Sent!");
             fetchData();
         } catch (err) {
             toast.error("Deposit confirmation failed.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleRejectAdDeposit = async (dep: any) => {
+        const reason = window.prompt("Enter the deposit rejection reason. This will be emailed to the merchant:");
+        const cleanReason = reason?.trim();
+        if (!cleanReason) {
+            toast.error("A rejection reason is required.");
+            return;
+        }
+
+        setProcessingId(`reject-deposit-${dep.id}`);
+        try {
+            const userRef = doc(db, "users", dep.userId);
+            await updateDoc(doc(db, "transactions", dep.id), {
+                status: "declined",
+                declineReason: cleanReason,
+                declinedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+
+            const userDoc = await getDoc(userRef);
+            if (userDoc.exists() && userDoc.data().email) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: userDoc.data().email,
+                        data: {
+                            subject: "Ad Wallet Deposit Rejected",
+                            html: `<p>Hello ${userDoc.data().displayName || userDoc.data().fullName || "Merchant"},</p>
+                                <p>Your ad wallet deposit request for <strong>$${dep.amount?.toLocaleString()}</strong> was rejected.</p>
+                                <p><strong>Reason:</strong> ${cleanReason}</p>
+                                <p>Please submit a new receipt after correcting the issue.</p>`
+                        }
+                    })
+                });
+            }
+
+            toast.success("Ad deposit rejected & email sent.");
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            toast.error("Deposit rejection failed.");
         } finally {
             setProcessingId(null);
         }
@@ -239,14 +360,24 @@ export default function AdCommandPage() {
                                     </div>
 
                                     {(dStatus === 'scheduled' || dStatus === 'reviewing') && (
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
                                         <button
                                             onClick={() => handleApproveCampaign(c)}
                                             disabled={!!processingId}
-                                            className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors mt-2"
+                                            className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
                                         >
                                             {processingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
                                             Activate Campaign
                                         </button>
+                                        <button
+                                            onClick={() => handleRejectCampaign(c)}
+                                            disabled={!!processingId}
+                                            className="w-full h-9 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                        >
+                                            {processingId === `reject-${c.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                            Reject
+                                        </button>
+                                        </div>
                                     )}
 
                                     {dStatus === 'active' && (
@@ -331,14 +462,24 @@ export default function AdCommandPage() {
                                             {d.bonus > 0 && <p className="text-xs text-emerald-400">+${d.bonus} bonus</p>}
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleApproveAdDeposit(d)}
-                                        disabled={!!processingId}
-                                        className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
-                                    >
-                                        {processingId === d.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                                        Approve Deposit
-                                    </button>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => handleApproveAdDeposit(d)}
+                                            disabled={!!processingId}
+                                            className="w-full h-9 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                        >
+                                            {processingId === d.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                            Approve
+                                        </button>
+                                        <button
+                                            onClick={() => handleRejectAdDeposit(d)}
+                                            disabled={!!processingId}
+                                            className="w-full h-9 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                        >
+                                            {processingId === `reject-deposit-${d.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                            Reject
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}

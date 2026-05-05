@@ -108,6 +108,26 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                 description: "Ad wallet deposit",
                 createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
             });
+            const userSnap = await getDoc(doc(db, "users", userId));
+            const userData = userSnap.exists() ? userSnap.data() : null;
+            if (userData?.email) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: userData.email,
+                        data: {
+                            subject: "Ad Wallet Deposit Request Received",
+                            html: `<p>Hello ${userData.displayName || userData.fullName || "Merchant"},</p>
+                                <p>We received your ad wallet deposit request for <strong>$${numAmount.toLocaleString()}</strong>.</p>
+                                <p><strong>Status:</strong> Pending review. We will email you again once your receipt is approved or rejected.</p>
+                                <p><strong>Total ad credits after approval:</strong> $${totalCredits.toLocaleString()}</p>
+                                <p><strong>Payment method:</strong> ${(method || "transfer").toUpperCase()}${cryptoAsset ? ` (${cryptoAsset.toUpperCase()})` : ""}</p>`
+                        }
+                    })
+                });
+            }
             setStep(5);
         } catch { toast.error("Failed to submit. Please try again."); }
         finally { setLoading(false); }

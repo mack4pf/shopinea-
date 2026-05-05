@@ -6,7 +6,7 @@ export async function sendEmail({
     to,
     subject,
     html,
-    from = 'Shoplinea <noreply@shoplinea.shop>',
+    from = 'Shoplinea <support@shoplinea.shop>',
 }: {
     to: string;
     subject: string;
@@ -19,6 +19,7 @@ export async function sendEmail({
             to,
             subject,
             html,
+            replyTo: 'support@shoplinea.shop',
         });
 
         if (error) {
@@ -66,7 +67,7 @@ const baseTemplate = (content: string) => `
         </div>
         <div class="footer">
             <p><strong>Shoplinea</strong><br/>
-            This email was sent automatically. Secure encryption applied.<br/>
+            This email was sent automatically by Shoplinea Support.<br/>
             &copy; 2026 Shoplinea.shop. All rights reserved.</p>
         </div>
     </div>
