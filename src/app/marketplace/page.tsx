@@ -30,11 +30,9 @@ export default function MarketplacePage() {
                 const productsRef = collection(db, "products");
                 const snapshot = await getDocs(productsRef);
 
-                // Force-reseed if catalog is stale or has extra products
-                const isStale = !snapshot.empty && (
-                    snapshot.docs.some(d => (d.data().catalogVersion ?? 0) !== CATALOG_VERSION) ||
-                    snapshot.docs.length > seedProducts.length
-                );
+                // Force-reseed only if ALL products are on a stale version (never delete admin-added extras)
+                const isStale = !snapshot.empty &&
+                    snapshot.docs.every(d => (d.data().catalogVersion ?? 0) !== CATALOG_VERSION);
 
                 if (snapshot.empty || isStale) {
                     if (!snapshot.empty) {

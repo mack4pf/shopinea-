@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc, writeBatch, serverTimestamp, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { products as seedProducts } from "@/lib/seed/products";
+import { products as seedProducts, CATALOG_VERSION } from "@/lib/seed/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,7 @@ export default function AdminProductsPage() {
         image: ""
     });
     const [formLoading, setFormLoading] = useState(false);
+    const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
     const [showSeedConfirm, setShowSeedConfirm] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
@@ -133,24 +134,31 @@ export default function AdminProductsPage() {
 
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!newProduct.image) { toast.error("Please upload an image or enter an image URL."); return; }
         setFormLoading(true);
         try {
             const productsRef = collection(db, "products");
             const newDocRef = doc(productsRef);
+            const existingDocs = await getDocs(productsRef);
+            const maxOrder = existingDocs.docs.reduce((max, d) => Math.max(max, d.data().sortOrder ?? 0), 0);
             await setDoc(newDocRef, {
                 ...newProduct,
                 price: Number(newProduct.price),
-                isPromoted: false,
+                isPromoted: true,
+                isFeatured: true,
+                catalogVersion: CATALOG_VERSION,
+                sortOrder: maxOrder + 1,
                 createdAt: serverTimestamp()
             });
 
             setNewProduct({ name: "", price: "", description: "", category: "", image: "" });
             setIsAdding(false);
+            setImageMode('upload');
             toast.success("Product added successfully!");
             fetchProducts();
         } catch (error) {
             console.error("Error adding product:", error);
-            alert("Failed to add product.");
+            toast.error("Failed to add product.");
         } finally {
             setFormLoading(false);
         }
@@ -244,13 +252,38 @@ export default function AdminProductsPage() {
                             </div>
 
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Main Product Image (Upload)</Label>
-                                <ImageUpload
-                                    value={newProduct.image}
-                                    onChange={(url) => setNewProduct({ ...newProduct, image: url })}
-                                    disabled={formLoading}
-                                />
-                                <input type="hidden" value={newProduct.image} required />
+                                <Label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest pl-1">Product Image</Label>
+                                {/* Toggle */}
+                                <div className="flex items-center gap-1 p-1 bg-zinc-950 border border-zinc-800 rounded-xl w-fit">
+                                    {(['upload', 'url'] as const).map(m => (
+                                        <button key={m} type="button" onClick={() => { setImageMode(m); setNewProduct(p => ({ ...p, image: '' })); }}
+                                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${imageMode === m ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                                            {m === 'upload' ? '📁 Upload File' : '🔗 Paste URL'}
+                                        </button>
+                                    ))}
+                                </div>
+                                {imageMode === 'upload' ? (
+                                    <ImageUpload
+                                        value={newProduct.image}
+                                        onChange={(url) => setNewProduct({ ...newProduct, image: url })}
+                                        disabled={formLoading}
+                                    />
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Input
+                                            type="url"
+                                            placeholder="https://example.com/image.jpg  or ImageKit URL"
+                                            className="h-14 bg-zinc-950 border-zinc-800 rounded-2xl font-bold"
+                                            value={newProduct.image}
+                                            onChange={e => setNewProduct({ ...newProduct, image: e.target.value })}
+                                        />
+                                        {newProduct.image && (
+                                            <div className="w-24 h-24 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
+                                                <img src={newProduct.image} alt="preview" className="w-full h-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-3 pt-6 border-t border-zinc-800">

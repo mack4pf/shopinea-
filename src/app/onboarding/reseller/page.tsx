@@ -84,10 +84,10 @@ export default function ResellerOnboarding() {
                 const productsRef = collection(db, "products");
                 const snapshot = await getDocs(productsRef);
 
-                // Check if Firestore is stale: wrong catalogVersion or more docs than our catalog
-                const isStale = snapshot.empty ? false : snapshot.docs.some(
+                // Reseed only if ALL products are stale (never delete admin-added extras)
+                const isStale = snapshot.empty ? false : snapshot.docs.every(
                     d => (d.data().catalogVersion ?? 0) !== CATALOG_VERSION
-                ) || snapshot.docs.length > seedProducts.length;
+                );
 
                 if (snapshot.empty || isStale) {
                     // Delete all existing docs first (in batches of 500)
