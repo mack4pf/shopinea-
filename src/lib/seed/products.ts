@@ -162,6 +162,14 @@ export const products = [
         image: "/products/Extra_JBL_Live_Pro_2_Earbuds.png",
         isFeatured: true, isPromoted: true, sortOrder: 21, catalogVersion: 4,
     },
+    {
+        name: "75W Box Mod Vape Kit with Sub-Ohm Tank",
+        price: 30,
+        description: "Rechargeable 75W regulated box mod kit with adjustable wattage, OLED display, and sub-ohm tank. Single 18650 external battery (not included). Supports Variable Wattage, Bypass, Temperature Control (Ni/Ti/SS), and TCR modes. Wattage range 1–75W, resistance range 0.05–3.5Ω, temp range 100–315°C. 510-thread connection, USB-C charging. Kit includes: 75W mod, sub-ohm tank (2–4ml), 0.3Ω & 0.5Ω coils, USB cable, and user manual. Zinc alloy & stainless steel build. Dimensions: ~45 × 23 × 70.5mm.",
+        category: "Vapes & E-Cigarettes",
+        image: "https://ik.imagekit.io/immiplanner/shoplinea/products/vapekit_qLNSoda9C.jpg",
+        isFeatured: true, isPromoted: true, sortOrder: 22, catalogVersion: 4,
+    },
 ];
 
 // Quick lookup: product name to local image path
