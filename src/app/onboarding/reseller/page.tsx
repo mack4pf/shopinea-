@@ -78,34 +78,46 @@ export default function ResellerOnboarding() {
         return () => unsub();
     }, []);
 
-    useEffect(() => {
-        const initializeProducts = async () => {
-            try {
-                const productsRef = collection(db, "products");
-                const snapshot = await getDocs(productsRef);
-
-                // Reseed only if ALL products are stale (never delete admin-added extras)
-                const isStale = snapshot.empty ? false : snapshot.docs.every(
-                    d => (d.data().catalogVersion ?? 0) !== CATALOG_VERSION
-                );
-
-                if (snapshot.empty || isStale) {
-                    // Delete all existing docs first (in batches of 500)
-                    if (!snapshot.empty) {
-                        const delBatch = writeBatch(db);
-                        snapshot.docs.forEach(d => delBatch.delete(d.ref));
-                        await delBatch.commit();
-                    }
-                    // Seed fresh with the 21 catalog products
-                    const seedBatch = writeBatch(db);
-                    seedProducts.forEach((product) => {
-                        seedBatch.set(doc(productsRef), product);
-                    });
-                    await seedBatch.commit();
-                }
-
-                const fresh = await getDocs(productsRef);
-                let fetched: Product[] = fresh.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+     useEffect(() => {
+         const initializeProducts = async () => {
+             try {
+                 const productsRef = collection(db, "products");
+                 const snapshot = await getDocs(productsRef);
+ 
+                 // Build name->doc map for existing products
+                 const existingMap = new Map<string, any>();
+                 snapshot.docs.forEach(d => {
+                     const data = d.data();
+                     existingMap.set(data.name, { id: d.id, ...data });
+                 });
+ 
+                 // Determine which seed products need to be added or updated
+                 const upserts: Array<{ id?: string; name: string; price: number; description: string; category: string; image: string; isPromoted?: boolean; isFeatured?: boolean; sortOrder?: number; catalogVersion: number }> = [];
+                 seedProducts.forEach(seed => {
+                     const existing = existingMap.get(seed.name);
+                     if (!existing) {
+                         upserts.push(seed);
+                     } else if ((existing.catalogVersion ?? 0) !== CATALOG_VERSION) {
+                         upserts.push({ id: existing.id, ...seed });
+                     }
+                 });
+ 
+                 // Batch upsert all changes
+                 if (upserts.length > 0) {
+                     const batch = writeBatch(db);
+                     upserts.forEach(p => {
+                         if (p.id) {
+                             batch.update(doc(productsRef, p.id), p);
+                         } else {
+                             batch.add(productsRef, p);
+                         }
+                     });
+                     await batch.commit();
+                 }
+ 
+                 // Fetch fresh product list
+                 const fresh = await getDocs(productsRef);
+                 let fetched: Product[] = fresh.docs.map(d => ({ id: d.id, ...d.data() } as Product));
 
                 // Deduplicate by name (safety net)
                 const nameMap = new Map<string, Product>();
