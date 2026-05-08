@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   // reactCompiler: true, // Temporarily disabled for debugging
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
