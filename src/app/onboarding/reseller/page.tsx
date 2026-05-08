@@ -109,7 +109,7 @@ export default function ResellerOnboarding() {
                          if (p.id) {
                              batch.update(doc(productsRef, p.id), p);
                          } else {
-                             batch.add(productsRef, p);
+                             batch.set(doc(productsRef), p);
                          }
                      });
                      await batch.commit();
