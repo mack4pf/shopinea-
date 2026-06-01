@@ -139,7 +139,7 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                     </div>
                     <div className="space-y-2">
                         <h3 className="text-2xl font-bold">Inquiry Sent</h3>
-                        <p className="text-sm text-zinc-500 font-medium max-w-xs mx-auto">The merchant has been notified. You can continue the conversation in your dashboard.</p>
+                        <p className="text-sm text-zinc-500 font-medium max-w-xs mx-auto">The seller has been notified. You can continue the conversation in messages.</p>
                     </div>
                     <div className="w-full flex flex-col gap-3 pt-4">
                         <Button
