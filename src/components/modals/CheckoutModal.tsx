@@ -12,6 +12,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { COUNTRY_NAMES } from "@/lib/countries";
+import { getDefaultStock } from "@/lib/catalog";
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -86,6 +87,26 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
         setVerifying(true);
         await new Promise(r => setTimeout(r, 2000));
         try {
+            const resellerRef = doc(db, "users", storeUser.uid);
+            const resellerSnap = await getDoc(resellerRef);
+            const resellerData = resellerSnap.exists() ? resellerSnap.data() : storeUser;
+            const additionalStores = Array.isArray(resellerData.additionalStores) ? resellerData.additionalStores : [];
+            const activeAdditionalStore = storeUser.additionalStoreId
+                ? additionalStores.find((store: any) => store.id === storeUser.additionalStoreId)
+                : null;
+            const storeProducts = activeAdditionalStore
+                ? (Array.isArray(activeAdditionalStore.storeProducts) ? activeAdditionalStore.storeProducts : [])
+                : (Array.isArray(resellerData.storeProducts) ? resellerData.storeProducts : []);
+            const storeProduct = storeProducts.find((p: any) => p.id === product.id);
+            const availableStock = Number(storeProduct?.stock ?? product?.stock ?? getDefaultStock(product.id || productName));
+
+            if (availableStock <= 0) {
+                toast.error("This product is out of stock.");
+                setLoading(false);
+                setVerifying(false);
+                return;
+            }
+
             const orderData = {
                 productId: product.id,
                 productName,
@@ -95,6 +116,8 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
                 resellPrice: paymentMethod === "crypto" ? sellPrice * 0.95 : sellPrice,
                 resellerProfit: sellPrice - basePrice,
                 resellerId: storeUser.uid,
+                resellerName: resellerData.displayName || storeUser.displayName || storeUser.storeName || "Merchant",
+                storeName: resellerData.storeName || storeUser.storeName || "Store",
                 customerId: user?.uid || "guest",
                 customerName: formData.name,
                 customerEmail: formData.email,
@@ -107,8 +130,20 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
                 createdAt: serverTimestamp()
             };
             await addDoc(collection(db, "orders"), orderData);
-            await updateDoc(doc(db, "users", storeUser.uid), {
+            const nextStoreProducts = storeProducts.map((p: any) => (
+                p.id === product.id ? { ...p, stock: Math.max(0, Number(p.stock ?? availableStock) - 1) } : p
+            ));
+            const inventoryUpdate = activeAdditionalStore
+                ? {
+                    additionalStores: additionalStores.map((store: any) => (
+                        store.id === activeAdditionalStore.id ? { ...store, storeProducts: nextStoreProducts } : store
+                    )),
+                }
+                : { storeProducts: nextStoreProducts };
+            await updateDoc(resellerRef, {
+                ...inventoryUpdate,
                 "stats.sales": increment(1),
+                "stats.orders": increment(1),
                 "stats.revenue": increment(orderData.resellPrice),
                 pendingPayout: increment(orderData.resellerProfit)
             });

@@ -59,6 +59,7 @@ export default function AdsPage() {
     const [showCampaignModal, setShowCampaignModal] = useState(false);
     const [creatingCampaign, setCreatingCampaign] = useState(false);
     const [generatingAI, setGeneratingAI] = useState(false);
+    const [aiStepIndex, setAiStepIndex] = useState(0);
 
     const [targetType, setTargetType] = useState<'store' | 'products'>('store');
     const [selectedPlatform, setSelectedPlatform] = useState("meta");
@@ -105,6 +106,43 @@ export default function AdsPage() {
         const d = new Date(startDate);
         d.setDate(d.getDate() + maxDays - 1);
         return d.toISOString().split('T')[0];
+    };
+
+    const getAiSteps = () => {
+        const platform = selectedPlatform.toUpperCase();
+        const productLabel = targetType === 'products'
+            ? `${selectedProducts.length} product${selectedProducts.length === 1 ? "" : "s"}`
+            : "your full store";
+
+        return [
+            {
+                title: "Shoplinea AI is generating ad themes",
+                detail: `Building ${platform} creative angles for ${productLabel}.`,
+                icon: Sparkles,
+            },
+            {
+                title: "Shoplinea AI is analyzing locations",
+                detail: "Checking buyer intent across United States, United Kingdom, Canada, and Nigeria.",
+                icon: MapPin,
+            },
+            {
+                title: "Winning product found",
+                detail: targetType === 'products'
+                    ? `${selectedProducts[0] || "Selected product"} is being matched to high-converting audiences.`
+                    : "Your store catalog is being matched to high-converting audiences.",
+                icon: Target,
+            },
+            {
+                title: "Scaling web data signals",
+                detail: "Scanning demand patterns, placement costs, and competitor ad velocity.",
+                icon: Activity,
+            },
+            {
+                title: "Campaign ready for review",
+                detail: `Finalizing budget pacing and ${platform} launch settings.`,
+                icon: Rocket,
+            },
+        ];
     };
 
     const toggleProduct = (name: string) => {
@@ -179,7 +217,14 @@ export default function AdsPage() {
         }
 
         setCreatingCampaign(true);
-        if (targetType === 'products') { setGeneratingAI(true); await new Promise(r => setTimeout(r, 4500)); setGeneratingAI(false); }
+        setGeneratingAI(true);
+        setAiStepIndex(0);
+        const aiSteps = getAiSteps();
+        for (let index = 0; index < aiSteps.length; index += 1) {
+            setAiStepIndex(index);
+            await new Promise(r => setTimeout(r, 850));
+        }
+        setGeneratingAI(false);
 
         try {
             if (paymentMode === 'now') {
@@ -218,7 +263,10 @@ export default function AdsPage() {
         } catch (error) {
             console.error(error);
             toast.error("Failed to create campaign.");
-        } finally { setCreatingCampaign(false); }
+        } finally {
+            setCreatingCampaign(false);
+            setGeneratingAI(false);
+        }
     };
 
     if (loading) return <div className="h-[80vh] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>;
@@ -226,6 +274,9 @@ export default function AdsPage() {
     const PlatformLogoMap: Record<string, React.FC<{size?: number; className?: string}>> = {
         meta: MetaLogo, facebook: MetaLogo, tiktok: TikTokLogo, google: GoogleLogo, youtube: YouTubeLogo
     };
+    const aiSteps = getAiSteps();
+    const currentAiStep = aiSteps[Math.min(aiStepIndex, aiSteps.length - 1)];
+    const CurrentAiIcon = currentAiStep?.icon || Sparkles;
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in duration-500">
@@ -720,10 +771,58 @@ export default function AdsPage() {
 
             <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Create Campaign" description="Set up your ad campaign across Meta, TikTok, or Google.">
                 {generatingAI ? (
-                    <div className="py-16 flex flex-col items-center justify-center space-y-4">
-                        <Sparkles className="w-12 h-12 text-blue-500 animate-spin" />
-                        <h3 className="text-lg font-semibold text-white">Preparing your campaign...</h3>
-                        <p className="text-sm text-zinc-500">Generating content for {selectedPlatform}</p>
+                    <div className="py-8 space-y-6">
+                        <div className="flex flex-col items-center justify-center text-center space-y-4">
+                            <div className="relative flex h-20 w-20 items-center justify-center">
+                                <div className="absolute inset-0 rounded-full border border-blue-500/20 bg-blue-500/10 animate-ping" />
+                                <div className="absolute inset-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 animate-pulse" />
+                                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 shadow-lg shadow-blue-500/20">
+                                    <CurrentAiIcon className="h-7 w-7 text-white" />
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white">{currentAiStep.title}</h3>
+                                <p className="mt-1 text-sm leading-relaxed text-zinc-500">{currentAiStep.detail}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3">
+                            {aiSteps.map((step, index) => {
+                                const StepIcon = step.icon;
+                                const isActive = index === aiStepIndex;
+                                const isDone = index < aiStepIndex;
+                                return (
+                                    <div key={step.title} className={cn(
+                                        "flex items-center gap-3 rounded-xl px-3 py-2 transition-all",
+                                        isActive ? "bg-blue-500/10 text-white" : "text-zinc-500"
+                                    )}>
+                                        <div className={cn(
+                                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+                                            isDone ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" :
+                                            isActive ? "border-blue-500/30 bg-blue-500/10 text-blue-400" :
+                                            "border-white/[0.06] bg-white/[0.03] text-zinc-600"
+                                        )}>
+                                            {isDone ? <Check className="h-4 w-4" /> : <StepIcon className={cn("h-4 w-4", isActive && "animate-pulse")} />}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-xs font-bold">{step.title}</p>
+                                            <p className="truncate text-[11px] text-zinc-600">{step.detail}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            {["Winning audience", "Best location", "Ad theme"].map((label, index) => (
+                                <div key={label} className="rounded-xl border border-white/[0.06] bg-zinc-950 p-3 text-center">
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">{label}</p>
+                                    <p className={cn("mt-1 text-xs font-semibold", index <= aiStepIndex ? "text-emerald-400" : "text-zinc-500")}>
+                                        {index <= aiStepIndex ? "Detected" : "Scanning"}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 ) : (
                     <div className="space-y-6">

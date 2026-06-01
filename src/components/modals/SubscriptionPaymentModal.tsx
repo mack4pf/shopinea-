@@ -75,6 +75,9 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
             await addDoc(collection(db, "subscription_requests"), {
                 userId, userName,
                 planId: plan.id, planName: plan.name, amount: plan.price,
+                aiCredits: plan.aiCredits || 0,
+                adCredits: plan.adCredits || 0,
+                maxStores: plan.maxStores || 1,
                 method: selectedMethod, asset: selectedCrypto || "N/A",
                 receiptUrl, status: "pending", createdAt: serverTimestamp(),
             });

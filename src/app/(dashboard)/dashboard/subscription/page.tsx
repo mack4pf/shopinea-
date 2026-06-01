@@ -10,10 +10,10 @@ import { SubscriptionPaymentModal } from "@/components/modals/SubscriptionPaymen
 import { cn } from "@/lib/utils";
 
 const plans = [
-    { id: "pro_300", name: "Starter", price: 300, icon: Rocket, color: "text-blue-400", bg: "bg-blue-500/10", features: ["Up to 50 active products", "Professional storefront", "Real-time order tracking", "Standard support"] },
-    { id: "elite_500", name: "Professional", price: 500, icon: Zap, color: "text-violet-400", bg: "bg-violet-500/10", features: ["Unlimited products", "AI product recommendations", "Advanced sales analytics", "SEO optimization tools"] },
-    { id: "venture_1200", name: "Scale", price: 1200, icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", features: ["Bulk order processing", "Dedicated account manager", "White-label packaging", "Custom API access"] },
-    { id: "enterprise_5000", name: "Enterprise", price: 5000, icon: Building2, color: "text-amber-400", bg: "bg-amber-500/10", features: ["Multi-store management", "Full legal compliance suite", "Automated tax management", "Concierge support 24/7"] },
+    { id: "pro_300", name: "Starter", price: 300, icon: Rocket, color: "text-blue-400", bg: "bg-blue-500/10", aiCredits: 0, adCredits: 25, maxStores: 1, features: ["Up to 50 active products", "Professional storefront", "Real-time order tracking", "Standard support", "$25 free ads credit monthly"] },
+    { id: "elite_500", name: "Professional", price: 500, icon: Zap, color: "text-violet-400", bg: "bg-violet-500/10", aiCredits: 200, adCredits: 75, maxStores: 3, features: ["Unlimited products", "Multiple stores up to 3", "Website AI credits to run store", "$75 free ads credit monthly", "AI product recommendations", "Advanced sales analytics", "SEO optimization tools"] },
+    { id: "venture_1200", name: "Scale", price: 1200, icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", aiCredits: 750, adCredits: 250, maxStores: 10, features: ["Bulk order processing", "Multiple stores up to 10", "750 website AI credits monthly", "$250 free ads credit monthly", "Dedicated account manager", "White-label packaging", "Custom API access"] },
+    { id: "enterprise_5000", name: "Enterprise", price: 5000, icon: Building2, color: "text-amber-400", bg: "bg-amber-500/10", aiCredits: 2500, adCredits: 1000, maxStores: 999, features: ["Multi-store management", "2,500 website AI credits monthly", "$1,000 free ads credit monthly", "Full legal compliance suite", "Automated tax management", "Concierge support 24/7"] },
 ];
 
 export default function SubscriptionPage() {

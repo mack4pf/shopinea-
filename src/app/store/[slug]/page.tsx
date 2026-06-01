@@ -33,6 +33,52 @@ import { auth } from "@/lib/firebase/config";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { getDefaultStock } from "@/lib/catalog";
+
+const TEMPLATE_STYLES: Record<string, { page: string; hero: string; card: string; section: string; label: string }> = {
+    classic: {
+        page: "bg-[#f4f7fb] text-slate-900",
+        hero: "bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-900",
+        card: "rounded-2xl",
+        section: "The Collection",
+        label: "Professional Experience",
+    },
+    spotlight: {
+        page: "bg-slate-950 text-white",
+        hero: "bg-slate-900",
+        card: "rounded-xl",
+        section: "Featured Drops",
+        label: "Spotlight Store",
+    },
+    minimal: {
+        page: "bg-white text-slate-950",
+        hero: "bg-slate-100",
+        card: "rounded-lg",
+        section: "Catalog",
+        label: "Minimal Store",
+    },
+    boutique: {
+        page: "bg-rose-50 text-slate-950",
+        hero: "bg-gradient-to-r from-rose-950 via-stone-900 to-slate-900",
+        card: "rounded-3xl",
+        section: "Curated Picks",
+        label: "Boutique Edit",
+    },
+    bold: {
+        page: "bg-zinc-950 text-white",
+        hero: "bg-gradient-to-r from-zinc-950 via-zinc-900 to-orange-950",
+        card: "rounded-md",
+        section: "Hot Inventory",
+        label: "Bold Storefront",
+    },
+};
+
+const STORE_PRODUCT_GRID: Record<string, string> = {
+    grid: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6",
+    featured: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7",
+    compact: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4",
+    editorial: "grid grid-cols-1 lg:grid-cols-2 gap-8",
+};
 
 export default function StorePage() {
     const { slug } = useParams();
@@ -56,15 +102,33 @@ export default function StorePage() {
     useEffect(() => {
         const fetchStore = async () => {
             try {
-                const q = query(
+                let q = query(
                     collection(db, "users"),
                     where("storeSlug", "==", slug),
                     limit(1)
                 );
-                const querySnapshot = await getDocs(q);
+                let querySnapshot = await getDocs(q);
+                let additionalStore: any = null;
+
+                if (querySnapshot.empty) {
+                    q = query(
+                        collection(db, "users"),
+                        where("additionalStoreSlugs", "array-contains", slug),
+                        limit(1)
+                    );
+                    querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        const extraStores = querySnapshot.docs[0].data().additionalStores || [];
+                        additionalStore = extraStores.find((store: any) => store.storeSlug === slug);
+                    }
+                }
+
                 if (!querySnapshot.empty) {
                     const uDoc = querySnapshot.docs[0];
-                    const uData = { uid: uDoc.id, ...uDoc.data() } as any;
+                    const ownerData = uDoc.data();
+                    const uData = additionalStore
+                        ? { uid: uDoc.id, ...ownerData, ...additionalStore, additionalStoreId: additionalStore.id }
+                        : { uid: uDoc.id, ...ownerData } as any;
                     setStoreUser(uData);
 
                     // Increment store view
@@ -117,6 +181,10 @@ export default function StorePage() {
     }
 
     const products = Array.isArray(storeUser.storeProducts) ? storeUser.storeProducts : [];
+    const accentColor = storeUser.themeColor || "#10b981";
+    const template = TEMPLATE_STYLES[storeUser.storeTemplate || "classic"] || TEMPLATE_STYLES.classic;
+    const storeLayout = storeUser.storeLayout || "grid";
+    const tagline = storeUser.storeTagline || "Discover high-quality products from verified global suppliers.";
     // Top products for hero: those with an image, up to 4
     const heroProducts = products.filter((p: any) => p?.image).slice(0, 4);
     const filteredProducts = products.filter((p: any) => {
@@ -143,13 +211,18 @@ export default function StorePage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f4f7fb] text-slate-900 selection:bg-emerald-200/70">
+        <div className={cn("min-h-screen selection:bg-emerald-200/70", template.page)}>
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-[#f4f7fb]/90 backdrop-blur-md border-b border-slate-200 py-3">
+            <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 py-3">
                 <div className="container mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-xl">
-                            {storeUser.storeName?.[0] || "S"}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-xl overflow-hidden bg-white border border-slate-200"
+                            style={{ backgroundColor: storeUser.storeLogo ? "#ffffff" : accentColor }}>
+                            {storeUser.storeLogo ? (
+                                <Image src={storeUser.storeLogo} alt={`${storeUser.storeName || "Store"} logo`} width={40} height={40} className="h-full w-full object-contain p-1" />
+                            ) : (
+                                storeUser.storeName?.[0] || "S"
+                            )}
                         </div>
                         <div>
                             <h1 className="text-lg font-bold tracking-tight text-slate-900 leading-none">{storeUser.storeName}</h1>
@@ -203,7 +276,7 @@ export default function StorePage() {
 
             <main className="container mx-auto px-6 py-12 max-w-7xl space-y-24">
                 {/* Hero Banner */}
-                <section className="relative rounded-[2rem] overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-900 border border-slate-700/50 min-h-[420px] flex items-center">
+                <section className={cn("relative rounded-[2rem] overflow-hidden border border-slate-700/50 min-h-[420px] flex items-center", template.hero)}>
                     {/* Background product image collage */}
                     {heroProducts.length > 0 && (
                         <div className="absolute inset-0 flex overflow-hidden opacity-25">
@@ -225,17 +298,22 @@ export default function StorePage() {
                         {/* Left: Text */}
                         <div className="flex-1 space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/[0.07] rounded-full border border-white/[0.18] text-[10px] font-bold uppercase tracking-widest text-slate-200">
-                                Professional Experience
+                                {storeUser.storeLogo && (
+                                    <span className="h-5 w-5 overflow-hidden rounded-md bg-white">
+                                        <Image src={storeUser.storeLogo} alt="" width={20} height={20} className="h-full w-full object-contain" />
+                                    </span>
+                                )}
+                                {template.label}
                             </div>
                             <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] text-white">
-                                Carefully curated essentials{" "}
-                                <span className="text-emerald-300">for your lifestyle.</span>
+                                {storeUser.storeName} brings premium, trusted products to your customers.
                             </h2>
                             <p className="text-slate-200/80 font-medium text-lg leading-relaxed">
-                                Discover high-quality products from verified global suppliers. Professional service, guaranteed delivery.
+                                {tagline}
                             </p>
                             <div className="flex items-center gap-3">
-                                <a href="#collection" className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors text-sm shadow-lg">
+                                <a href="#collection" className="inline-flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl transition-colors text-sm shadow-lg"
+                                    style={{ backgroundColor: accentColor }}>
                                     <ShoppingBag className="w-4 h-4" /> Shop Now
                                 </a>
                                 <div className="flex items-center gap-1.5 text-slate-300 text-xs font-bold">
@@ -303,7 +381,8 @@ export default function StorePage() {
                                             <p className="text-xs font-bold text-slate-800 line-clamp-1 mb-1">{product.name}</p>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-bold text-slate-900">${(product.resellPrice || product.price || 0).toLocaleString()}</span>
-                                                <span className="flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                                                <span className="flex items-center gap-1 text-[9px] font-bold bg-white/90 border rounded-full px-2 py-0.5"
+                                                    style={{ color: accentColor, borderColor: accentColor + '33' }}>
                                                     <ShoppingCart className="w-2.5 h-2.5" /> {(orderCounts[product.id] || 0).toLocaleString()} sold
                                                 </span>
                                             </div>
@@ -320,7 +399,7 @@ export default function StorePage() {
                     )}
                     <div className="flex items-end justify-between border-b border-slate-200 pb-6">
                         <div>
-                            <h3 className="text-2xl font-bold">The Collection</h3>
+                            <h3 className="text-2xl font-bold">{template.section}</h3>
                             <p className="text-xs font-bold text-zinc-600 uppercase tracking-widest mt-1">
                                 {filteredProducts.length} items available
                             </p>
@@ -330,7 +409,7 @@ export default function StorePage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className={STORE_PRODUCT_GRID[storeLayout] || STORE_PRODUCT_GRID.grid}>
                         {filteredProducts.length === 0 ? (
                             <div className="col-span-full py-40 flex flex-col items-center text-center space-y-4 bg-zinc-900/40 rounded-3xl border border-white/[0.04]">
                                 <SearchX className="w-12 h-12 text-zinc-800" />
@@ -347,6 +426,9 @@ export default function StorePage() {
                                     product={product}
                                     salesCount={orderCounts[product.id] || 0}
                                     viewCount={productViewsMap[product.id] || 0}
+                                    accentColor={accentColor}
+                                    cardRadius={template.card}
+                                    layout={storeLayout}
                                     onInquiry={() => { handleProductView(product); setInquiryProduct(product); }}
                                 />
                             ))
@@ -398,12 +480,16 @@ export default function StorePage() {
     );
 }
 
-function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0 }: { product: any; onInquiry: () => void; salesCount?: number; viewCount?: number }) {
+function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0, accentColor = "#10b981", cardRadius = "rounded-2xl", layout = "grid" }: { product: any; onInquiry: () => void; salesCount?: number; viewCount?: number; accentColor?: string; cardRadius?: string; layout?: string }) {
     const [imageLoaded, setImageLoaded] = useState(false);
+    const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
+    const inStock = stock > 0;
+    const isCompact = layout === "compact";
+    const isEditorial = layout === "editorial";
 
     return (
-        <div className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 flex flex-col shadow-sm">
-            <div className="relative aspect-[4/5] overflow-hidden bg-slate-100 cursor-pointer" onClick={onInquiry}>
+        <div className={cn("group bg-white border border-slate-200 overflow-hidden hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 shadow-sm", isEditorial ? "grid md:grid-cols-[42%_1fr]" : "flex flex-col", cardRadius)}>
+            <div className={cn("relative overflow-hidden bg-slate-100 cursor-pointer", isCompact ? "aspect-square" : isEditorial ? "aspect-[4/3] md:aspect-auto" : "aspect-[4/5]")} onClick={onInquiry}>
                 {product.image ? (
                     <Image 
                         src={product.image} 
@@ -423,6 +509,10 @@ function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0 }: { pr
                 
                 {/* Views + Sales badge */}
                 <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
+                    <div className={`px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full border border-slate-200 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${inStock ? 'text-emerald-700' : 'text-rose-700'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        {inStock ? `${stock} in stock` : 'Out of stock'}
+                    </div>
                     {viewCount > 0 && (
                         <div className="px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full border border-slate-200 text-[9px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                             <Eye className="w-3 h-3 text-emerald-600" />
@@ -440,26 +530,30 @@ function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0 }: { pr
                 <div className="absolute bottom-4 left-4 right-4 translate-y-20 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out z-20">
                     <Button
                         onClick={(e) => { e.stopPropagation(); onInquiry(); }}
-                        className="w-full h-12 brand-gradient text-white font-bold rounded-xl shadow-2xl hover:opacity-90 text-xs"
+                        disabled={!inStock}
+                        className="w-full h-12 brand-gradient text-white font-bold rounded-xl shadow-2xl hover:opacity-90 text-xs disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        Secure Purchase
+                        {inStock ? 'Secure Purchase' : 'Out of Stock'}
                     </Button>
                 </div>
             </div>
             
-            <div className="p-6 flex flex-col flex-1">
+            <div className={cn("flex flex-col flex-1", isCompact ? "p-4" : "p-6")}>
                 <div className="flex-1 space-y-2 cursor-pointer" onClick={onInquiry}>
-                   <h4 className="font-bold text-sm text-slate-900 line-clamp-2 leading-tight group-hover:text-emerald-700 transition-colors">{product.name || product.productName || "Untitled product"}</h4>
+                   <h4 className={cn("font-bold text-slate-900 line-clamp-2 leading-tight group-hover:text-emerald-700 transition-colors", isCompact ? "text-xs" : "text-sm")}>{product.name || product.productName || "Untitled product"}</h4>
                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{product.category || 'Lifestyle'}</p>
+                   {isEditorial && (
+                    <p className="text-sm text-slate-500 line-clamp-3">{product.description}</p>
+                   )}
                 </div>
                 
                 <div className="flex justify-between items-end mt-6 pt-4 border-t border-slate-200">
                     <div>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 leading-none mb-1">Price</p>
-                        <p className="text-2xl font-bold tracking-tight text-slate-900">${(product.resellPrice ?? product.price ?? 0).toLocaleString()}</p>
+                        <p className={cn("font-bold tracking-tight text-slate-900", isCompact ? "text-lg" : "text-2xl")}>${(product.resellPrice ?? product.price ?? 0).toLocaleString()}</p>
                     </div>
                     <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 group-hover:bg-emerald-600 group-hover:text-white transition-all transform group-hover:rotate-45">
-                        <ArrowUpRight className="w-4 h-4" />
+                        <ArrowUpRight className="w-4 h-4" style={{ color: inStock ? undefined : accentColor }} />
                     </div>
                 </div>
             </div>

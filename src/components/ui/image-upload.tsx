@@ -20,6 +20,9 @@ interface ImageUploadProps {
     disabled?: boolean;
     folder?: string;
     className?: string;
+    label?: string;
+    helperText?: string;
+    compact?: boolean;
 }
 
 const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY || "";
@@ -36,7 +39,7 @@ async function authenticator() {
     return data;
 }
 
-export function ImageUpload({ value, onChange, disabled, folder = "/shoplinea/products", className }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, disabled, folder = "/shoplinea/products", className, label = "Upload product image", helperText = "JPG, PNG, or WebP. Sent directly to ImageKit.", compact = false }: ImageUploadProps) {
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
@@ -85,7 +88,7 @@ export function ImageUpload({ value, onChange, disabled, folder = "/shoplinea/pr
     return (
         <div className={cn("flex flex-col gap-3 w-full", className)}>
             {value ? (
-                <div className="relative min-h-[220px] w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+                <div className={cn("relative w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950", compact ? "min-h-[140px]" : "min-h-[220px]")}>
                     <Button
                         type="button"
                         onClick={handleRemove}
@@ -131,7 +134,7 @@ export function ImageUpload({ value, onChange, disabled, folder = "/shoplinea/pr
                         variant="outline"
                         disabled={disabled || loading}
                         onClick={() => fileInputRef.current?.click()}
-                        className="h-44 w-full rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-blue-500 hover:bg-zinc-900"
+                        className={cn("w-full rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-blue-500 hover:bg-zinc-900", compact ? "h-36" : "h-44")}
                     >
                         {loading ? (
                             <div className="flex w-full max-w-xs flex-col items-center gap-3 px-5">
@@ -147,8 +150,8 @@ export function ImageUpload({ value, onChange, disabled, folder = "/shoplinea/pr
                                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-400">
                                     <ImagePlus className="h-6 w-6" />
                                 </span>
-                                <span className="text-sm font-bold text-white">Upload product image</span>
-                                <span className="text-xs font-medium text-zinc-500">JPG, PNG, or WebP. Sent directly to ImageKit.</span>
+                                <span className="text-sm font-bold text-white">{label}</span>
+                                <span className="text-xs font-medium text-zinc-500">{helperText}</span>
                                 <span className="mt-1 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-3 py-1 text-xs font-semibold text-zinc-400">
                                     <UploadCloud className="h-3.5 w-3.5" />
                                     Choose file

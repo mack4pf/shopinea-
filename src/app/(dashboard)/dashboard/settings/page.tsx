@@ -31,7 +31,7 @@ export default function SettingsPage() {
     });
 
     const [formData, setFormData] = useState({
-        displayName: "", phone: "", storeName: "", storeSlug: "",
+        displayName: "", phone: "", storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981"
     });
     const [host, setHost] = useState("");
 
@@ -50,6 +50,8 @@ export default function SettingsPage() {
                         phone: data.phoneNumber || "",
                         storeName: data.storeName || "",
                         storeSlug: data.storeSlug || "",
+                        storeTagline: data.storeTagline || "",
+                        themeColor: data.themeColor || "#10b981"
                     });
                     setKycData(data.identification || {
                         fullName: "", idType: "Government ID",
@@ -72,6 +74,8 @@ export default function SettingsPage() {
                 phoneNumber: formData.phone,
                 storeName: formData.storeName,
                 storeSlug: formData.storeSlug,
+                storeTagline: formData.storeTagline,
+                themeColor: formData.themeColor,
             });
             toast.success("Settings saved successfully.");
         } catch (error) {
@@ -239,6 +243,26 @@ export default function SettingsPage() {
                                         <Label className="text-xs font-medium text-zinc-400">Store Name</Label>
                                         <Input value={formData.storeName} onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
                                             className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" placeholder="My Awesome Store" />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Store Tagline</Label>
+                                            <Input value={formData.storeTagline} onChange={(e) => setFormData({ ...formData, storeTagline: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" placeholder="Premium sourced products, fast shipping" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Accent Color</Label>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="color"
+                                                    value={formData.themeColor}
+                                                    onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
+                                                    className="w-14 h-11 rounded-lg border border-white/[0.08] bg-white/[0.04] p-0"
+                                                />
+                                                <Input value={formData.themeColor} onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
+                                                    className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 flex-1" placeholder="#10b981" />
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-xs font-medium text-zinc-400">Store URL</Label>

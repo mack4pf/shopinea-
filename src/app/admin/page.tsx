@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getDefaultStock } from "@/lib/catalog";
 
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
@@ -217,7 +218,9 @@ export default function AdminDashboard() {
 
     const handleRunSimulator = async () => {
         const simUser = allUsers.find(u => u.id === simUserId);
-        const storeProds = (simUser?.storeProducts || []).filter((p: any) => simSelectedProducts.includes(p.id));
+        const storeProds = (simUser?.storeProducts || [])
+            .filter((p: any) => simSelectedProducts.includes(p.id))
+            .map((p: any) => ({ ...p, stock: Number(p.stock ?? getDefaultStock(p.id || p.name)) }));
         const validLocs = simLocations.filter(l => l.country.trim() && Number(l.count) > 0);
         if (!simUserId) { toast.error("Select a reseller account first."); return; }
         if (storeProds.length === 0) { toast.error("Select at least one product."); return; }
@@ -244,7 +247,10 @@ export default function AdminDashboard() {
                 const count = Math.min(Number(loc.count) || 0, 2000);
                 const cities = locCities[loc.country] || [];
                 for (let i = 0; i < count; i++) {
-                    const product = storeProds[Math.floor(Math.random() * storeProds.length)];
+                    const availableProducts = storeProds.filter((p: any) => p.stock > 0);
+                    if (availableProducts.length === 0) break;
+                    const product = availableProducts[Math.floor(Math.random() * availableProducts.length)];
+                    product.stock = Math.max(0, product.stock - 1);
                     const profit = (product.resellPrice || 0) - (product.price || 0);
                     const resellerProfit = profit > 0 ? profit : (product.price || 0) * 0.3;
                     // All simulated orders are spread across today's hours only
@@ -254,6 +260,8 @@ export default function AdminDashboard() {
                     const randomCity = cities.length > 0 ? cities[Math.floor(Math.random() * cities.length)] : null;
                     await addDoc(collection(db, "orders"), {
                         resellerId: simUserId,
+                        resellerName: simUser.displayName || simUser.storeName || "Merchant",
+                        storeName: simUser.storeName || "Store",
                         customerName: getUniqueName(),
                         customerCountry: loc.country,
                         ...(randomCity ? { customerCity: randomCity } : {}),
@@ -265,7 +273,13 @@ export default function AdminDashboard() {
                         createdAt,
                     });
                     await updateDoc(doc(db, "users", simUserId), {
-                        pendingPayout: increment(resellerProfit)
+                        pendingPayout: increment(resellerProfit),
+                        "stats.orders": increment(1),
+                        "stats.sales": increment(1),
+                        storeProducts: (simUser.storeProducts || []).map((p: any) => {
+                            const changed = storeProds.find((sp: any) => sp.id === p.id);
+                            return changed ? { ...p, stock: changed.stock } : p;
+                        })
                     });
                     // 5% referral commission — credit the person who referred this seller
                     if (simUser.referredBy) {

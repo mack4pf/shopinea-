@@ -177,14 +177,19 @@ export default function UserMatrixPage() {
             toast.error("Select at least one product to simulate orders for.");
             return;
         }
-        const validLocations = simLocations.filter(l => l.country.trim() && Number(l.count) > 0);
+
+        const validLocations = simLocations
+            .map(loc => ({ country: loc.country.trim(), count: Math.max(0, Math.trunc(Number(loc.count || "0"))) }))
+            .filter(loc => loc.country && loc.count > 0);
+
         if (validLocations.length === 0) {
             toast.error("Add at least one location with an order count.");
             return;
         }
+
         setBoostingSales(true);
         try {
-            // Pre-fetch cities for all locations
+            // Pre-fetch cities for all locations.
             const locCities: Record<string, string[]> = {};
             await Promise.all(validLocations.map(async loc => {
                 locCities[loc.country] = await fetchCitiesForCountry(loc.country);
@@ -198,21 +203,24 @@ export default function UserMatrixPage() {
                     const name = `${first} ${last}`;
                     if (!usedNames.has(name)) { usedNames.add(name); return name; }
                 }
-                const n = `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]} ${Math.floor(Math.random() * 99)}`;
-                usedNames.add(n);
-                return n;
+                const fallbackName = `${FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)]} ${LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)]} ${Math.floor(Math.random() * 99)}`;
+                usedNames.add(fallbackName);
+                return fallbackName;
             };
 
-            let totalOrders = 0;
+            const orderPromises: Promise<any>[] = [];
+            let totalPayout = 0;
+
             for (const loc of validLocations) {
-                const count = Math.min(Number(loc.count) || 0, 2000);
                 const cities = locCities[loc.country] || [];
-                for (let i = 0; i < count; i++) {
+                for (let i = 0; i < loc.count; i++) {
                     const product = storeProds[Math.floor(Math.random() * storeProds.length)];
                     const profit = (product.resellPrice || 0) - (product.price || 0);
-                    const createdAt = new Date(Date.now() - (Math.floor(Math.random() * 7) * 86400000) - (Math.floor(Math.random() * 86400000)));
+                    const payout = profit > 0 ? profit : (product.price || 0) * 0.3;
+                    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 7) * 86400000 - Math.floor(Math.random() * 86400000));
                     const randomCity = cities.length > 0 ? cities[Math.floor(Math.random() * cities.length)] : null;
-                    await addDoc(collection(db, "orders"), {
+
+                    orderPromises.push(addDoc(collection(db, "orders"), {
                         resellerId: selectedUser.id,
                         customerName: getUniqueName(),
                         customerCountry: loc.country,
@@ -220,17 +228,23 @@ export default function UserMatrixPage() {
                         productId: product.id,
                         productName: product.name,
                         resellPrice: product.resellPrice || product.price || 0,
-                        resellerProfit: profit > 0 ? profit : (product.price || 0) * 0.3,
+                        resellerProfit: payout,
                         status: 'shipped',
                         createdAt
-                    });
-                    await updateDoc(doc(db, "users", selectedUser.id), {
-                        pendingPayout: increment(profit > 0 ? profit : (product.price || 0) * 0.3)
-                    });
-                    totalOrders++;
+                    }));
+
+                    totalPayout += payout;
                 }
             }
-            toast.success(`Injected ${totalOrders} orders across ${validLocations.length} location(s)!`);
+
+            await Promise.all(orderPromises);
+            if (totalPayout > 0) {
+                await updateDoc(doc(db, "users", selectedUser.id), {
+                    pendingPayout: increment(totalPayout)
+                });
+            }
+
+            toast.success(`Injected ${orderPromises.length} orders across ${validLocations.length} location(s)!`);
             fetchUserDetails(selectedUser);
         } catch (err) {
             console.error(err);
@@ -781,6 +795,7 @@ export default function UserMatrixPage() {
                                             </div>
                                             <input
                                                 type="number"
+                                                min={1}
                                                 value={loc.count}
                                                 onChange={e => updateSimLocation(i, 'count', e.target.value)}
                                                 placeholder="#"

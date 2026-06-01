@@ -1,22 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { collection, getDocs, doc, writeBatch } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase/config";
+import { useEffect, useMemo, useState } from "react";
+import { collection, getDocs, limit, orderBy, query, startAfter, where, type QueryConstraint } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ShoppingBag, Loader2, ArrowUpRight, Search, LayoutGrid, Filter, ArrowRight, PackageOpen } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Filter, LayoutGrid, Loader2, PackageOpen, Search, ShoppingBag } from "lucide-react";
+import { auth, db } from "@/lib/firebase/config";
+import { getFastProductImageUrl, getMarketplaceSourceLabel, getProductKey, PRODUCT_CATEGORIES, PRODUCT_PAGE_SIZE, type CatalogProduct, type ProductCursor } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { products as seedProducts, CATALOG_VERSION } from "@/lib/seed/products";
 import { Navbar } from "@/components/shared/Navbar";
+import { cn } from "@/lib/utils";
 
 export default function MarketplacePage() {
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<CatalogProduct[]>([]);
+    const [liveProducts, setLiveProducts] = useState<CatalogProduct[]>([]);
     const [loading, setLoading] = useState(true);
-    const [user, setUser] = useState<any>(null);
+    const [liveLoading, setLiveLoading] = useState(false);
+    const [liveError, setLiveError] = useState<string | null>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [cursor, setCursor] = useState<ProductCursor>(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [user, setUser] = useState<unknown>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
     const router = useRouter();
 
     useEffect(() => {
@@ -24,202 +31,299 @@ export default function MarketplacePage() {
         return () => unsub();
     }, []);
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const productsRef = collection(db, "products");
-                const snapshot = await getDocs(productsRef);
+    const buildQuery = (nextCursor?: ProductCursor) => {
+        const constraints: QueryConstraint[] = selectedCategory === "All"
+            ? [orderBy("sortOrder"), limit(PRODUCT_PAGE_SIZE)]
+            : [where("category", "==", selectedCategory), limit(PRODUCT_PAGE_SIZE)];
 
-                // Force-reseed only if ALL products are on a stale version (never delete admin-added extras)
-                const isStale = !snapshot.empty &&
-                    snapshot.docs.every(d => (d.data().catalogVersion ?? 0) !== CATALOG_VERSION);
+        if (nextCursor) constraints.push(startAfter(nextCursor));
+        return query(collection(db, "products"), ...constraints);
+    };
 
-                if (snapshot.empty || isStale) {
-                    if (!snapshot.empty) {
-                        const delBatch = writeBatch(db);
-                        snapshot.docs.forEach(d => delBatch.delete(d.ref));
-                        await delBatch.commit();
-                    }
-                    const seedBatch = writeBatch(db);
-                    seedProducts.forEach(p => seedBatch.set(doc(productsRef), p));
-                    await seedBatch.commit();
-                }
-
-                const fresh = await getDocs(productsRef);
-                const fetched = fresh.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-
-                // Deduplicate by name, keep isFeatured version
-                const uniqueMap = new Map();
-                fetched.forEach((p: any) => {
-                    if (!p.name) return;
-                    const existing = uniqueMap.get(p.name);
-                    if (!existing || (p.isFeatured && !existing.isFeatured)) uniqueMap.set(p.name, p);
-                });
-
-                const sorted = Array.from(uniqueMap.values()).sort((a: any, b: any) =>
-                    (a.sortOrder ?? 99) - (b.sortOrder ?? 99)
-                );
-                setProducts(sorted);
-            } catch (error) {
-                console.error("Error fetching products:", error);
-            } finally {
-                setLoading(false);
+    const loadLiveProducts = async () => {
+        setLiveLoading(true);
+        setLiveError(null);
+        try {
+            const res = await fetch("/api/verified-products");
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data?.error || "Failed to load live products.");
             }
-        };
-        fetchProducts();
-    }, []);
-
-    const handleProductClick = () => {
-        if (!user) {
-            router.push("/login?redirect=/onboarding/reseller");
-        } else {
-            router.push("/onboarding/reseller");
+            const filteredByCategory = selectedCategory === "All"
+                ? data
+                : data.filter((product: CatalogProduct) => product.category === selectedCategory);
+            setLiveProducts(filteredByCategory);
+        } catch (error: any) {
+            console.error(error);
+            setLiveError(error?.message || "Unable to fetch live products.");
+            setLiveProducts([]);
+        } finally {
+            setLiveLoading(false);
         }
     };
 
-    const filtered = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const loadProducts = async (mode: "reset" | "more" = "reset") => {
+        if (mode === "more") setLoadingMore(true);
+        else setLoading(true);
+
+        try {
+            const snapshot = await getDocs(buildQuery(mode === "more" ? cursor : null));
+            const nextProducts = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as CatalogProduct));
+            setProducts((prev) => dedupeProducts(mode === "more" ? [...prev, ...nextProducts] : nextProducts));
+            setCursor(snapshot.docs.at(-1) ?? null);
+            setHasMore(snapshot.docs.length === PRODUCT_PAGE_SIZE);
+        } catch (error) {
+            console.error("Error fetching products:", error);
+            setHasMore(false);
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        setCursor(null);
+        setProducts([]);
+        setHasMore(true);
+        void loadProducts("reset");
+        void loadLiveProducts();
+    }, [selectedCategory]);
+
+    const combinedProducts = useMemo(() => dedupeProducts([...products, ...liveProducts]), [products, liveProducts]);
+    const filtered = useMemo(() => {
+        const term = searchQuery.trim().toLowerCase();
+        if (!term) return combinedProducts;
+        return combinedProducts.filter((p) => [p.name, p.category, p.description, p.source].some((value) => value?.toLowerCase().includes(term)));
+    }, [combinedProducts, searchQuery]);
+    const showLiveWarning = liveError && !liveLoading && liveProducts.length === 0 && products.length > 0;
+
+    const handleProductClick = () => {
+        router.push(user ? "/onboarding/reseller" : "/login?redirect=/onboarding/reseller");
+    };
 
     return (
-        <div className="min-h-screen bg-[#f5f7fb] text-slate-900 selection:bg-emerald-200/70 pb-24">
+        <div className="min-h-screen bg-[#f5f7fb] pb-24 text-slate-900 selection:bg-emerald-200/70">
             <Navbar />
-            {/* Nav Space */}
             <div className="h-20 sm:h-24" />
 
-            <main className="container mx-auto px-6 max-w-7xl space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                {/* Hero Header */}
-                <div className="flex flex-col md:flex-row justify-between items-end gap-10 border-b border-slate-200 pb-12">
-                    <div className="max-w-xl space-y-4">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full border border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                             Professional Sourcing
+            <main className="container mx-auto max-w-7xl space-y-10 px-4 sm:px-6">
+                <section className="grid gap-6 border-b border-slate-200 pb-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+                    <div className="max-w-2xl space-y-4">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                            Professional Sourcing
                         </div>
-                            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-slate-900 leading-tight">Millions of items. <br/> <span className="text-slate-500 font-medium">Ready to sell.</span></h1>
-                            <p className="text-slate-600 font-medium text-lg max-w-lg">Browse our verified catalog of high-demand products and add them to your store with a single click.</p>
-                    {/* Free plan notice */}
-                    <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-blue-50 border border-blue-200 max-w-xl">
-                        <span className="text-xl mt-0.5">🔒</span>
-                        <p className="text-sm text-slate-700 leading-snug">
-                            <strong className="font-extrabold text-slate-900">Free plan: you can only view and add up to 20 products to your store.</strong>{" "}
-                            <a href="/dashboard/subscription" className="text-blue-600 font-bold underline underline-offset-2 hover:text-blue-800 transition-colors">Upgrade your plan</a> to unlock unlimited products.
+                        <h1 className="text-4xl font-bold leading-tight tracking-tight text-slate-900 md:text-6xl">
+                            Products ready to sell.
+                        </h1>
+                        <p className="max-w-xl text-base font-medium leading-7 text-slate-600">
+                            Browse the catalog in fast pages, filter by category, then add products to your store.
                         </p>
                     </div>
-                    </div>
-                    
-                    <div className="w-full md:w-96 space-y-4">
-                        <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-700 transition-colors" />
+
+                    <div className="space-y-4">
+                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+                            <strong className="font-semibold">Combined live feed + marketplace catalog</strong>
+                            <p className="mt-2 text-xs text-slate-500">Showing products from DummyJSON, FakeStoreAPI, Shopify feeds, and the marketplace catalog all together.</p>
+                        </div>
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
-                                placeholder="Search products..."
-                                className="w-full h-12 pl-12 pr-4 rounded-xl bg-white border border-slate-200 text-sm font-medium placeholder:text-slate-400 focus:outline-none focus:border-emerald-500/50 transition-all text-slate-800"
+                                placeholder="Search all products..."
+                                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-medium text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500/50"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {loading ? (
-                    <div className="py-40 flex flex-col items-center justify-center space-y-6">
-                        <div className="relative">
-                            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
-                            <div className="absolute inset-0 blur-xl bg-blue-600/20" />
+                <section className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
+                    <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500">
+                            <Filter className="h-4 w-4" />
+                            Categories
                         </div>
-                        <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-[0.3em]">Loading Catalog...</p>
-                    </div>
-                ) : (
-                    <div className="space-y-12">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
+                        <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+                            {PRODUCT_CATEGORIES.map((category) => (
+                                <button
+                                    key={category}
+                                    type="button"
+                                    onClick={() => setSelectedCategory(category)}
+                                    className={cn(
+                                        "shrink-0 rounded-xl border px-4 py-2.5 text-left text-sm font-bold transition-colors",
+                                        selectedCategory === category
+                                            ? "border-slate-900 bg-slate-900 text-white"
+                                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                                    )}
+                                >
+                                    {category}
+                                </button>
+                            ))}
+                        </div>
+                    </aside>
+
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-slate-500">
                             <div className="flex items-center gap-2">
-                                <LayoutGrid className="w-4 h-4" />
-                                {filtered.length} products found
+                                <LayoutGrid className="h-4 w-4" />
+                                {loading || liveLoading ? "Loading" : `${filtered.length} showing`}
                             </div>
-                            <div className="flex items-center gap-4">
-                                <span className="hidden sm:inline">Sort: Trending</span>
-                                <Filter className="w-4 h-4" />
-                            </div>
+                            <span>Sort: Recommended</span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filtered.length === 0 ? (
-                                <div className="col-span-full py-40 border border-dashed border-slate-300 rounded-[2.5rem] flex flex-col items-center justify-center space-y-4 bg-white">
-                                    <PackageOpen className="w-12 h-12 text-slate-400" />
-                                    <h3 className="text-slate-800 font-bold">No products found</h3>
-                                    <p className="text-slate-500 text-sm font-medium">Try searching for something else or browse categories.</p>
-                                    <Button variant="outline" onClick={() => setSearchQuery("")} className="mt-4 rounded-xl border-slate-300 hover:bg-slate-50 text-xs font-bold">Clear Search</Button>
+                        {showLiveWarning && (
+                            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                <span className="text-lg">⚠️</span>
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold text-amber-900">Live product feeds unavailable</p>
+                                    <p className="text-xs text-amber-800 mt-1">{liveError}</p>
+                                    <p className="text-xs text-amber-700 mt-2">Showing marketplace catalog products. Refresh to retry live feeds.</p>
                                 </div>
-                            ) : (
-                                filtered.map((product) => (
+                            </div>
+                        )}
+
+                        {liveError && combinedProducts.length === 0 ? (
+                            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-center p-8">
+                                <span className="text-3xl">⚠️</span>
+                                <h3 className="mt-4 text-lg font-semibold text-slate-900">Could not load products</h3>
+                                <p className="mt-2 text-sm text-slate-600 max-w-md">{liveError}</p>
+                                <button
+                                    onClick={() => window.location.reload()}
+                                    className="mt-5 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition-colors"
+                                >
+                                    Reload Page
+                                </button>
+                            </div>
+                        ) : loading || (liveLoading && combinedProducts.length === 0) ? (
+                            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white">
+                                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                                <p className="mt-4 text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Loading Products</p>
+                            </div>
+                        ) : filtered.length === 0 ? (
+                            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white text-center">
+                                <PackageOpen className="mb-4 h-12 w-12 text-slate-400" />
+                                <h3 className="font-bold text-slate-800">No products found</h3>
+                                <p className="mt-1 text-sm font-medium text-slate-500">Try another category, clear search, or switch tab.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                                {filtered.map((product) => (
                                     <MarketplaceCard key={product.id} product={product} onClick={handleProductClick} />
-                                ))
-                            )}
-                        </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {!loading && hasMore && (
+                            <div className="flex justify-center pt-2">
+                                <Button
+                                    type="button"
+                                    onClick={() => loadProducts("more")}
+                                    disabled={loadingMore}
+                                    className="h-12 rounded-xl bg-slate-900 px-8 font-bold text-white hover:bg-slate-800"
+                                >
+                                    {loadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Load More Products
+                                </Button>
+                            </div>
+                        )}
                     </div>
-                )}
+                </section>
             </main>
         </div>
     );
 }
 
-function MarketplaceCard({ product, onClick }: { product: any, onClick: () => void }) {
+function dedupeProducts(products: CatalogProduct[]) {
+    const seen = new Set<string>();
+    return products.filter((product) => {
+        const key = getProductKey(product);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+function MarketplaceCard({ product, onClick }: { product: CatalogProduct; onClick: () => void }) {
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageFailed, setImageFailed] = useState(false);
+    const imageUrl = getFastProductImageUrl(product.image);
+    const sourceLabel = getMarketplaceSourceLabel(product.source);
+
+    const handleViewProduct = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        if (product.sourceUrl) {
+            window.open(product.sourceUrl, "_blank");
+        } else {
+            onClick();
+        }
+    };
 
     return (
-        <div 
+        <article
             onClick={onClick}
-            className="group relative bg-white border border-slate-200 rounded-[2rem] overflow-hidden hover:bg-slate-50 hover:border-slate-300 transition-all duration-500 flex flex-col cursor-pointer shadow-sm"
+            className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:border-slate-300 hover:bg-slate-50"
         >
-            <div className="aspect-[4/5] relative overflow-hidden bg-slate-100">
-                {product.image ? (
-                    <Image 
-                        src={product.image} 
-                        alt={product.name || "Product"} 
-                        fill 
-                        className={cn(
-                            "object-cover transition-transform duration-1000 group-hover:scale-110 group-hover:opacity-70",
-                            imageLoaded ? "opacity-100" : "opacity-0"
-                        )}
+            <div className="relative aspect-[4/5] overflow-hidden bg-slate-100">
+                {imageUrl && !imageFailed ? (
+                    <Image
+                        src={imageUrl}
+                        alt={product.name || "Product"}
+                        fill
+                        sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+                        unoptimized={imageUrl.includes("cdn.shopify.com")}
+                        className={cn("object-cover transition duration-500 group-hover:scale-105", imageLoaded ? "opacity-100" : "opacity-0")}
                         onLoadingComplete={() => setImageLoaded(true)}
+                        onError={() => {
+                            setImageFailed(true);
+                            setImageLoaded(true);
+                        }}
                     />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                        <ShoppingBag className="w-20 h-20" />
+                        <ShoppingBag className="h-20 w-20" />
                     </div>
                 )}
-                
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-50" />
-                
-                {product.isFeatured && (
-                    <div className="absolute top-4 left-4 z-10">
-                        <span className="px-2.5 py-1 bg-emerald-600 text-white text-[9px] font-bold uppercase tracking-widest rounded-full shadow-lg">
-                            ⭐ Featured
-                        </span>
+                {!imageLoaded && imageUrl && !imageFailed && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
                     </div>
                 )}
-                
-                <div className="absolute bottom-6 left-6 right-6 translate-y-20 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out z-20">
-                    <Button className="w-full h-12 brand-gradient text-white font-bold rounded-xl shadow-2xl hover:opacity-90 text-xs gap-2">
+                <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-700">
+                    {sourceLabel}
+                </span>
+            </div>
+
+            <div className="flex flex-1 flex-col p-5">
+                <div className="flex-1 space-y-2">
+                    <h4 className="line-clamp-2 text-sm font-black uppercase leading-tight tracking-tight text-slate-900">{product.name}</h4>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{product.category || "General Sourcing"}</p>
+                </div>
+
+                <div className="mt-6 flex items-end justify-between border-t border-slate-200 pt-4">
+                    <div>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">Base Cost</p>
+                        <p className="text-2xl font-bold tracking-tighter text-slate-900">${Number(product.price || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-500 transition-all group-hover:bg-emerald-600 group-hover:text-white">
+                        <ArrowUpRight className="h-4 w-4" />
+                    </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                    <button
+                        type="button"
+                        onClick={handleViewProduct}
+                        className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                    >
+                        View Product
+                    </button>
+                    <Button className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 text-xs font-black text-white hover:bg-blue-700">
                         Add to Store
-                        <ArrowRight className="w-4 h-4" />
+                        <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 </div>
             </div>
-            
-            <div className="p-8 flex flex-col flex-1">
-                <div className="flex-1 space-y-2">
-                    <h4 className="font-bold text-sm text-slate-900 line-clamp-2 leading-tight group-hover:text-emerald-700 transition-colors uppercase tracking-tight">{product.name}</h4>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{product.category || 'General Sourcing'}</p>
-                </div>
-                
-                <div className="flex justify-between items-end mt-8 pt-4 border-t border-slate-200">
-                    <div>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Base Wholesale Cost</p>
-                        <p className="text-2xl font-bold tracking-tighter text-slate-900">${product.price?.toLocaleString() || '0'}</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                        <ArrowUpRight className="w-4 h-4" />
-                    </div>
-                </div>
-            </div>
-        </div>
+        </article>
     );
 }

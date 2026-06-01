@@ -325,6 +325,11 @@ export default function EscrowOpsPage() {
             await updateDoc(userRef, {
                 plan: req.planId,
                 planName: req.planName,
+                aiCredits: increment(req.aiCredits || 0),
+                adsCreditBalance: increment(req.adCredits || 0),
+                monthlyAdsCredit: req.adCredits || 0,
+                maxStores: req.maxStores || 1,
+                multipleStoresEnabled: (req.maxStores || 1) > 1,
                 planStartDate: serverTimestamp(),
                 planExpiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
             });
