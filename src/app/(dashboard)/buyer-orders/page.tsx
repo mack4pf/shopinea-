@@ -1,23 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import {
-    Package,
-    CheckCircle2,
-    ArrowLeft,
-    ShoppingBag,
-    Loader2,
-    History,
-    MapPin,
-    Clock,
-    Truck,
-    ExternalLink
-} from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import {
+    ArrowLeft,
+    CheckCircle2,
+    Clock,
+    Loader2,
+    MapPin,
+    Package,
+    Search,
+    ShoppingBag,
+    Truck,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const statusMap: Record<string, { label: string; tone: string; step: number }> = {
+    completed: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4 },
+    delivered: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4 },
+    shipped: { label: "On the way", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 3 },
+    awaiting_seller_fulfillment: { label: "Preparing", tone: "bg-violet-50 text-violet-700 border-violet-200", step: 2 },
+    paid_to_site: { label: "Processing", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 2 },
+    awaiting_admin_confirmation: { label: "Processing", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 2 },
+};
+
+const steps = ["Placed", "Processing", "Shipped", "Delivered"];
 
 export default function BuyerOrdersPage() {
     const [user, setUser] = useState<any>(null);
@@ -27,211 +38,197 @@ export default function BuyerOrdersPage() {
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
-            if (firebaseUser) {
-                setUser(firebaseUser);
-
-                // Fetch orders for this buyer
-                const q = query(
-                    collection(db, "orders"),
-                    where("customerId", "==", firebaseUser.uid),
-                    orderBy("createdAt", "desc")
-                );
-
-                const unsubscribeOrders = onSnapshot(q, (snapshot) => {
-                    const ordersData = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    setOrders(ordersData);
-                    setLoading(false);
-                });
-
-                return () => unsubscribeOrders();
-            } else {
+            setUser(firebaseUser);
+            if (!firebaseUser) {
                 setLoading(false);
+                return;
             }
+
+            const ordersQuery = query(
+                collection(db, "orders"),
+                where("customerId", "==", firebaseUser.uid),
+                orderBy("createdAt", "desc")
+            );
+
+            const unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
+                setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                setLoading(false);
+            }, (error) => {
+                console.error(error);
+                setLoading(false);
+            });
+
+            return () => unsubscribeOrders();
         });
 
         return () => unsubscribeAuth();
     }, []);
 
-    const getStatusStyles = (status: string) => {
-        switch (status) {
-            case 'completed': return { badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20', label: 'Delivered' };
-            case 'shipped': return { badge: 'bg-blue-500/15 text-blue-400 border-blue-500/20', label: 'In Transit' };
-            case 'paid_to_site':
-            case 'awaiting_admin_confirmation': return { badge: 'bg-amber-500/15 text-amber-400 border-amber-500/20', label: 'Processing' };
-            case 'awaiting_seller_fulfillment': return { badge: 'bg-violet-500/15 text-violet-400 border-violet-500/20', label: 'Preparing' };
-            default: return { badge: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/20', label: 'Pending' };
-        }
-    };
+    const filteredOrders = useMemo(() => {
+        const clean = searchQuery.trim().toLowerCase();
+        if (!clean) return orders;
+        return orders.filter(order =>
+            (order.productName || "").toLowerCase().includes(clean) ||
+            (order.storeName || "").toLowerCase().includes(clean) ||
+            order.id.toLowerCase().includes(clean)
+        );
+    }, [orders, searchQuery]);
 
-    const getStepStatus = (orderStatus: string) => {
-        const steps = [
-            { id: 1, label: 'Order Placed', active: true },
-            { id: 2, label: 'Processing', active: ['paid_to_site', 'awaiting_seller_fulfillment', 'shipped', 'completed'].includes(orderStatus) },
-            { id: 3, label: 'In Transit', active: ['shipped', 'completed'].includes(orderStatus) },
-            { id: 4, label: 'Delivered', active: ['completed'].includes(orderStatus) }
-        ];
-        return steps;
-    };
+    const totalSpent = orders.reduce((sum, order) => sum + Number(order.resellPrice || 0), 0);
 
     if (loading) {
         return (
-            <div className="h-[80vh] flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
             </div>
         );
     }
 
     if (!user) {
         return (
-            <div className="h-[80vh] flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-white/[0.04] border border-white/[0.08] rounded-2xl flex items-center justify-center mb-5">
-                    <Package className="w-8 h-8 text-zinc-600" />
+            <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center text-center">
+                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                    <ShoppingBag className="h-8 w-8 text-slate-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white mb-2">Sign In Required</h2>
-                <p className="text-sm text-zinc-500 mb-6">Please log in to view your order history.</p>
-                <Link href="/login" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-                    Log In
+                <h1 className="text-2xl font-black text-slate-950">Sign in to view orders</h1>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Your purchases, delivery updates, and receipts live here.</p>
+                <Link href="/login" className="mt-6 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white hover:bg-slate-800">
+                    Sign in
                 </Link>
             </div>
         );
     }
 
-    const filteredOrders = orders.filter(o =>
-        o.productName?.toLowerCase().includes(searchQuery?.toLowerCase() || '') ||
-        o.id.toLowerCase().includes(searchQuery?.toLowerCase() || '')
-    );
-
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-20">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Link href="/marketplace" className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
-                            <ArrowLeft className="w-3.5 h-3.5" />
-                            Back to Shopping
-                        </Link>
+        <div className="space-y-6 pb-16">
+            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7">
+                <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-slate-950">
+                    <ArrowLeft className="h-4 w-4" />
+                    Continue shopping
+                </Link>
+                <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-black tracking-tight text-slate-950">Your orders</h1>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                            Track purchases from every Shopinea store in one simple place.
+                        </p>
                     </div>
-                    <h1 className="text-2xl font-bold text-white">My Orders</h1>
-                    <p className="text-sm text-zinc-500 mt-1">Track all your purchases in one place.</p>
+                    <div className="grid grid-cols-2 gap-3 sm:w-80">
+                        <div className="rounded-2xl bg-slate-50 p-4">
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Orders</p>
+                            <p className="mt-1 text-2xl font-black text-slate-950">{orders.length}</p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 p-4">
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Spent</p>
+                            <p className="mt-1 text-2xl font-black text-slate-950">${totalSpent.toLocaleString()}</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="px-4 py-2 bg-white/[0.03] border border-white/[0.06] rounded-lg text-center">
-                        <p className="text-xs text-zinc-500">Total Orders</p>
-                        <p className="text-lg font-bold text-white">{orders.length}</p>
-                    </div>
+                <div className="mt-6 flex max-w-xl items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5">
+                    <Search className="h-4 w-4 text-slate-400" />
+                    <input
+                        value={searchQuery}
+                        onChange={(event) => setSearchQuery(event.target.value)}
+                        placeholder="Search by product, store, or order number"
+                        className="ml-2 w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                    />
                 </div>
             </div>
 
-            {/* Orders */}
             {filteredOrders.length === 0 ? (
-                <div className="text-center py-20 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.08]">
-                    <ShoppingBag className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
-                    <h2 className="text-lg font-semibold text-white mb-2">No orders yet</h2>
-                    <p className="text-sm text-zinc-500 mb-6">Orders you place from any store will appear here.</p>
-                    <Link href="/marketplace" className="px-5 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors">
-                        Browse Marketplace
+                <div className="rounded-3xl border border-dashed border-slate-300 bg-white py-20 text-center shadow-sm">
+                    <ShoppingBag className="mx-auto h-12 w-12 text-slate-300" />
+                    <h2 className="mt-4 text-xl font-black text-slate-950">No orders found</h2>
+                    <p className="mt-2 text-sm text-slate-500">
+                        {orders.length === 0 ? "When you buy something, it will show here." : "Try a different search."}
+                    </p>
+                    <Link href="/" className="mt-6 inline-flex rounded-full bg-slate-950 px-5 py-2.5 text-sm font-black text-white hover:bg-slate-800">
+                        Start shopping
                     </Link>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {filteredOrders.map((order) => {
-                        const { badge, label } = getStatusStyles(order.status);
-                        const steps = getStepStatus(order.status);
-                        const activeStep = steps.filter(s => s.active).length;
+                    {filteredOrders.map(order => {
+                        const status = statusMap[order.status] || { label: "Pending", tone: "bg-slate-50 text-slate-600 border-slate-200", step: 1 };
+                        const createdAt = order.createdAt?.toDate ? order.createdAt.toDate() : (order.createdAt ? new Date(order.createdAt) : null);
 
                         return (
-                            <div key={order.id} className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/[0.12] transition-all">
-                                {/* Top */}
-                                <div className="p-5 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center border-b border-white/[0.05]">
+                            <article key={order.id} className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+                                <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-center gap-4">
-                                        {order.productImage ? (
-                                            <div className="w-14 h-14 rounded-xl overflow-hidden relative shrink-0 border border-white/[0.08]">
-                                                <Image src={order.productImage} alt={order.productName || 'Product'} fill className="object-cover" />
-                                            </div>
-                                        ) : (
-                                            <div className="w-14 h-14 rounded-xl bg-white/[0.04] flex items-center justify-center shrink-0 border border-white/[0.06]">
-                                                <ShoppingBag className="w-6 h-6 text-zinc-600" />
-                                            </div>
-                                        )}
+                                        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+                                            {order.productImage ? (
+                                                <Image src={order.productImage} alt={order.productName || "Product"} fill className="object-cover" />
+                                            ) : (
+                                                <Package className="h-8 w-8 text-slate-300" />
+                                            )}
+                                        </div>
                                         <div>
-                                            <p className="text-xs text-zinc-500 mb-0.5">Order #{order.id.slice(-8).toUpperCase()}</p>
-                                            <h3 className="text-sm font-semibold text-white">{order.productName || 'Product'}</h3>
-                                            <p className="text-xs text-zinc-600 mt-0.5">
-                                                {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
-                                            </p>
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">#{order.id.slice(-8).toUpperCase()}</p>
+                                            <h2 className="mt-1 text-base font-black text-slate-950">{order.productName || "Product"}</h2>
+                                            <p className="mt-1 text-sm text-slate-500">{order.storeName || "Shopinea store"}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-right">
-                                            <p className="text-xs text-zinc-500">Total</p>
-                                            <p className="text-base font-bold text-white">${order.resellPrice?.toLocaleString() || '0'}</p>
+                                    <div className="flex items-center justify-between gap-4 sm:justify-end">
+                                        <div className="sm:text-right">
+                                            <p className="text-xs font-bold text-slate-400">Total</p>
+                                            <p className="text-lg font-black text-slate-950">${Number(order.resellPrice || 0).toLocaleString()}</p>
                                         </div>
-                                        <span className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${badge}`}>
-                                            {label}
+                                        <span className={cn("rounded-full border px-3 py-1.5 text-xs font-black", status.tone)}>
+                                            {status.label}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Progress Tracker */}
-                                <div className="px-5 py-4">
-                                    <div className="flex items-center justify-between relative">
-                                        {/* Progress line */}
-                                        <div className="absolute top-4 left-4 right-4 h-0.5 bg-white/[0.06]">
-                                            <div
-                                                className="h-full bg-blue-500/60 transition-all duration-500"
-                                                style={{ width: `${((activeStep - 1) / (steps.length - 1)) * 100}%` }}
-                                            />
+                                <div className="grid gap-5 p-5 lg:grid-cols-[1fr_280px]">
+                                    <div className="space-y-5">
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {steps.map((step, index) => {
+                                                const done = index + 1 <= status.step;
+                                                return (
+                                                    <div key={step} className="space-y-2">
+                                                        <div className={cn("h-2 rounded-full", done ? "bg-slate-950" : "bg-slate-200")} />
+                                                        <p className={cn("text-[11px] font-black", done ? "text-slate-950" : "text-slate-400")}>{step}</p>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
 
-                                        {steps.map((step) => (
-                                            <div key={step.id} className="flex flex-col items-center gap-2 relative z-10">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                                                    step.active
-                                                        ? 'bg-blue-600 shadow-lg shadow-blue-500/30'
-                                                        : 'bg-white/[0.05] border border-white/[0.08]'
-                                                }`}>
-                                                    {step.active ? (
-                                                        <CheckCircle2 className="w-4 h-4 text-white" />
-                                                    ) : (
-                                                        <span className="text-[10px] font-bold text-zinc-600">{step.id}</span>
-                                                    )}
-                                                </div>
-                                                <span className={`text-[10px] font-medium text-center whitespace-nowrap ${
-                                                    step.active ? 'text-blue-400' : 'text-zinc-600'
-                                                }`}>
-                                                    {step.label}
-                                                </span>
+                                        <div className="grid gap-3 sm:grid-cols-3">
+                                            <div className="rounded-2xl bg-slate-50 p-4">
+                                                <Clock className="h-4 w-4 text-slate-400" />
+                                                <p className="mt-2 text-xs font-bold text-slate-400">Ordered</p>
+                                                <p className="mt-0.5 text-sm font-black text-slate-900">
+                                                    {createdAt ? createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Recent"}
+                                                </p>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Details footer */}
-                                <div className="px-5 py-3 bg-white/[0.02] border-t border-white/[0.04] flex flex-wrap gap-6">
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="w-3.5 h-3.5 text-zinc-600" />
-                                        <span className="text-xs text-zinc-500">Payment: <span className="text-zinc-300">{order.paymentType || 'Online'}</span></span>
-                                    </div>
-                                    {order.shippingAddress && (
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="w-3.5 h-3.5 text-zinc-600" />
-                                            <span className="text-xs text-zinc-500 truncate max-w-[200px]">{order.shippingAddress}</span>
+                                            <div className="rounded-2xl bg-slate-50 p-4">
+                                                <Truck className="h-4 w-4 text-slate-400" />
+                                                <p className="mt-2 text-xs font-bold text-slate-400">Delivery</p>
+                                                <p className="mt-0.5 text-sm font-black text-slate-900">Standard shipping</p>
+                                            </div>
+                                            <div className="rounded-2xl bg-slate-50 p-4">
+                                                <CheckCircle2 className="h-4 w-4 text-slate-400" />
+                                                <p className="mt-2 text-xs font-bold text-slate-400">Payment</p>
+                                                <p className="mt-0.5 text-sm font-black text-slate-900">{order.paymentType || "Online"}</p>
+                                            </div>
                                         </div>
-                                    )}
-                                    <div className="flex items-center gap-2">
-                                        <Truck className="w-3.5 h-3.5 text-zinc-600" />
-                                        <span className="text-xs text-zinc-500">Carrier: <span className="text-zinc-300">Standard Shipping</span></span>
                                     </div>
-                                    <button className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors ml-auto">
-                                        <ExternalLink className="w-3.5 h-3.5" />
-                                        Track Shipment
-                                    </button>
+
+                                    <div className="rounded-2xl border border-slate-200 p-4">
+                                        <p className="text-sm font-black text-slate-950">Ship to</p>
+                                        <div className="mt-3 flex items-start gap-2">
+                                            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                                            <p className="text-sm leading-6 text-slate-500">
+                                                {order.customerAddress || order.shippingAddress || "Address saved on order"}
+                                            </p>
+                                        </div>
+                                        <button className="mt-4 w-full rounded-full border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">
+                                            Track package
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            </article>
                         );
                     })}
                 </div>

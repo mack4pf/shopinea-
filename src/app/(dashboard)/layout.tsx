@@ -6,7 +6,7 @@ import {
     LayoutDashboard, Wallet, Package, ShoppingCart, BarChart3,
     Users, Megaphone, UserCircle, CreditCard, Bell, Settings,
     HelpCircle, LogOut, Menu, X, User as UserIcon, Search,
-    ChevronRight, History, MessageSquare, Zap, Crown, AlertTriangle
+    ChevronRight, History, MessageSquare, Zap, Crown, AlertTriangle, Home, Heart, Headphones
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase/config";
@@ -108,6 +108,92 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     const currencySymbol = getCurrencySymbol(userData?.currency);
+
+    if (userData?.role === "buyer") {
+        return (
+            <div className="min-h-screen bg-slate-50 text-slate-950">
+                <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+                    <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+                        <Link href="/" className="flex items-center gap-2.5">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/images/sholinealogo2.png" alt="shopinea" className="h-9 w-9 object-contain" />
+                            <span className="text-base font-black tracking-tight text-slate-950">shopinea</span>
+                        </Link>
+
+                        <div className="hidden flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 md:flex max-w-xl">
+                            <Search className="h-4 w-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search products, stores, or orders"
+                                className="ml-2 w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                                onKeyDown={(event) => {
+                                    if (event.key === "Enter") router.push("/");
+                                }}
+                            />
+                        </div>
+
+                        <nav className="hidden items-center gap-1 md:flex">
+                            {[
+                                { label: "Shop", href: "/", icon: Home },
+                                { label: "Orders", href: "/buyer-orders", icon: ShoppingCart },
+                                { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+                                { label: "Support", href: "/dashboard/support", icon: Headphones },
+                            ].map(item => {
+                                const active = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={cn(
+                                            "flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-bold transition-colors",
+                                            active ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                                        )}
+                                    >
+                                        <item.icon className="h-4 w-4" />
+                                        {item.label}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+
+                        <div className="flex items-center gap-2">
+                            <button className="hidden rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 sm:block">
+                                <Heart className="h-4 w-4" />
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="rounded-full border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:bg-slate-50"
+                            >
+                                Sign out
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto border-t border-slate-100 px-4 py-2 md:hidden">
+                        {[
+                            { label: "Shop", href: "/" },
+                            { label: "Orders", href: "/buyer-orders" },
+                            { label: "Messages", href: "/dashboard/messages" },
+                            { label: "Support", href: "/dashboard/support" },
+                        ].map(item => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "shrink-0 rounded-full px-3 py-1.5 text-xs font-black",
+                                    pathname === item.href ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-600"
+                                )}
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+                    </div>
+                </header>
+                <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                    {children}
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#0b0f1a] text-white flex">
