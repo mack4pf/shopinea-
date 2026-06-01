@@ -28,7 +28,10 @@ export default function CustomersPage() {
                     const customerMap: Record<string, any> = {};
                     orders.forEach(o => {
                         // Key by name (trimmed lower) — each unique buyer name is its own customer
-                        const key = (o.customerName || 'Guest').trim().toLowerCase();
+                        const key = (o.customerId || o.customerEmail || `${o.customerName || 'Guest'}-${o.customerCity || ''}-${o.customerCountry || ''}`)
+                            .toString()
+                            .trim()
+                            .toLowerCase();
                         const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
 
                         if (!customerMap[key]) {

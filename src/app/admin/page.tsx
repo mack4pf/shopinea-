@@ -150,6 +150,7 @@ export default function AdminDashboard() {
     const [simUserId, setSimUserId] = useState("");
     const [simSelectedProducts, setSimSelectedProducts] = useState<string[]>([]);
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "20" }]);
+    const [simOrderDate, setSimOrderDate] = useState<"today" | "yesterday">("today");
     const [runningSim, setRunningSim] = useState(false);
     const [boostUserId, setBoostUserId] = useState("");
     const [boostViews, setBoostViews] = useState("");
@@ -242,6 +243,23 @@ export default function AdminDashboard() {
                 const fb = `${SIM_FIRST[Math.floor(Math.random()*SIM_FIRST.length)]} ${SIM_LAST[Math.floor(Math.random()*SIM_LAST.length)]} ${Math.floor(Math.random()*99)}`;
                 usedNames.add(fb); return fb;
             };
+            const getOrderDate = () => {
+                const start = new Date();
+                if (simOrderDate === "yesterday") start.setDate(start.getDate() - 1);
+                start.setHours(0, 0, 0, 0);
+                const end = simOrderDate === "today" ? new Date() : new Date(start.getTime() + 86399000);
+                const span = Math.max(1, end.getTime() - start.getTime());
+                return new Date(start.getTime() + Math.floor(Math.random() * span));
+            };
+            const makeBuyer = (orderNumber: number) => {
+                const name = getUniqueName();
+                const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "");
+                return {
+                    id: `sim-${simUserId}-${Date.now()}-${orderNumber}`,
+                    name,
+                    email: `${slug}.${orderNumber}@buyer.shoplinea.local`,
+                };
+            };
             let total = 0;
             for (const loc of validLocs) {
                 const count = Math.min(Number(loc.count) || 0, 2000);
@@ -253,16 +271,16 @@ export default function AdminDashboard() {
                     product.stock = Math.max(0, product.stock - 1);
                     const profit = (product.resellPrice || 0) - (product.price || 0);
                     const resellerProfit = profit > 0 ? profit : (product.price || 0) * 0.3;
-                    // All simulated orders are spread across today's hours only
-                    const hoursAgo = Math.floor(Math.random() * 23);
-                    const minsAgo = Math.floor(Math.random() * 60);
-                    const createdAt = new Date(Date.now() - hoursAgo * 3600000 - minsAgo * 60000);
+                    const buyer = makeBuyer(total + 1);
+                    const createdAt = getOrderDate();
                     const randomCity = cities.length > 0 ? cities[Math.floor(Math.random() * cities.length)] : null;
                     await addDoc(collection(db, "orders"), {
                         resellerId: simUserId,
                         resellerName: simUser.displayName || simUser.storeName || "Merchant",
                         storeName: simUser.storeName || "Store",
-                        customerName: getUniqueName(),
+                        customerId: buyer.id,
+                        customerName: buyer.name,
+                        customerEmail: buyer.email,
                         customerCountry: loc.country,
                         ...(randomCity ? { customerCity: randomCity } : {}),
                         productId: product.id,
@@ -729,6 +747,30 @@ export default function AdminDashboard() {
                                     </div>
                                 );
                             })()}
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Order Date</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { value: "today", label: "Today" },
+                                        { value: "yesterday", label: "Yesterday" },
+                                    ].map(option => (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            onClick={() => setSimOrderDate(option.value as "today" | "yesterday")}
+                                            className={cn(
+                                                "h-9 rounded-lg border text-xs font-bold transition-colors",
+                                                simOrderDate === option.value
+                                                    ? "border-amber-500 bg-amber-500 text-black"
+                                                    : "border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:text-white"
+                                            )}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
                             {/* Location rows */}
                             <div className="space-y-2.5">
