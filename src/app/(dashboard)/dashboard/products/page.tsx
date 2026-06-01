@@ -6,7 +6,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
     Package, Plus, Search, ExternalLink, Copy, Megaphone,
-    TrendingUp, Loader2, Eye, Palette, LayoutTemplate, Save, ImageIcon
+    TrendingUp, Loader2, Eye, Palette, LayoutTemplate, Save, ImageIcon, Trash2
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ export default function ProductsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [customizing, setCustomizing] = useState(false);
     const [creatingStore, setCreatingStore] = useState(false);
+    const [removingProductId, setRemovingProductId] = useState<string | null>(null);
     const [storeDraft, setStoreDraft] = useState({ storeName: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid", storeLogo: "" });
 
     const getCurrencySymbol = (code: string = "USD") => {
@@ -128,6 +129,38 @@ export default function ProductsPage() {
             toast.error("Could not create store.");
         } finally {
             setCreatingStore(false);
+        }
+    };
+
+    const removeProduct = async (product: any, productIndex: number) => {
+        if (!user?.uid) return;
+        const productKey = product.id || `${product.name}-${productIndex}`;
+        const confirmed = window.confirm(`Remove "${product.name || "this product"}" from your store?`);
+        if (!confirmed) return;
+
+        setRemovingProductId(productKey);
+        try {
+            const currentProducts = Array.isArray(userData?.storeProducts) ? userData.storeProducts : [];
+            const nextProducts = currentProducts.filter((item: any, index: number) => {
+                if (product.id) return item.id !== product.id;
+                return !(index === currentProducts.findIndex((candidate: any) =>
+                    candidate?.name === product.name &&
+                    candidate?.price === product.price &&
+                    candidate?.resellPrice === product.resellPrice
+                ));
+            });
+
+            await updateDoc(doc(db, "users", user.uid), {
+                storeProducts: nextProducts,
+                updatedAt: new Date().toISOString(),
+            });
+            setUserData((prev: any) => ({ ...prev, storeProducts: nextProducts }));
+            toast.success("Product removed from your store.");
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not remove product.");
+        } finally {
+            setRemovingProductId(null);
         }
     };
 
@@ -380,6 +413,7 @@ export default function ProductsPage() {
                         const profit = (product.resellPrice || 0) - (product.price || 0);
                         const marginPct = product.price > 0 ? ((profit / product.price) * 100).toFixed(0) : "0";
                         const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
+                        const productKey = product.id || `${product.name}-${idx}`;
 
                         return (
                             <div key={product.id || idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/[0.12] transition-all group">
@@ -453,7 +487,7 @@ export default function ProductsPage() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         <button className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white/[0.04] text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors">
                                             <Megaphone className="w-3.5 h-3.5" /> Promote
                                         </button>
@@ -462,6 +496,14 @@ export default function ProductsPage() {
                                             className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white/[0.04] text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors"
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Preview
+                                        </button>
+                                        <button
+                                            onClick={() => removeProduct(product, idx)}
+                                            disabled={removingProductId === productKey}
+                                            className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-rose-500/10 text-xs font-medium text-rose-300 hover:bg-rose-500/20 disabled:opacity-60 transition-colors"
+                                        >
+                                            {removingProductId === productKey ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                            Remove
                                         </button>
                                     </div>
                                 </div>
