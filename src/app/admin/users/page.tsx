@@ -79,6 +79,7 @@ export default function UserMatrixPage() {
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
     const [selectedSimProducts, setSelectedSimProducts] = useState<string[]>([]);
+    const [simOrderDate, setSimOrderDate] = useState<"today" | "yesterday">("today");
     const addSimLocation = () => setSimLocations(prev => [...prev, { country: "", count: "5" }]);
     const removeSimLocation = (i: number) => setSimLocations(prev => prev.filter((_, idx) => idx !== i));
     const updateSimLocation = (i: number, field: 'country' | 'count', val: string) =>
@@ -114,6 +115,7 @@ export default function UserMatrixPage() {
         // Pre-select all store products for the simulator
         setSelectedSimProducts((user.storeProducts || []).map((p: any) => p.id));
         setSimLocations([{ country: "United States", count: "10" }]);
+        setSimOrderDate("today");
         try {
             // Fetch Pending Transactions
             const transSnap = await getDocs(query(
@@ -207,6 +209,23 @@ export default function UserMatrixPage() {
                 usedNames.add(fallbackName);
                 return fallbackName;
             };
+            const getOrderDate = () => {
+                const start = new Date();
+                if (simOrderDate === "yesterday") start.setDate(start.getDate() - 1);
+                start.setHours(0, 0, 0, 0);
+                const end = simOrderDate === "today" ? new Date() : new Date(start.getTime() + 86399000);
+                const span = Math.max(1, end.getTime() - start.getTime());
+                return new Date(start.getTime() + Math.floor(Math.random() * span));
+            };
+            const makeBuyer = (orderNumber: number) => {
+                const name = getUniqueName();
+                const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "");
+                return {
+                    id: `sim-${selectedUser.id}-${Date.now()}-${orderNumber}`,
+                    name,
+                    email: `${slug}.${orderNumber}@buyer.shoplinea.local`,
+                };
+            };
 
             const orderPromises: Promise<any>[] = [];
             let totalPayout = 0;
@@ -217,12 +236,16 @@ export default function UserMatrixPage() {
                     const product = storeProds[Math.floor(Math.random() * storeProds.length)];
                     const profit = (product.resellPrice || 0) - (product.price || 0);
                     const payout = profit > 0 ? profit : (product.price || 0) * 0.3;
-                    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 7) * 86400000 - Math.floor(Math.random() * 86400000));
+                    const orderNumber = orderPromises.length + 1;
+                    const buyer = makeBuyer(orderNumber);
+                    const createdAt = getOrderDate();
                     const randomCity = cities.length > 0 ? cities[Math.floor(Math.random() * cities.length)] : null;
 
                     orderPromises.push(addDoc(collection(db, "orders"), {
                         resellerId: selectedUser.id,
-                        customerName: getUniqueName(),
+                        customerId: buyer.id,
+                        customerName: buyer.name,
+                        customerEmail: buyer.email,
                         customerCountry: loc.country,
                         ...(randomCity ? { customerCity: randomCity } : {}),
                         productId: product.id,
@@ -730,6 +753,30 @@ export default function UserMatrixPage() {
                                 <span className="ml-auto text-[10px] font-mono text-zinc-500 truncate max-w-[180px]">{selectedUser.email}</span>
                             </div>
                             <p className="text-xs text-zinc-500 -mt-2">Inject simulated orders. Each order gets a unique buyer name from a different location.</p>
+
+                            <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-zinc-300 uppercase tracking-wider">Order Date</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { value: "today", label: "Today" },
+                                        { value: "yesterday", label: "Yesterday" },
+                                    ].map(option => (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            onClick={() => setSimOrderDate(option.value as "today" | "yesterday")}
+                                            className={cn(
+                                                "h-9 rounded-lg border text-xs font-bold transition-colors",
+                                                simOrderDate === option.value
+                                                    ? "border-amber-500 bg-amber-500 text-black"
+                                                    : "border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:text-white"
+                                            )}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
                             {/* Product Selector */}
                             <div className="space-y-2">
