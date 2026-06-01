@@ -19,9 +19,10 @@ interface CheckoutModalProps {
     onClose: () => void;
     product: any;
     storeUser: any;
+    storeSlug?: string;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product, storeUser }: CheckoutModalProps) {
+export default function CheckoutModal({ isOpen, onClose, product, storeUser, storeSlug }: CheckoutModalProps) {
     const [step, setStep] = useState(1); // 0: Auth, 1: Delivery info, 2: Payment options, 3: Finalize, 4: Verifying, 5: Success
     const [loading, setLoading] = useState(false);
     const [verifying, setVerifying] = useState(false);
@@ -118,6 +119,10 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser }: C
                 resellerId: storeUser.uid,
                 resellerName: resellerData.displayName || storeUser.displayName || storeUser.storeName || "Merchant",
                 storeName: resellerData.storeName || storeUser.storeName || "Store",
+                storeSlug: storeSlug || storeUser.storeSlug || activeAdditionalStore?.storeSlug || "",
+                storeUrl: storeSlug || storeUser.storeSlug || activeAdditionalStore?.storeSlug
+                    ? `/store/${storeSlug || storeUser.storeSlug || activeAdditionalStore?.storeSlug}`
+                    : "",
                 customerId: user?.uid || "guest",
                 customerName: formData.name,
                 customerEmail: formData.email,

@@ -19,12 +19,10 @@ import { cn } from "@/lib/utils";
 const getNavItems = (role?: string) => {
     if (role === "buyer") {
         return [
-            { name: "Marketplace", href: "/", icon: LayoutDashboard },
+            { name: "Marketplace", href: "/marketplace", icon: LayoutDashboard },
             { name: "My Orders", href: "/buyer-orders", icon: ShoppingCart },
             { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-            { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
             { name: "Support", href: "/dashboard/support", icon: HelpCircle },
-            { name: "Settings", href: "/dashboard/settings", icon: Settings },
         ];
     }
     return [
@@ -89,6 +87,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        if (userData?.role !== "buyer") return;
+        const buyerAllowedPaths = ["/buyer-orders", "/dashboard/messages", "/dashboard/support"];
+        const isAllowed = buyerAllowedPaths.some(path => pathname === path || pathname.startsWith(`${path}/`));
+        if (pathname === "/dashboard" || (pathname.startsWith("/dashboard") && !isAllowed)) {
+            router.replace("/buyer-orders");
+        }
+    }, [pathname, router, userData?.role]);
+
     const handleLogout = async () => {
         try {
             await signOut(auth);
@@ -114,7 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="min-h-screen bg-slate-50 text-slate-950">
                 <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-                        <Link href="/" className="flex items-center gap-2.5">
+                        <Link href="/marketplace" className="flex items-center gap-2.5">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src="/images/sholinealogo2.png" alt="shopinea" className="h-9 w-9 object-contain" />
                             <span className="text-base font-black tracking-tight text-slate-950">shopinea</span>
@@ -127,14 +134,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 placeholder="Search products, stores, or orders"
                                 className="ml-2 w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
                                 onKeyDown={(event) => {
-                                    if (event.key === "Enter") router.push("/");
+                                    if (event.key === "Enter") router.push("/marketplace");
                                 }}
                             />
                         </div>
 
                         <nav className="hidden items-center gap-1 md:flex">
                             {[
-                                { label: "Shop", href: "/", icon: Home },
+                                { label: "Shop", href: "/marketplace", icon: Home },
                                 { label: "Orders", href: "/buyer-orders", icon: ShoppingCart },
                                 { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
                                 { label: "Support", href: "/dashboard/support", icon: Headphones },
@@ -170,7 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                     <div className="flex gap-2 overflow-x-auto border-t border-slate-100 px-4 py-2 md:hidden">
                         {[
-                            { label: "Shop", href: "/" },
+                            { label: "Shop", href: "/marketplace" },
                             { label: "Orders", href: "/buyer-orders" },
                             { label: "Messages", href: "/dashboard/messages" },
                             { label: "Support", href: "/dashboard/support" },

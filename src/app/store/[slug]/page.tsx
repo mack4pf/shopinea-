@@ -7,23 +7,17 @@ import { collection, query, where, getDocs, limit, doc, updateDoc, increment, ge
 import {
     ShoppingBag,
     ShieldCheck,
-    Star,
     CheckCircle2,
     Truck,
-    Clock,
     Search,
     Loader2,
     Eye,
-    User,
     LogOut,
     Package,
-    ArrowUpRight,
-    ArrowRight,
     SearchX,
     MessageCircle,
     ShoppingCart,
     Flame,
-    TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InquiryModal from "@/components/modals/InquiryModal";
@@ -426,10 +420,10 @@ export default function StorePage() {
                                     product={product}
                                     salesCount={orderCounts[product.id] || 0}
                                     viewCount={productViewsMap[product.id] || 0}
-                                    accentColor={accentColor}
                                     cardRadius={template.card}
                                     layout={storeLayout}
                                     onInquiry={() => { handleProductView(product); setInquiryProduct(product); }}
+                                    onBuyNow={() => { handleProductView(product); setCheckoutProduct(product); }}
                                 />
                             ))
                         )}
@@ -471,6 +465,7 @@ export default function StorePage() {
                 onClose={() => setCheckoutProduct(null)}
                 product={checkoutProduct}
                 storeUser={storeUser}
+                storeSlug={String(slug || storeUser.storeSlug || "")}
             />
 
             <footer className="border-t border-slate-200 p-12 text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
@@ -480,7 +475,7 @@ export default function StorePage() {
     );
 }
 
-function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0, accentColor = "#10b981", cardRadius = "rounded-2xl", layout = "grid" }: { product: any; onInquiry: () => void; salesCount?: number; viewCount?: number; accentColor?: string; cardRadius?: string; layout?: string }) {
+function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount = 0, cardRadius = "rounded-2xl", layout = "grid" }: { product: any; onInquiry: () => void; onBuyNow: () => void; salesCount?: number; viewCount?: number; cardRadius?: string; layout?: string }) {
     const [imageLoaded, setImageLoaded] = useState(false);
     const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
     const inStock = stock > 0;
@@ -529,11 +524,11 @@ function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0, accent
 
                 <div className="absolute bottom-4 left-4 right-4 translate-y-20 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 ease-out z-20">
                     <Button
-                        onClick={(e) => { e.stopPropagation(); onInquiry(); }}
+                        onClick={(e) => { e.stopPropagation(); onBuyNow(); }}
                         disabled={!inStock}
                         className="w-full h-12 brand-gradient text-white font-bold rounded-xl shadow-2xl hover:opacity-90 text-xs disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                        {inStock ? 'Secure Purchase' : 'Out of Stock'}
+                        {inStock ? 'Buy Now' : 'Out of Stock'}
                     </Button>
                 </div>
             </div>
@@ -552,9 +547,23 @@ function ProductCard({ product, onInquiry, salesCount = 0, viewCount = 0, accent
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 leading-none mb-1">Price</p>
                         <p className={cn("font-bold tracking-tight text-slate-900", isCompact ? "text-lg" : "text-2xl")}>${(product.resellPrice ?? product.price ?? 0).toLocaleString()}</p>
                     </div>
-                    <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 group-hover:bg-emerald-600 group-hover:text-white transition-all transform group-hover:rotate-45">
-                        <ArrowUpRight className="w-4 h-4" style={{ color: inStock ? undefined : accentColor }} />
-                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Verified</span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Button
+                        onClick={onBuyNow}
+                        disabled={!inStock}
+                        className="h-10 rounded-lg bg-slate-950 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-60"
+                    >
+                        Buy Now
+                    </Button>
+                    <Button
+                        onClick={onInquiry}
+                        variant="outline"
+                        className="h-10 rounded-lg border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                        Enquiry
+                    </Button>
                 </div>
             </div>
         </div>
