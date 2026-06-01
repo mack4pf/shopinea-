@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { products as seedProducts, CATALOG_VERSION } from "@/lib/seed/products";
+import { commitInChunks } from "@/lib/firebase/batch";
+import { getStableProductDocId } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +18,8 @@ import {
     Boxes,
     CheckCircle2,
     Database,
+    DownloadCloud,
+    Globe2,
     ImageIcon,
     LayoutGrid,
     LinkIcon,
@@ -38,8 +42,23 @@ interface Product {
     description: string;
     category: string;
     image: string;
+    source?: string;
+    sourceProductId?: string;
+    sourceUrl?: string;
     isPromoted?: boolean;
     sortOrder?: number;
+}
+
+interface ImportedProduct {
+    source: "Aliexpress";
+    sourceProductId: string;
+    sourceUrl: string;
+    name: string;
+    price: number;
+    description: string;
+    category: string;
+    image: string;
+    currency: string;
 }
 
 const emptyProduct = {
@@ -55,12 +74,18 @@ export default function AdminProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [seeding, setSeeding] = useState(false);
+    const [importing, setImporting] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [newProduct, setNewProduct] = useState(emptyProduct);
     const [formLoading, setFormLoading] = useState(false);
     const [imageMode, setImageMode] = useState<"upload" | "url">("upload");
     const [showSeedConfirm, setShowSeedConfirm] = useState(false);
     const [search, setSearch] = useState("");
+    const [aliExpressQuery, setAliExpressQuery] = useState("");
+    const [aliExpressCategory, setAliExpressCategory] = useState("");
+    const [aliExpressResults, setAliExpressResults] = useState<ImportedProduct[]>([]);
+    const [aliExpressLoading, setAliExpressLoading] = useState(false);
+    const [importingProductId, setImportingProductId] = useState<string | null>(null);
 
     const categories = useMemo(() => {
         return Array.from(new Set(products.map((p) => p.category).filter(Boolean))).sort((a, b) => a.localeCompare(b));
@@ -124,18 +149,12 @@ export default function AdminProductsPage() {
         setSeeding(true);
         setShowSeedConfirm(false);
         try {
-            const batch = writeBatch(db);
             const productsRef = collection(db, "products");
-
-            seedProducts.forEach((product) => {
-                batch.set(doc(productsRef), {
-                    ...product,
-                    isPromoted: false,
-                    createdAt: serverTimestamp(),
-                });
-            });
-
-            await batch.commit();
+            await commitInChunks(db, productsRef, seedProducts.map((product) => ({
+                ...product,
+                isPromoted: false,
+                createdAt: serverTimestamp(),
+            })), getStableProductDocId);
             toast.success("Database seeded successfully.");
             await fetchProducts();
         } catch (error) {
@@ -143,6 +162,26 @@ export default function AdminProductsPage() {
             toast.error("Failed to seed database.");
         } finally {
             setSeeding(false);
+        }
+    };
+
+    const handleImportVerifiedProducts = async () => {
+        setImporting(true);
+        try {
+            const response = await fetch("/api/import-products", {
+                method: "POST",
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data?.error || "Failed to import verified products.");
+            }
+            toast.success(`Imported ${data.importedCount} verified products.`);
+            await fetchProducts();
+        } catch (error) {
+            console.error("Error importing verified products:", error);
+            toast.error(error instanceof Error ? error.message : "Import failed.");
+        } finally {
+            setImporting(false);
         }
     };
 
@@ -216,6 +255,89 @@ export default function AdminProductsPage() {
         }
     };
 
+    const handleAliExpressSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const keywords = aliExpressQuery.trim();
+
+        if (!keywords) {
+            toast.error("Enter a keyword, like wireless earbuds or gym bag.");
+            return;
+        }
+
+        setAliExpressLoading(true);
+        try {
+            const response = await fetch("/api/aliexpress/search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    keywords,
+                    pageSize: 12,
+                    targetCurrency: "USD",
+                    targetLanguage: "EN",
+                    shipToCountry: "US",
+                }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.error || "AliExpress search failed.");
+            }
+
+            setAliExpressResults(Array.isArray(data.products) ? data.products : []);
+            if (!data.products?.length) toast.info("No AliExpress products found for that keyword.");
+        } catch (error) {
+            console.error("AliExpress search error:", error);
+            toast.error(error instanceof Error ? error.message : "Could not search AliExpress.");
+        } finally {
+            setAliExpressLoading(false);
+        }
+    };
+
+    const handleImportAliExpressProduct = async (product: ImportedProduct) => {
+        const existing = products.find((p) => {
+            return p.sourceProductId === product.sourceProductId || p.sourceUrl === product.sourceUrl || p.name.toLowerCase() === product.name.toLowerCase();
+        });
+
+        if (existing) {
+            toast.info("That product is already in the marketplace.");
+            return;
+        }
+
+        setImportingProductId(product.sourceProductId);
+        try {
+            const productsRef = collection(db, "products");
+            const newDocRef = doc(productsRef);
+            const existingDocs = await getDocs(productsRef);
+            const maxOrder = existingDocs.docs.reduce((max, d) => Math.max(max, d.data().sortOrder ?? 0), 0);
+            const category = aliExpressCategory.trim() || product.category || "AliExpress";
+
+            await setDoc(newDocRef, {
+                name: product.name,
+                price: product.price,
+                description: product.description,
+                category,
+                image: product.image,
+                source: "Aliexpress",
+                sourceProductId: product.sourceProductId,
+                sourceUrl: product.sourceUrl,
+                currency: product.currency,
+                isPromoted: true,
+                isFeatured: true,
+                catalogVersion: CATALOG_VERSION,
+                sortOrder: maxOrder + 1,
+                createdAt: serverTimestamp(),
+            });
+
+            toast.success("AliExpress product imported.");
+            await fetchProducts();
+        } catch (error) {
+            console.error("AliExpress import error:", error);
+            toast.error("Could not import this product.");
+        } finally {
+            setImportingProductId(null);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-zinc-950">
@@ -256,6 +378,15 @@ export default function AdminProductsPage() {
                             >
                                 {seeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
                                 Seed
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handleImportVerifiedProducts}
+                                disabled={importing}
+                                className="h-11 rounded-xl border-zinc-700 bg-zinc-950 text-zinc-200 hover:bg-zinc-800"
+                            >
+                                {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe2 className="mr-2 h-4 w-4" />}
+                                Import Verified Products
                             </Button>
                             <Button
                                 onClick={() => setIsAdding((open) => !open)}
@@ -399,6 +530,91 @@ export default function AdminProductsPage() {
                         </form>
                     </section>
                 )}
+
+                <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 shadow-2xl shadow-black/20 sm:p-6">
+                    <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.24em] text-emerald-400">
+                                <Globe2 className="h-4 w-4" />
+                                AliExpress import
+                            </div>
+                            <h2 className="text-xl font-black tracking-tight">Fetch products by keyword</h2>
+                            <p className="text-sm font-medium text-zinc-500">Search AliExpress, preview name, price, and description, then publish selected products to the marketplace.</p>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleAliExpressSearch} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px_auto]">
+                        <Input
+                            className="h-12 rounded-xl border-zinc-800 bg-zinc-950 font-semibold"
+                            value={aliExpressQuery}
+                            onChange={(e) => setAliExpressQuery(e.target.value)}
+                            placeholder="Search AliExpress products..."
+                        />
+                        <Input
+                            className="h-12 rounded-xl border-zinc-800 bg-zinc-950 font-semibold"
+                            value={aliExpressCategory}
+                            onChange={(e) => setAliExpressCategory(e.target.value)}
+                            placeholder="Optional store category"
+                            list="product-categories"
+                        />
+                        <Button
+                            type="submit"
+                            disabled={aliExpressLoading}
+                            className="h-12 rounded-xl bg-emerald-600 px-6 font-black text-white hover:bg-emerald-500"
+                        >
+                            {aliExpressLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DownloadCloud className="mr-2 h-4 w-4" />}
+                            Fetch
+                        </Button>
+                    </form>
+
+                    {aliExpressResults.length > 0 && (
+                        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                            {aliExpressResults.map((product) => {
+                                const alreadyImported = products.some((p) => {
+                                    return p.sourceProductId === product.sourceProductId || p.sourceUrl === product.sourceUrl || p.name.toLowerCase() === product.name.toLowerCase();
+                                });
+
+                                return (
+                                    <article key={product.sourceProductId} className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-950 p-3 sm:gap-4 sm:p-4">
+                                        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 sm:h-28 sm:w-28">
+                                            {product.image ? (
+                                                <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center text-xs font-bold text-zinc-600">No image</div>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex gap-2">
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="line-clamp-2 text-sm font-black text-white">{product.name}</h3>
+                                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                        <span className="text-sm font-black text-emerald-400">${product.price.toLocaleString()}</span>
+                                                        <span className="rounded-full bg-zinc-900 px-2 py-1 text-[11px] font-bold text-zinc-400">{aliExpressCategory.trim() || product.category || "AliExpress"}</span>
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    disabled={alreadyImported || importingProductId === product.sourceProductId}
+                                                    onClick={() => handleImportAliExpressProduct(product)}
+                                                    className="shrink-0 rounded-lg bg-white font-black text-black hover:bg-zinc-200"
+                                                >
+                                                    {importingProductId === product.sourceProductId ? <Loader2 className="h-4 w-4 animate-spin" /> : alreadyImported ? "Added" : "Import"}
+                                                </Button>
+                                            </div>
+                                            <p className="mt-3 line-clamp-2 text-sm font-medium leading-6 text-zinc-500">{product.description}</p>
+                                            {product.sourceUrl && (
+                                                <a href={product.sourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-bold text-blue-400 hover:text-blue-300">
+                                                    View source
+                                                </a>
+                                            )}
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    )}
+                </section>
 
                 <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                     <div className="flex flex-col gap-4 border-b border-zinc-800 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">

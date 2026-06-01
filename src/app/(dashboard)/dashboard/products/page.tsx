@@ -2,20 +2,25 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
     Package, Plus, Search, ExternalLink, Copy, Megaphone,
-    TrendingUp, Loader2, Eye, Tag
+    TrendingUp, Loader2, Eye, Palette, LayoutTemplate, Save, ImageIcon
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
+import { ImageUpload } from "@/components/ui/image-upload";
+import { getDefaultStock, STORE_LAYOUTS, STORE_TEMPLATES, STORE_THEME_COLORS } from "@/lib/catalog";
 
 export default function ProductsPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [customizing, setCustomizing] = useState(false);
+    const [creatingStore, setCreatingStore] = useState(false);
+    const [storeDraft, setStoreDraft] = useState({ storeName: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid", storeLogo: "" });
 
     const getCurrencySymbol = (code: string = "USD") => {
         switch (code) {
@@ -32,7 +37,18 @@ export default function ProductsPage() {
             if (firebaseUser) {
                 setUser(firebaseUser);
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-                if (userDoc.exists()) setUserData(userDoc.data());
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    setUserData(data);
+                    setStoreDraft({
+                        storeName: data.storeName || "",
+                        storeTagline: data.storeTagline || "",
+                        themeColor: data.themeColor || "#10b981",
+                        storeTemplate: data.storeTemplate || "classic",
+                        storeLayout: data.storeLayout || "grid",
+                        storeLogo: data.storeLogo || "",
+                    });
+                }
             }
             setLoading(false);
         });
@@ -42,6 +58,77 @@ export default function ProductsPage() {
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         toast.success("Link copied to clipboard.");
+    };
+
+    const saveStoreCustomization = async () => {
+        if (!user?.uid) return;
+        setCustomizing(true);
+        try {
+            const updates = {
+                storeName: storeDraft.storeName.trim() || userData?.storeName || "My Store",
+                storeTagline: storeDraft.storeTagline.trim() || "Premium sourced products, fast shipping.",
+                themeColor: storeDraft.themeColor,
+                storeTemplate: storeDraft.storeTemplate,
+                storeLayout: storeDraft.storeLayout,
+                storeLogo: storeDraft.storeLogo,
+                updatedAt: new Date().toISOString(),
+            };
+            await updateDoc(doc(db, "users", user.uid), updates);
+            setUserData((prev: any) => ({ ...prev, ...updates }));
+            toast.success("Store design saved.");
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not save store design.");
+        } finally {
+            setCustomizing(false);
+        }
+    };
+
+    const createAdditionalStore = async () => {
+        if (!user?.uid) return;
+        const maxStores = Number(userData?.maxStores || 1);
+        const additionalStores = Array.isArray(userData?.additionalStores) ? userData.additionalStores : [];
+        if (maxStores <= 1 || additionalStores.length + 1 >= maxStores) {
+            toast.error("Upgrade your plan to create more stores.");
+            return;
+        }
+
+        setCreatingStore(true);
+        try {
+            const storeNumber = additionalStores.length + 2;
+            const baseSlug = (userData?.storeSlug || userData?.storeName || user?.displayName || "store")
+                .toString()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "");
+            const newStore = {
+                id: `store-${Date.now()}`,
+                storeName: `${userData?.storeName || "My Store"} ${storeNumber}`,
+                storeSlug: `${baseSlug}-${storeNumber}`,
+                storeTagline: userData?.storeTagline || "Premium sourced products, fast shipping.",
+                themeColor: userData?.themeColor || "#10b981",
+                storeTemplate: userData?.storeTemplate || "classic",
+                storeLayout: userData?.storeLayout || "grid",
+                storeLogo: userData?.storeLogo || "",
+                storeProducts: products,
+                createdAt: new Date().toISOString(),
+            };
+            const nextStores = [...additionalStores, newStore];
+            const nextSlugs = nextStores.map((store: any) => store.storeSlug);
+            await updateDoc(doc(db, "users", user.uid), {
+                additionalStores: nextStores,
+                additionalStoreSlugs: nextSlugs,
+                updatedAt: new Date().toISOString(),
+            });
+            setUserData((prev: any) => ({ ...prev, additionalStores: nextStores, additionalStoreSlugs: nextSlugs }));
+            toast.success("New store created.");
+            window.open(`${window.location.origin}/store/${newStore.storeSlug}`, "_blank");
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not create store.");
+        } finally {
+            setCreatingStore(false);
+        }
     };
 
     if (loading) return (
@@ -64,7 +151,7 @@ export default function ProductsPage() {
 
     const statCards = [
         { label: "Products", value: products.length },
-        { label: "Out of Stock", value: "0" },
+        { label: "Out of Stock", value: products.filter((p: any) => (p.stock ?? getDefaultStock(p.id || p.name)) <= 0).length },
         { label: "Orders", value: userData?.stats?.orders || 0 },
         { label: "Avg Margin", value: `${avgMargin}%` },
     ];
@@ -158,6 +245,122 @@ export default function ProductsPage() {
                 </div>
             </div>
 
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-5">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                            <Palette className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-semibold text-white">Store customization</h2>
+                            <p className="text-xs text-zinc-500">Choose your logo, color, page style, product layout, name, and tagline.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={saveStoreCustomization}
+                        disabled={customizing}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-white text-zinc-950 hover:bg-zinc-200 disabled:opacity-60 transition-colors"
+                    >
+                        {customizing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                        Save
+                    </button>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-5">
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
+                            <ImageIcon className="w-3 h-3" /> Brand logo
+                        </p>
+                        <ImageUpload
+                            value={storeDraft.storeLogo}
+                            onChange={(url) => setStoreDraft(prev => ({ ...prev, storeLogo: url }))}
+                            folder="/shoplinea/brands"
+                            label="Upload brand logo"
+                            helperText="PNG, JPG, WebP, or transparent logo."
+                            compact
+                        />
+                    </div>
+                    <div className="space-y-4">
+                        <input
+                            value={storeDraft.storeName}
+                            onChange={(e) => setStoreDraft(prev => ({ ...prev, storeName: e.target.value }))}
+                            placeholder="Store name"
+                            className="h-11 w-full px-4 bg-zinc-950/50 border border-white/[0.08] rounded-lg text-sm text-white outline-none focus:border-blue-500/40"
+                        />
+                        <input
+                            value={storeDraft.storeTagline}
+                            onChange={(e) => setStoreDraft(prev => ({ ...prev, storeTagline: e.target.value }))}
+                            placeholder="Store tagline"
+                            className="h-11 w-full px-4 bg-zinc-950/50 border border-white/[0.08] rounded-lg text-sm text-white outline-none focus:border-blue-500/40"
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Theme color</p>
+                        <div className="flex flex-wrap gap-2">
+                            {STORE_THEME_COLORS.map(color => (
+                                <button
+                                    key={color}
+                                    onClick={() => setStoreDraft(prev => ({ ...prev, themeColor: color }))}
+                                    className={`w-9 h-9 rounded-lg border transition-all ${storeDraft.themeColor === color ? 'border-white scale-105' : 'border-white/10'}`}
+                                    style={{ backgroundColor: color }}
+                                    aria-label={`Choose ${color}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Page style</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            {STORE_TEMPLATES.map(template => (
+                                <button
+                                    key={template.id}
+                                    onClick={() => setStoreDraft(prev => ({ ...prev, storeTemplate: template.id }))}
+                                    className={`flex items-center justify-center gap-1.5 h-9 rounded-lg border text-[11px] font-bold transition-colors ${storeDraft.storeTemplate === template.id ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/[0.04] border-white/[0.08] text-zinc-400 hover:text-white'}`}
+                                >
+                                    <LayoutTemplate className="w-3 h-3" />
+                                    {template.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Product layout</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {STORE_LAYOUTS.map(layout => (
+                            <button
+                                key={layout.id}
+                                onClick={() => setStoreDraft(prev => ({ ...prev, storeLayout: layout.id }))}
+                                className={`flex items-center justify-center gap-1.5 h-10 rounded-lg border text-xs font-bold transition-colors ${storeDraft.storeLayout === layout.id ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-white/[0.04] border-white/[0.08] text-zinc-400 hover:text-white'}`}
+                            >
+                                <LayoutTemplate className="w-3.5 h-3.5" />
+                                {layout.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {Number(userData?.maxStores || 1) > 1 && (
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-sm font-semibold text-white">Multiple stores</h2>
+                        <p className="text-xs text-zinc-500 mt-1">
+                            {(Array.isArray(userData?.additionalStores) ? userData.additionalStores.length : 0) + 1}/{userData?.maxStores} stores used on your plan.
+                        </p>
+                    </div>
+                    <button
+                        onClick={createAdditionalStore}
+                        disabled={creatingStore}
+                        className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                    >
+                        {creatingStore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                        Create Store
+                    </button>
+                </div>
+            )}
+
             {/* Product Grid */}
             {filteredProducts.length === 0 ? (
                 <div className="text-center py-20 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.08]">
@@ -176,6 +379,7 @@ export default function ProductsPage() {
                     {filteredProducts.filter((p: any) => typeof p === 'object' && p !== null).map((product: any, idx: number) => {
                         const profit = (product.resellPrice || 0) - (product.price || 0);
                         const marginPct = product.price > 0 ? ((profit / product.price) * 100).toFixed(0) : "0";
+                        const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
 
                         return (
                             <div key={product.id || idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/[0.12] transition-all group">
@@ -195,9 +399,9 @@ export default function ProductsPage() {
                                     )}
                                     {/* Badges */}
                                     <div className="absolute top-3 left-3 flex items-center gap-2">
-                                        <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-md text-[11px] font-medium text-emerald-400 flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                                            Active
+                                        <span className={`px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-md text-[11px] font-medium flex items-center gap-1.5 ${stock > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${stock > 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                            {stock > 0 ? `${stock} in stock` : 'Out of stock'}
                                         </span>
                                     </div>
                                     <div className="absolute top-3 right-3">
