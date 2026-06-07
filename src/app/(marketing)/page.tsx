@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Globe, ShieldCheck, Zap, TrendingUp, Bot, Package, Rocket, Users, Star, Check, ChevronRight } from "lucide-react";
+import { ArrowRight, Sparkles, Globe, ShieldCheck, Zap, TrendingUp, Bot, Package, Rocket, Users, Star, Check, ChevronRight, BrainCircuit, Activity } from "lucide-react";
 import { ReviewsSection } from "@/components/marketing/ReviewsSection";
 import { ShopineaLogo } from "@/components/shared/ShopineaLogo";
 
@@ -21,7 +21,7 @@ export default function Home() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-5 py-2 text-[12px] font-semibold text-purple-300 backdrop-blur-md">
             <Bot className="w-3.5 h-3.5" />
-            AI-Powered Dropshipping · The Future of E-Commerce
+            Agentic AI Dropshipping - Claude.ai + Open Claw AI
             <span className="flex h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
           </div>
 
@@ -40,12 +40,25 @@ export default function Home() {
               </svg>
             </span>
             <br />
-            <span className="text-white/30 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Powered by AI.</span>
+            <span className="text-white/30 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Run by agentic AI.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed font-medium">
-            Shopinea is the world&apos;s most intelligent dropshipping platform. Find winning products, automate orders, and build a thriving e-commerce business — without ever touching inventory.
+            Shopinea connects Claude.ai and Open Claw AI style agents to product research, store operations, ads, and growth signals so resellers can build a thriving business without touching inventory.
           </p>
+
+          <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+            <div className="rounded-2xl border border-violet-500/20 bg-violet-500/10 px-4 py-3 text-left">
+              <BrainCircuit className="w-5 h-5 text-violet-300 mb-2" />
+              <p className="text-sm font-black text-white">Claude.ai</p>
+              <p className="text-[11px] text-violet-100/60">Ad copy, strategy, product angles</p>
+            </div>
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-left">
+              <Activity className="w-5 h-5 text-emerald-300 mb-2" />
+              <p className="text-sm font-black text-white">Open Claw AI</p>
+              <p className="text-[11px] text-emerald-100/60">Store monitoring, launch checks, pacing</p>
+            </div>
+          </div>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -96,7 +109,7 @@ export default function Home() {
                 {[
                   { label: "Total Revenue", val: "$48,320", color: "from-purple-600/30 to-indigo-600/30", border: "border-purple-500/20" },
                   { label: "Active Orders", val: "1,284", color: "from-cyan-600/20 to-blue-600/20", border: "border-cyan-500/20" },
-                  { label: "AI Wins Today", val: "17 🔥", color: "from-fuchsia-600/20 to-pink-600/20", border: "border-fuchsia-500/20" },
+                  { label: "Agentic AI Wins", val: "17 live", color: "from-fuchsia-600/20 to-pink-600/20", border: "border-fuchsia-500/20" },
                 ].map((card, i) => (
                   <div key={i} className={`col-span-3 lg:col-span-2 rounded-xl border ${card.border} bg-gradient-to-br ${card.color} p-4`}>
                     <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-widest mb-1">{card.label}</p>
@@ -129,7 +142,7 @@ export default function Home() {
                     <div className="w-7 h-7 rounded-lg bg-fuchsia-500/20 flex items-center justify-center">
                       <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
                     </div>
-                    <p className="text-[11px] font-bold text-fuchsia-300 uppercase tracking-widest">AI Pick</p>
+                    <p className="text-[11px] font-bold text-fuchsia-300 uppercase tracking-widest">Claude.ai Pick</p>
                   </div>
                   <p className="text-sm font-bold text-white mb-1">Wireless Earbuds Pro</p>
                   <p className="text-[11px] text-zinc-500 mb-3">Trending +240% this week</p>
@@ -155,7 +168,7 @@ export default function Home() {
               <Zap className="w-3 h-3" /> Simple Process
             </div>
             <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-5">From zero to selling<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">in 3 steps.</span></h2>
-            <p className="text-zinc-500 text-lg max-w-xl mx-auto">No experience needed. No inventory. No shipping headaches. Just profits.</p>
+            <p className="text-zinc-500 text-lg max-w-xl mx-auto">No experience needed. Claude.ai and Open Claw AI assist product discovery, ads, and store signals while you sell.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
@@ -163,9 +176,9 @@ export default function Home() {
             <div className="hidden md:block absolute top-14 left-[calc(16.6%+1rem)] right-[calc(16.6%+1rem)] h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
 
             {[
-              { step: "01", icon: Bot, color: "from-purple-500 to-indigo-600", glow: "shadow-purple-500/20", title: "AI Finds Winning Products", desc: "Our AI scans millions of products daily to surface high-margin, trending items you can list immediately." },
+              { step: "01", icon: Bot, color: "from-purple-500 to-indigo-600", glow: "shadow-purple-500/20", title: "Agentic AI Finds Winners", desc: "Claude.ai and Open Claw AI scan product and demand signals to surface high-margin items you can list immediately." },
               { step: "02", icon: Package, color: "from-indigo-500 to-cyan-600", glow: "shadow-indigo-500/20", title: "Import & Customize", desc: "One click to add products to your store. Set your price, your margins, your brand — total control." },
-              { step: "03", icon: Rocket, color: "from-cyan-500 to-teal-600", glow: "shadow-cyan-500/20", title: "Sell & Auto-Fulfill", desc: "When a customer orders, Shopinea automatically notifies the supplier and ships directly. You just collect profits." },
+              { step: "03", icon: Rocket, color: "from-cyan-500 to-teal-600", glow: "shadow-cyan-500/20", title: "Sell, Launch Ads & Fulfill", desc: "When a customer orders, Shopinea coordinates supplier fulfillment while agentic ad tools help push traffic to the store." },
             ].map((s, i) => (
               <div key={i} className="relative flex flex-col items-center text-center p-8 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.05] transition-all group">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-6 shadow-2xl ${s.glow} group-hover:scale-110 transition-transform`}>
@@ -188,16 +201,16 @@ export default function Home() {
               <Sparkles className="w-3 h-3" /> Everything Included
             </div>
             <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-5">Built different.<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400">Powered by AI.</span></h2>
-            <p className="text-zinc-500 text-lg max-w-xl mx-auto">Every tool you need to run a profitable dropshipping store, baked right in.</p>
+            <p className="text-zinc-500 text-lg max-w-xl mx-auto">Every tool you need to run a profitable dropshipping store, with an agentic AI layer baked right in.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: Bot, title: "AI Product Research", desc: "Real-time trend analysis and profit scoring powered by machine learning. Find winning products before your competitors.", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+              { icon: Bot, title: "Claude.ai Product Research", desc: "Real-time trend analysis, profit scoring, and product-angle generation for winning listings.", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
               { icon: Globe, title: "Global Supplier Network", desc: "Access 50,000+ verified suppliers across 40+ countries. Diverse products, competitive prices, fast shipping.", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },
               { icon: Zap, title: "One-Click Import", desc: "Browse the marketplace, click import, and your store is stocked instantly. Product details, photos, and pricing synced automatically.", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/20" },
               { icon: ShieldCheck, title: "Escrow Protection", desc: "Every transaction is secured through our encrypted escrow system. Your money is protected until delivery is confirmed.", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-              { icon: TrendingUp, title: "Smart Analytics", desc: "Deep sales insights, customer behavior patterns, and conversion optimization tips — all in one beautiful dashboard.", color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
+              { icon: TrendingUp, title: "OpenClaw AI Analytics", desc: "Store monitoring, sales signals, customer behavior patterns, and conversion optimization tips in one dashboard.", color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
               { icon: Users, title: "Referral & Rewards", desc: "Earn extra income by referring other merchants. Our multi-tier referral program pays you on every sign-up and sale.", color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/20" },
             ].map((f, i) => (
               <div key={i} className={`p-7 rounded-2xl bg-white/[0.02] border ${f.border} hover:bg-white/[0.05] transition-all group`}>
@@ -318,7 +331,7 @@ export default function Home() {
             </span>
           </h2>
           <p className="text-lg text-zinc-400 font-medium max-w-xl mb-12 leading-relaxed">
-            Join 32,000+ merchants who are already building profitable online businesses with Shopinea&apos;s AI-powered platform.
+            Join 32,000+ merchants already building with Shopinea&apos;s Claude.ai + Open Claw AI powered growth platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Link href="/register">

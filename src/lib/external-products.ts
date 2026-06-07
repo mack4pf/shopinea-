@@ -1,4 +1,4 @@
-import { CATALOG_VERSION } from "@/lib/catalog";
+import { CATALOG_VERSION, getProductKey } from "@/lib/catalog";
 import type { CatalogProduct } from "@/lib/catalog";
 
 const dummySources = [
@@ -133,6 +133,47 @@ const shopifySources = [
   },
 ];
 
+const openBeautySources = [
+  "cerave cleanser",
+  "la roche posay",
+  "the ordinary serum",
+  "retinol serum",
+  "sunscreen spf",
+  "moisturizer",
+  "hyaluronic acid",
+  "niacinamide",
+  "vitamin c serum",
+  "face wash",
+].map((query) => ({
+  name: query,
+  url: `https://world.openbeautyfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=12&fields=code,product_name,brands,generic_name,quantity,categories,image_front_url,url,ingredients_text`,
+  category: "Skin Care",
+  supplier: "Open Beauty Facts",
+}));
+
+const supplementSources = [
+  "Calcium",
+  "Vitamin D",
+  "Magnesium",
+  "Omega 3",
+  "Zinc",
+  "Vitamin C",
+  "Multivitamin",
+  "Probiotic",
+  "Collagen",
+  "Biotin",
+  "Iron",
+  "Folic Acid",
+  "Vitamin B12",
+  "Melatonin",
+  "Creatine",
+].map((query) => ({
+  name: query,
+  url: `https://api.ods.od.nih.gov/dsld/v9/browse-products/?method=by_keyword&q=${encodeURIComponent(query)}`,
+  category: "Supplements & Wellness",
+  supplier: "NIH DSLD",
+}));
+
 function getCategoryFromFakeStore(category?: string) {
   if (!category) return "Tech & Gadgets";
   const normalized = category.toLowerCase();
@@ -176,6 +217,26 @@ function formatPrice(value: number | string | null | undefined, category?: strin
   return Math.round(nextPrice * 100) / 100;
 }
 
+function estimateApiCatalogPrice(seed: string, category: string) {
+  const hash = seed.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+
+  if (category === "Skin Care") {
+    const prices = [8.99, 10.99, 12.99, 14.99, 16.99, 18.99, 21.99, 24.99, 29.99, 34.99];
+    return prices[hash % prices.length];
+  }
+
+  if (category === "Supplements & Wellness") {
+    const prices = [7.99, 9.99, 11.99, 13.99, 15.99, 17.99, 19.99, 22.99, 24.99, 29.99];
+    return prices[hash % prices.length];
+  }
+
+  return Math.round((9.99 + (hash % 30)) * 100) / 100;
+}
+
+function getOriginalPriceFromDiscounted(price: number) {
+  return Math.round((price / 0.4) * 100) / 100;
+}
+
 function randomStock() {
   return Math.floor(Math.random() * 41) + 10; // 10-50
 }
@@ -185,6 +246,15 @@ function normalizeImageUrl(image: any) {
   if (!raw) return "";
   if (raw.startsWith("//")) return `https:${raw}`;
   return raw;
+}
+
+function cleanText(value: any) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function truncateText(value: string, maxLength = 220) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength).trim()}...`;
 }
 
 function isSellablePhysicalProduct(item: any) {
@@ -198,6 +268,23 @@ function isSellablePhysicalProduct(item: any) {
   if (isFoodProduct(title)) return false;
   if (isBlockedCheapPhoneOrBadTech(title)) return false;
   return true;
+}
+
+function hasUsableOpenBeautyName(item: any) {
+  const name = cleanText(item.product_name || item.generic_name);
+  if (!name) return false;
+  if (/^\d+$/.test(name)) return false;
+  return true;
+}
+
+function isCurrentSupplementLabel(hit: any) {
+  const item = hit?._source || {};
+  const name = cleanText(item.fullName);
+  const brand = cleanText(item.brandName);
+  if (!name || !brand) return false;
+
+  const events = Array.isArray(item.events) ? item.events : [];
+  return !events.some((event: any) => cleanText(event.type).toLowerCase().includes("off market"));
 }
 
 function isBlockedCheapPhoneOrBadTech(title: string) {
@@ -301,6 +388,76 @@ function normalizeShopifyProduct(item: any, source: { name: string; category: st
   };
 }
 
+function normalizeOpenBeautyProduct(item: any, source: { name: string; category: string; supplier: string; url: string }): CatalogProduct {
+  const brand = cleanText(item.brands);
+  const name = cleanText(item.product_name) || cleanText(item.generic_name) || "Skin care product";
+  const quantity = cleanText(item.quantity);
+  const ingredients = cleanText(item.ingredients_text);
+  const descriptionParts = [
+    brand ? `${brand} skin care product` : "Skin care product",
+    quantity ? `Pack size: ${quantity}.` : "",
+    ingredients ? `Label ingredients include ${truncateText(ingredients, 160)}` : "Product details sourced from Open Beauty Facts label data.",
+  ].filter(Boolean);
+  const sourceId = cleanText(item.code) || `${source.name}:${name}`;
+  const price = estimateApiCatalogPrice(`${brand}:${name}:${sourceId}`, source.category);
+
+  return {
+    id: `openbeauty-${sourceId}`,
+    name: brand && !name.toLowerCase().includes(brand.toLowerCase()) ? `${brand} ${name}` : name,
+    price,
+    originalPrice: getOriginalPriceFromDiscounted(price),
+    description: descriptionParts.join(" "),
+    category: source.category,
+    image: normalizeImageUrl(item.image_front_url) || "/images/products.png",
+    stock: randomStock(),
+    source: getVerifiedSupplier(),
+    sourceProductId: `${source.supplier}:${sourceId}`,
+    sourceUrl: cleanText(item.url) || `https://world.openbeautyfacts.org/product/${sourceId}`,
+    isFeatured: false,
+    isPromoted: false,
+    sortOrder: 0,
+    catalogVersion: CATALOG_VERSION,
+  };
+}
+
+function normalizeSupplementProduct(hit: any, source: { name: string; category: string; supplier: string; url: string }): CatalogProduct {
+  const item = hit?._source || {};
+  const name = cleanText(item.fullName) || "Dietary supplement";
+  const brand = cleanText(item.brandName);
+  const state = cleanText(item.physicalState?.langualCodeDescription);
+  const contents = Array.isArray(item.netContents)
+    ? item.netContents.map((entry: any) => cleanText(entry.display)).filter(Boolean).join("; ")
+    : "";
+  const upc = cleanText(item.upcSku);
+  const sourceId = cleanText(hit?._id) || `${source.name}:${brand}:${name}`;
+  const displayName = brand && !name.toLowerCase().includes(brand.toLowerCase()) ? `${brand} ${name}` : name;
+  const price = estimateApiCatalogPrice(`${brand}:${name}:${contents}:${sourceId}`, source.category);
+
+  return {
+    id: `nih-dsld-${sourceId}`,
+    name: displayName,
+    price,
+    originalPrice: getOriginalPriceFromDiscounted(price),
+    description: [
+      "Dietary supplement label record from the NIH Dietary Supplement Label Database.",
+      state ? `Form: ${state}.` : "",
+      contents ? `Net contents: ${contents}.` : "",
+      upc ? `UPC/SKU: ${upc}.` : "",
+      "Review local rules before resale; supplements are not prescription medicines.",
+    ].filter(Boolean).join(" "),
+    category: source.category,
+    image: "/images/products.png",
+    stock: randomStock(),
+    source: getVerifiedSupplier(),
+    sourceProductId: `${source.supplier}:${sourceId}`,
+    sourceUrl: `https://dsld.od.nih.gov/label/${sourceId}`,
+    isFeatured: false,
+    isPromoted: false,
+    sortOrder: 0,
+    catalogVersion: CATALOG_VERSION,
+  };
+}
+
 function withRefurbishedNote(description: string, item: any, sourceName?: string) {
   if (!isPhoneProduct(item, sourceName)) return description;
   if (description.toLowerCase().includes("refurbished")) return description;
@@ -381,7 +538,41 @@ export async function fetchVerifiedCatalogProducts(): Promise<CatalogProduct[]> 
     }
   });
 
-  const results = await Promise.allSettled([...dummyPromises, ...fakeStorePromises, ...shopifyPromises]);
+  const openBeautyPromises = openBeautySources.map(async (source) => {
+    try {
+      const data = await fetchJson(source.url, `OpenBeautyFacts: ${source.name}`);
+      const items: any[] = Array.isArray(data.products) ? data.products : [];
+      successLog.push(`OpenBeautyFacts ${source.name}: ${items.length} items`);
+      return items
+        .filter(hasUsableOpenBeautyName)
+        .map((item) => normalizeOpenBeautyProduct(item, source));
+    } catch (error) {
+      failLog.push(`OpenBeautyFacts ${source.name}`);
+      return [];
+    }
+  });
+
+  const supplementPromises = supplementSources.map(async (source) => {
+    try {
+      const data = await fetchJson(source.url, `NIH DSLD: ${source.name}`);
+      const items: any[] = Array.isArray(data.hits) ? data.hits : [];
+      successLog.push(`NIH DSLD ${source.name}: ${items.length} items`);
+      return items
+        .filter(isCurrentSupplementLabel)
+        .map((item) => normalizeSupplementProduct(item, source));
+    } catch (error) {
+      failLog.push(`NIH DSLD ${source.name}`);
+      return [];
+    }
+  });
+
+  const results = await Promise.allSettled([
+    ...dummyPromises,
+    ...fakeStorePromises,
+    ...shopifyPromises,
+    ...openBeautyPromises,
+    ...supplementPromises,
+  ]);
 
   for (const result of results) {
     if (result.status === "fulfilled") {
@@ -389,17 +580,21 @@ export async function fetchVerifiedCatalogProducts(): Promise<CatalogProduct[]> 
     }
   }
 
+  const dedupedProducts = Array.from(
+    new Map(products.map((product) => [getProductKey(product), product])).values()
+  );
+
   console.log(`[Catalog] Success: ${successLog.join(" | ")}`);
   if (failLog.length > 0) {
     console.warn(`[Catalog] Failed: ${failLog.join(" | ")}`);
   }
 
-  if (products.length === 0) {
+  if (dedupedProducts.length === 0) {
     const msg = failLog.length > 0
       ? `All APIs failed. Failed: ${failLog.join(", ")}`
       : "No products found from any source";
     throw new Error(msg);
   }
 
-  return products;
+  return dedupedProducts;
 }

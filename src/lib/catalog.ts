@@ -1,6 +1,6 @@
 import type { QueryDocumentSnapshot } from "firebase/firestore";
 
-export const CATALOG_VERSION = 7;
+export const CATALOG_VERSION = 8;
 export const PRODUCT_PAGE_SIZE = 24;
 export const STORE_TEMPLATES = [
     { id: "classic", name: "Classic" },
@@ -32,6 +32,9 @@ export const PRODUCT_CATEGORIES = [
     "Fashion Accessories",
     "Fitness Apparel",
     "Health & Fitness",
+    "Skin Care",
+    "Supplements & Wellness",
+    "Medical & First Aid",
     "Beauty & Cosmetics",
     "Beauty Accessories",
     "Footwear",

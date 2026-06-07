@@ -9,7 +9,7 @@ import {
     Megaphone, Target, Sparkles, Plus, Loader2, Rocket, Wallet,
     Globe, Zap, Lock, Calendar, Coins,
     UserCheck, AlertTriangle, Play, Check, ShoppingCart,
-    BarChart3, TrendingUp, MousePointerClick, Eye, MapPin, Activity, ArrowUpRight, Users
+    BarChart3, TrendingUp, MousePointerClick, Eye, MapPin, Activity, ArrowUpRight, Users, Bot, BrainCircuit
 } from "lucide-react";
 import { MetaLogo, TikTokLogo, GoogleLogo, YouTubeLogo } from "@/components/shared/BrandLogos";
 import { Button } from "@/components/ui/button";
@@ -110,19 +110,28 @@ export default function AdsPage() {
 
     const getAiSteps = () => {
         const platform = selectedPlatform.toUpperCase();
+        const platformLabel = selectedPlatform === "tiktok"
+            ? "TikTok"
+            : selectedPlatform === "google"
+            ? "Google"
+            : selectedPlatform === "youtube"
+            ? "YouTube"
+            : "Meta";
         const productLabel = targetType === 'products'
             ? `${selectedProducts.length} product${selectedProducts.length === 1 ? "" : "s"}`
             : "your full store";
 
         return [
             {
-                title: "Shoplinea AI is generating ad themes",
-                detail: `Building ${platform} creative angles for ${productLabel}.`,
+                title: "Claude.ai is creating your ad concept",
+                detail: selectedPlatform === "tiktok"
+                    ? `Creating TikTok-style ad content ideas for ${productLabel}.`
+                    : `Building ${platformLabel} ad copy, hooks, and creative angles for ${productLabel}.`,
                 icon: Sparkles,
             },
             {
-                title: "Shoplinea AI is analyzing locations",
-                detail: "Checking buyer intent across United States, United Kingdom, Canada, and Nigeria.",
+                title: "Open Claw AI is analyzing locations",
+                detail: `Checking ${platformLabel} audience intent across United States, United Kingdom, Canada, and Nigeria.`,
                 icon: MapPin,
             },
             {
@@ -133,13 +142,13 @@ export default function AdsPage() {
                 icon: Target,
             },
             {
-                title: "Scaling web data signals",
-                detail: "Scanning demand patterns, placement costs, and competitor ad velocity.",
+                title: "Claude.ai + Open Claw AI are syncing signals",
+                detail: `Scanning ${platformLabel} demand patterns, placement costs, and competitor ad velocity.`,
                 icon: Activity,
             },
             {
-                title: "Campaign ready for review",
-                detail: `Finalizing budget pacing and ${platform} launch settings.`,
+                title: "Ads are being prepared",
+                detail: `${platformLabel} is preparing the campaign for review. Approval can take a few hours.`,
                 icon: Rocket,
             },
         ];
@@ -222,7 +231,7 @@ export default function AdsPage() {
         const aiSteps = getAiSteps();
         for (let index = 0; index < aiSteps.length; index += 1) {
             setAiStepIndex(index);
-            await new Promise(r => setTimeout(r, 850));
+            await new Promise(r => setTimeout(r, 5000));
         }
         setGeneratingAI(false);
 
@@ -247,18 +256,16 @@ export default function AdsPage() {
             await fetch("/api/send-email", {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    type: "custom", to: user.email,
+                    type: "ad-campaign-submitted", to: user.email,
                     data: {
-                        subject: `Campaign Submitted - ${selectedPlatform.toUpperCase()}`,
-                        html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9fafb;border-radius:12px;border:1px solid #e5e7eb;">
-                            <h2 style="color:#111827;">Campaign Submitted</h2>
-                            <p style="color:#4b5563;">Your ${selectedPlatform.toUpperCase()} campaign is under review. We'll notify you once it's approved.</p>
-                        </div>`
+                        userName: userData?.displayName || userData?.fullName || "Merchant",
+                        platform: selectedPlatform,
+                        budget: budgetNum
                     }
                 })
             });
 
-            toast.success(`Campaign submitted for review on ${selectedPlatform.toUpperCase()}.`);
+            toast.success(`${selectedPlatform.toUpperCase()} is preparing your ads. Please wait a few hours for platform approval.`);
             setShowCampaignModal(false);
         } catch (error) {
             console.error(error);
@@ -283,8 +290,8 @@ export default function AdsPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Advertising</h1>
-                    <p className="text-sm text-zinc-500 mt-1">Create and manage ad campaigns to reach more buyers.</p>
+                    <h1 className="text-2xl font-bold text-white">Agentic Advertising</h1>
+                    <p className="text-sm text-zinc-500 mt-1">Start ads with Claude.ai and Open Claw AI assisting your campaign launch.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-3 px-4 py-2.5 bg-white/[0.04] border border-white/[0.06] rounded-lg">
@@ -299,8 +306,34 @@ export default function AdsPage() {
                     </div>
                     <button onClick={() => setShowCampaignModal(true)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors">
-                        <Zap className="w-4 h-4" /> New Campaign
+                        <Zap className="w-4 h-4" /> Start Ads
                     </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2 rounded-xl border border-blue-500/20 bg-blue-500/10 p-5">
+                    <div className="flex items-start gap-4">
+                        <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                            <Bot className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-white">AI ad agents are standing by</p>
+                            <p className="text-xs text-blue-100/70 mt-1 leading-relaxed">Claude.ai shapes creative strategy while Open Claw AI handles launch pacing, audience checks, and delivery monitoring after admin approval.</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] p-3">
+                        <BrainCircuit className="w-4 h-4 text-violet-400 mb-2" />
+                        <p className="text-sm font-black text-white">Claude.ai</p>
+                        <p className="text-[10px] text-zinc-500">Creative AI</p>
+                    </div>
+                    <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] p-3">
+                        <Activity className="w-4 h-4 text-emerald-400 mb-2" />
+                        <p className="text-sm font-black text-white">Open Claw AI</p>
+                        <p className="text-[10px] text-zinc-500">Launch AI</p>
+                    </div>
                 </div>
             </div>
 
@@ -657,10 +690,10 @@ export default function AdsPage() {
                     <div className="py-16 text-center">
                         <Rocket className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-white mb-2">No campaigns yet</h3>
-                        <p className="text-sm text-zinc-500 max-w-sm mx-auto mb-6">Create your first campaign to start reaching buyers.</p>
+                        <p className="text-sm text-zinc-500 max-w-sm mx-auto mb-6">Start your first AI-assisted campaign and let the ad agents prepare launch settings.</p>
                         <button onClick={() => setShowCampaignModal(true)}
                             className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-                            Create Campaign
+                            Start Ads with AI
                         </button>
                     </div>
                 ) : (
@@ -769,7 +802,7 @@ export default function AdsPage() {
             <AdDepositModal isOpen={showDepositModal} onClose={() => setShowDepositModal(false)} userId={user?.uid} />
             <KYCModal isOpen={showKYCModal} onClose={() => setShowKYCModal(false)} userId={user?.uid} />
 
-            <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Create Campaign" description="Set up your ad campaign across Meta, TikTok, or Google.">
+            <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Start Ads with AI" description="Claude.ai and Open Claw AI prepare your campaign before admin approval.">
                 {generatingAI ? (
                     <div className="py-8 space-y-6">
                         <div className="flex flex-col items-center justify-center text-center space-y-4">
@@ -783,6 +816,20 @@ export default function AdsPage() {
                             <div>
                                 <h3 className="text-lg font-semibold text-white">{currentAiStep.title}</h3>
                                 <p className="mt-1 text-sm leading-relaxed text-zinc-500">{currentAiStep.detail}</p>
+                                <p className="mt-2 text-xs font-semibold text-emerald-400">{selectedPlatform.toUpperCase()} is preparing your ads. Please wait a few hours for approval.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-3 text-center">
+                                <BrainCircuit className="w-5 h-5 text-violet-300 mx-auto mb-1" />
+                                <p className="text-xs font-black text-white">Claude.ai</p>
+                                <p className="text-[10px] text-violet-200/70">Strategy agent online</p>
+                            </div>
+                            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-center">
+                                <Activity className="w-5 h-5 text-emerald-300 mx-auto mb-1" />
+                                <p className="text-xs font-black text-white">Open Claw AI</p>
+                                <p className="text-[10px] text-emerald-200/70">Launch agent online</p>
                             </div>
                         </div>
 
@@ -982,7 +1029,7 @@ export default function AdsPage() {
                             <Button onClick={handleCreateCampaign} disabled={creatingCampaign}
                                 className={cn("flex-1 h-12 font-medium rounded-lg text-sm gap-2",
                                     paymentMode === 'later' ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white")}>
-                                {creatingCampaign ? <Loader2 className="w-4 h-4 animate-spin" /> : "Launch Campaign"}
+                                {creatingCampaign ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start Ads with AI"}
                             </Button>
                         </div>
                     </div>

@@ -22,6 +22,7 @@ import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, up
 import { db, auth } from "@/lib/firebase/config";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFastProductImageUrl, getProductKey, getMarketplaceSourceLabel, PRODUCT_CATEGORIES, type ProductCursor } from "@/lib/catalog";
+import { products as seedProducts } from "@/lib/seed/products";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -102,11 +103,28 @@ export default function ResellerOnboarding() {
         try {
             const snapshot = await getDocs(buildProductQuery(mode === "more" ? cursor : null));
             const nextProducts = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-            setProducts(prev => dedupeProducts(mode === "more" ? [...prev, ...nextProducts] : nextProducts));
+            const fallbackProducts = seedProducts.map((product) => ({
+                id: getProductKey(product),
+                ...product,
+            })) as Product[];
+            const categoryFallback = selectedCategory === "All"
+                ? fallbackProducts
+                : fallbackProducts.filter((product) => product.category === selectedCategory);
+            const productsToShow = mode === "reset"
+                ? [...nextProducts, ...categoryFallback]
+                : nextProducts;
+            setProducts(prev => dedupeProducts(mode === "more" ? [...prev, ...productsToShow] : productsToShow));
             setCursor(snapshot.docs.at(-1) ?? null);
-            setHasMore(snapshot.docs.length === ONBOARDING_PRODUCT_PAGE_SIZE);
+            setHasMore(nextProducts.length > 0 && snapshot.docs.length === ONBOARDING_PRODUCT_PAGE_SIZE);
         } catch (error) {
             console.error(error);
+            const fallbackProducts = seedProducts.map((product) => ({
+                id: getProductKey(product),
+                ...product,
+            })) as Product[];
+            setProducts(selectedCategory === "All"
+                ? fallbackProducts
+                : fallbackProducts.filter((product) => product.category === selectedCategory));
             setHasMore(false);
         } finally {
             setLoading(false);

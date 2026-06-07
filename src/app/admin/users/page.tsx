@@ -318,23 +318,33 @@ export default function UserMatrixPage() {
             toast.error("User does not have a valid email.");
             return;
         }
-        if (!adminSubject || !adminBody) {
+        if (adminTemplate === "custom" && (!adminSubject || !adminBody)) {
             toast.error("Please fill in both subject and body.");
             return;
         }
         setAdminSending(true);
         try {
+            const topProduct = selectedUser?.storeProducts?.[0]?.name || userProducts?.[0]?.name || "Your winning product";
+            const templateType = adminTemplate === "winning-product"
+                ? "winning-product-ad-prompt"
+                : adminTemplate === "upgrade-plan"
+                ? "plan-upgrade-prompt"
+                : "custom";
+            const templateData = templateType === "custom"
+                ? { subject: adminSubject, html: adminBody }
+                : {
+                    userName: selectedUser.displayName || selectedUser.fullName || "Merchant",
+                    productName: topProduct,
+                };
+
             const res = await fetch("/api/send-email", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    type: "custom",
+                    type: templateType,
                     to: selectedUser.email,
                     from: "Shoplinea Support <support@shoplinea.shop>",
-                    data: {
-                        subject: adminSubject,
-                        html: adminBody
-                    }
+                    data: templateData
                 })
             });
             if (res.ok) {
@@ -937,6 +947,13 @@ export default function UserMatrixPage() {
                                             if (e.target.value === 'billing') {
                                                 setAdminSubject('Action Required: Account Setup Fee / Subscription Phase');
                                                 setAdminBody('Dear Merchant,\n\nTo release your pending funds and activate your payout route, you are required to pay a one-time network clearance fee / subscription. Please contact our support team or use the designated payment portal to complete this transaction.\n\nThank you,\nShoplinea Network Infrastructure');
+                                            } else if (e.target.value === 'winning-product') {
+                                                const topProduct = selectedUser?.storeProducts?.[0]?.name || userProducts?.[0]?.name || "Your winning product";
+                                                setAdminSubject(`${topProduct} is ready for ads`);
+                                                setAdminBody(`Sharp AI template: tells the merchant this product has had strong sales signals over the last 2 months and they should run ads now.`);
+                                            } else if (e.target.value === 'upgrade-plan') {
+                                                setAdminSubject('Your Shopinea account is ready to upgrade');
+                                                setAdminBody('Sharp AI template: tells the merchant to upgrade for more products, advanced analytics, and AI growth tools.');
                                             } else {
                                                 setAdminSubject('');
                                                 setAdminBody('');
@@ -944,6 +961,8 @@ export default function UserMatrixPage() {
                                         }}
                                     >
                                         <option value="custom" className="bg-zinc-900">Custom Message</option>
+                                        <option value="winning-product" className="bg-zinc-900">Winning Product Ads</option>
+                                        <option value="upgrade-plan" className="bg-zinc-900">Upgrade Plan Prompt</option>
                                         <option value="billing" className="bg-zinc-900">Billing / Fee Request</option>
                                     </select>
                                 </div>

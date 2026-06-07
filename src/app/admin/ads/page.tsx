@@ -86,21 +86,18 @@ export default function AdCommandPage() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        type: "custom",
+                        type: "ad-campaign-approved",
                         to: sellerDoc.data().email,
                         data: {
-                            subject: `Ad Campaign Approved - ${camp.platform?.toUpperCase()}`,
-                            html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
-                                <h2 style="color: #111827; margin-bottom: 16px;">Traffic Protocol Active</h2>
-                                <p style="color: #4b5563; line-height: 1.6;">Your <strong>${camp.platform?.toUpperCase() || 'network'}</strong> ad campaign has been approved and is now actively delivering traffic.</p>
-                                <p style="color: #4b5563; line-height: 1.6;">You can track conversions and impressions in your dashboard.</p>
-                            </div>`
+                            userName: sellerDoc.data().displayName || sellerDoc.data().fullName || "Merchant",
+                            platform: camp.platform || "ads",
+                            budget: camp.totalBudget || 0
                         }
                     })
                 });
             }
 
-            toast.success("Ad Campaign Propagated & Email Sent!");
+            toast.success("Claude.ai + Open Claw AI launch email sent.");
             fetchData();
         } catch (err) {
             toast.error("Failed to activate campaign.");
