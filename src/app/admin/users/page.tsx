@@ -41,6 +41,13 @@ import { where, addDoc, serverTimestamp, getDoc, collection, doc, getDocs, incre
 import { db, auth } from "@/lib/firebase/config";
 import { useState, useEffect } from "react";
 
+const ADMIN_PAYMENT_PLANS = [
+    { id: "pro_300", name: "Starter", aiCredits: 0, adCredits: 25, maxStores: 1 },
+    { id: "elite_500", name: "Professional", aiCredits: 200, adCredits: 75, maxStores: 3 },
+    { id: "venture_1200", name: "Scale", aiCredits: 750, adCredits: 250, maxStores: 10 },
+    { id: "enterprise_5000", name: "Enterprise", aiCredits: 2500, adCredits: 1000, maxStores: 999 },
+];
+
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
 async function fetchCitiesForCountry(country: string): Promise<string[]> {
@@ -75,6 +82,13 @@ export default function UserMatrixPage() {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [boostingSales, setBoostingSales] = useState(false);
     const [transactionProcessingId, setTransactionProcessingId] = useState<string | null>(null);
+    const [manualPaymentType, setManualPaymentType] = useState("deposit");
+    const [manualPaymentAmount, setManualPaymentAmount] = useState("");
+    const [manualPaymentMethod, setManualPaymentMethod] = useState("Admin credit");
+    const [manualPaymentReference, setManualPaymentReference] = useState("");
+    const [manualPaymentNote, setManualPaymentNote] = useState("");
+    const [manualPaymentPlanId, setManualPaymentPlanId] = useState(ADMIN_PAYMENT_PLANS[0].id);
+    const [manualPaymentSaving, setManualPaymentSaving] = useState(false);
 
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
@@ -363,6 +377,114 @@ export default function UserMatrixPage() {
                 data: { subject, html: body }
             })
         });
+    };
+
+    const buildManualPaymentDescription = (type: string, planName?: string) => {
+        if (type === "ad_deposit") return "Ad wallet payment received";
+        if (type === "subscription_payment") return `Subscription payment received${planName ? ` for ${planName}` : ""}`;
+        if (type === "earning") return "Earnings balance credited";
+        return "Wallet payment received";
+    };
+
+    const resetManualPaymentForm = () => {
+        setManualPaymentAmount("");
+        setManualPaymentReference("");
+        setManualPaymentNote("");
+        setManualPaymentMethod("Admin credit");
+        setManualPaymentType("deposit");
+        setManualPaymentPlanId(ADMIN_PAYMENT_PLANS[0].id);
+    };
+
+    const handleRecordManualPayment = async () => {
+        if (!selectedUser) return;
+        const amount = Number(manualPaymentAmount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            toast.error("Enter a valid payment amount.");
+            return;
+        }
+
+        setManualPaymentSaving(true);
+        try {
+            const selectedPlan = ADMIN_PAYMENT_PLANS.find(plan => plan.id === manualPaymentPlanId) || ADMIN_PAYMENT_PLANS[0];
+            const type = manualPaymentType;
+            const userUpdates: Record<string, unknown> = { updatedAt: serverTimestamp() };
+
+            if (type === "deposit") {
+                userUpdates.walletBalance = increment(amount);
+            } else if (type === "ad_deposit") {
+                userUpdates.adWalletBalance = increment(amount);
+            } else if (type === "earning") {
+                userUpdates.payoutBalance = increment(amount);
+            } else if (type === "subscription_payment") {
+                userUpdates.plan = selectedPlan.id;
+                userUpdates.planName = selectedPlan.name;
+                userUpdates.aiCredits = increment(selectedPlan.aiCredits);
+                userUpdates.adWalletBalance = increment(selectedPlan.adCredits);
+                userUpdates.adsCreditBalance = increment(selectedPlan.adCredits);
+                userUpdates.monthlyAdsCredit = selectedPlan.adCredits;
+                userUpdates.maxStores = selectedPlan.maxStores;
+                userUpdates.multipleStoresEnabled = selectedPlan.maxStores > 1;
+                userUpdates.planStartDate = serverTimestamp();
+                userUpdates.planExpiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            }
+
+            await updateDoc(doc(db, "users", selectedUser.id), userUpdates);
+
+            const description = buildManualPaymentDescription(type, selectedPlan.name);
+            await addDoc(collection(db, "transactions"), {
+                userId: selectedUser.id,
+                userEmail: selectedUser.email || null,
+                type,
+                amount,
+                status: "completed",
+                method: manualPaymentMethod.trim() || "Admin credit",
+                reference: manualPaymentReference.trim() || `ADMIN-${Date.now()}`,
+                description,
+                note: manualPaymentNote.trim(),
+                source: "admin_manual",
+                createdBy: auth.currentUser?.uid || "admin",
+                ...(type === "subscription_payment" ? {
+                    planId: selectedPlan.id,
+                    planName: selectedPlan.name,
+                    aiCredits: selectedPlan.aiCredits,
+                    adCredits: selectedPlan.adCredits,
+                    maxStores: selectedPlan.maxStores,
+                } : {}),
+                createdAt: serverTimestamp(),
+                approvedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            await addDoc(collection(db, "notifications"), {
+                userId: selectedUser.id,
+                type: "payout",
+                title: "Payment received",
+                description: `${description}: $${amount.toLocaleString()}. Your balance has been updated.`,
+                read: false,
+                createdAt: serverTimestamp(),
+            });
+
+            await sendTransactionStatusEmail(
+                selectedUser,
+                "Payment Received - Balance Updated",
+                `<p>Hello ${selectedUser.displayName || selectedUser.fullName || "Merchant"},</p>
+                <p>We have received and recorded your payment.</p>
+                <p><strong>Payment:</strong> ${description}</p>
+                <p><strong>Amount:</strong> $${amount.toLocaleString()}</p>
+                <p><strong>Status:</strong> Completed</p>
+                <p>Your Shopinea balance and payment history have been updated.</p>`
+            );
+
+            toast.success("Payment recorded, balance updated, and user notified.");
+            resetManualPaymentForm();
+            await fetchUsers();
+            await fetchUserDetails(selectedUser);
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to record payment.");
+        } finally {
+            setManualPaymentSaving(false);
+        }
     };
 
     const handleApproveTransaction = async (transaction: any) => {
@@ -668,6 +790,92 @@ export default function UserMatrixPage() {
                                 <p className="text-sm text-zinc-500">{selectedUser.email}</p>
                                 <p className="text-xs text-zinc-600 mt-0.5 font-mono">ID: {selectedUser.id.slice(0, 12)}</p>
                             </div>
+                        </div>
+
+                        <div className="bg-emerald-500/[0.04] border border-emerald-500/15 p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <DollarSign className="w-4 h-4 text-emerald-400" />
+                                <h3 className="text-sm font-semibold text-white">Record Payment</h3>
+                                <span className="ml-auto text-[10px] text-emerald-300/70">Completed instantly</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Payment For</Label>
+                                    <select
+                                        value={manualPaymentType}
+                                        onChange={(e) => setManualPaymentType(e.target.value)}
+                                        className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm px-3 outline-none focus:border-emerald-500/40"
+                                    >
+                                        <option value="deposit" className="bg-zinc-900">Wallet Balance</option>
+                                        <option value="ad_deposit" className="bg-zinc-900">Ads Balance</option>
+                                        <option value="subscription_payment" className="bg-zinc-900">Subscription</option>
+                                        <option value="earning" className="bg-zinc-900">Available Earnings</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Amount</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={manualPaymentAmount}
+                                        onChange={(e) => setManualPaymentAmount(e.target.value)}
+                                        placeholder="Any amount"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                    />
+                                </div>
+                                {manualPaymentType === "subscription_payment" && (
+                                    <div className="space-y-1 md:col-span-2">
+                                        <Label className="text-xs text-zinc-400 font-medium">Activate Plan</Label>
+                                        <select
+                                            value={manualPaymentPlanId}
+                                            onChange={(e) => setManualPaymentPlanId(e.target.value)}
+                                            className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm px-3 outline-none focus:border-emerald-500/40"
+                                        >
+                                            {ADMIN_PAYMENT_PLANS.map(plan => (
+                                                <option key={plan.id} value={plan.id} className="bg-zinc-900">
+                                                    {plan.name} - {plan.aiCredits.toLocaleString()} AI credits, ${plan.adCredits.toLocaleString()} ads credit
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Payment Method</Label>
+                                    <Input
+                                        value={manualPaymentMethod}
+                                        onChange={(e) => setManualPaymentMethod(e.target.value)}
+                                        placeholder="Bank, PayPal, Crypto, Cash"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Reference</Label>
+                                    <Input
+                                        value={manualPaymentReference}
+                                        onChange={(e) => setManualPaymentReference(e.target.value)}
+                                        placeholder="Receipt or transaction ID"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1 md:col-span-2">
+                                    <Label className="text-xs text-zinc-400 font-medium">Admin Note</Label>
+                                    <textarea
+                                        value={manualPaymentNote}
+                                        onChange={(e) => setManualPaymentNote(e.target.value)}
+                                        placeholder="Optional internal note"
+                                        className="w-full h-20 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm p-3 outline-none focus:border-emerald-500/40 transition-colors resize-none"
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleRecordManualPayment}
+                                disabled={manualPaymentSaving}
+                                className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                            >
+                                {manualPaymentSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                {manualPaymentSaving ? "Recording payment..." : "Record Payment & Notify User"}
+                            </button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
