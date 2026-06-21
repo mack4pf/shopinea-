@@ -2,24 +2,45 @@
 
 import { useState, useEffect } from "react";
 import { db, auth } from "@/lib/firebase/config";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { 
     Wallet, 
     Building2, 
-    Send, 
     Bitcoin, 
-    Zap, 
-    ShieldCheck, 
     Loader2,
     Save,
     CreditCard,
-    Lock
+    Lock,
+    Plus,
+    Trash2,
+    ImageOff
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { onAuthStateChanged } from "firebase/auth";
+
+type PaymentMethod = {
+    id: string;
+    label: string;
+    type: string;
+    flow: "deposit" | "withdrawal" | "both";
+    destination: string;
+    instructions: string;
+    logoUrl: string;
+    enabled: boolean;
+};
+
+const defaultMethod = (label = "New Method"): PaymentMethod => ({
+    id: `method-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    label,
+    type: "bank",
+    flow: "deposit",
+    destination: "",
+    instructions: "",
+    logoUrl: "",
+    enabled: true,
+});
 
 export default function GatewaysPage() {
     const [loading, setLoading] = useState(true);
@@ -29,15 +50,24 @@ export default function GatewaysPage() {
         bankAccount: "",
         bankSwift: "",
         paypalEmail: "",
+        cashappTag: "",
         btcAddress: "",
         ethAddress: "",
-        usdtAddress: ""
+        usdtAddress: "",
+        paymentMethods: [] as PaymentMethod[],
     });
 
     const fetchData = async () => {
         try {
             const snap = await getDoc(doc(db, "settings", "payments"));
-            if (snap.exists()) setPaymentConfig(snap.data() as any);
+            if (snap.exists()) {
+                const data = snap.data() as any;
+                setPaymentConfig(prev => ({
+                    ...prev,
+                    ...data,
+                    paymentMethods: Array.isArray(data.paymentMethods) ? data.paymentMethods : [],
+                }));
+            }
         } catch (err) {
             console.error(err);
         } finally {
@@ -64,13 +94,34 @@ export default function GatewaysPage() {
     const handleUpdatePaymentConfig = async () => {
         setSaving(true);
         try {
-            await updateDoc(doc(db, "settings", "payments"), paymentConfig);
+            await setDoc(doc(db, "settings", "payments"), paymentConfig, { merge: true });
             toast.success("Global Gateway Parameters Updated!");
         } catch (err) {
             toast.error("Failed to save configuration.");
         } finally {
             setSaving(false);
         }
+    };
+
+    const updateMethod = (id: string, updates: Partial<PaymentMethod>) => {
+        setPaymentConfig(prev => ({
+            ...prev,
+            paymentMethods: prev.paymentMethods.map(method => method.id === id ? { ...method, ...updates } : method),
+        }));
+    };
+
+    const addMethod = () => {
+        setPaymentConfig(prev => ({
+            ...prev,
+            paymentMethods: [...prev.paymentMethods, defaultMethod()],
+        }));
+    };
+
+    const removeMethod = (id: string) => {
+        setPaymentConfig(prev => ({
+            ...prev,
+            paymentMethods: prev.paymentMethods.filter(method => method.id !== id),
+        }));
     };
 
     if (loading) return (
@@ -80,7 +131,7 @@ export default function GatewaysPage() {
     );
 
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
             <div>
                 <h1 className="text-2xl font-bold text-white">Payment Gateways</h1>
                 <p className="text-sm text-zinc-500 mt-1">Configure payment methods and deposit addresses.</p>
@@ -115,6 +166,10 @@ export default function GatewaysPage() {
                             <Label className="text-xs text-zinc-500">PayPal Email</Label>
                             <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" placeholder="paypal@example.com" value={paymentConfig.paypalEmail} onChange={(e) => setPaymentConfig({...paymentConfig, paypalEmail: e.target.value})} />
                         </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs text-zinc-500">Cash App Tag</Label>
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" placeholder="$shopinea" value={paymentConfig.cashappTag} onChange={(e) => setPaymentConfig({...paymentConfig, cashappTag: e.target.value})} />
+                        </div>
                     </div>
                 </div>
 
@@ -148,6 +203,97 @@ export default function GatewaysPage() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 className="text-sm font-semibold text-white">Custom Payment Methods</h2>
+                        <p className="text-xs text-zinc-500 mt-1">Add cards, PayPal, Cash App, bank, crypto, or any manual method for deposits and withdrawals.</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={addMethod}
+                        className="h-9 px-4 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Method
+                    </button>
+                </div>
+
+                {paymentConfig.paymentMethods.length === 0 ? (
+                    <div className="py-10 border border-dashed border-white/[0.08] rounded-xl text-center">
+                        <CreditCard className="w-7 h-7 text-zinc-600 mx-auto mb-2" />
+                        <p className="text-sm text-zinc-500">No custom methods added yet.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {paymentConfig.paymentMethods.map((method) => (
+                            <div key={method.id} className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center overflow-hidden shrink-0">
+                                        {method.logoUrl ? (
+                                            <img src={method.logoUrl} alt="" className="w-full h-full object-contain p-1.5" />
+                                        ) : (
+                                            <CreditCard className="w-5 h-5 text-zinc-500" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">Name</Label>
+                                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={method.label} onChange={(e) => updateMethod(method.id, { label: e.target.value })} placeholder="PayPal, Cash App, Visa Card" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">Type</Label>
+                                            <select className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm px-3 outline-none" value={method.type} onChange={(e) => updateMethod(method.id, { type: e.target.value })}>
+                                                {["bank", "card", "paypal", "cashapp", "crypto", "manual"].map(type => <option key={type} value={type} className="bg-zinc-900">{type}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">Use For</Label>
+                                            <select className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm px-3 outline-none" value={method.flow} onChange={(e) => updateMethod(method.id, { flow: e.target.value as PaymentMethod["flow"] })}>
+                                                <option value="deposit" className="bg-zinc-900">Deposits</option>
+                                                <option value="withdrawal" className="bg-zinc-900">Withdrawals</option>
+                                                <option value="both" className="bg-zinc-900">Both</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <Label className="text-xs text-zinc-500">Payment Details</Label>
+                                        <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={method.destination} onChange={(e) => updateMethod(method.id, { destination: e.target.value })} placeholder="Email, tag, bank info, card instruction, wallet" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-xs text-zinc-500">Logo URL</Label>
+                                        <div className="flex gap-2">
+                                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={method.logoUrl} onChange={(e) => updateMethod(method.id, { logoUrl: e.target.value })} placeholder="https://..." />
+                                            <button type="button" onClick={() => updateMethod(method.id, { logoUrl: "" })} className="w-10 h-10 rounded-lg border border-white/[0.08] bg-white/[0.04] text-zinc-500 hover:text-white flex items-center justify-center">
+                                                <ImageOff className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1 md:col-span-2">
+                                        <Label className="text-xs text-zinc-500">Instructions</Label>
+                                        <textarea value={method.instructions} onChange={(e) => updateMethod(method.id, { instructions: e.target.value })} placeholder="Tell users what to include in notes, reference fields, or upload receipts." className="w-full h-20 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm p-3 outline-none focus:border-blue-500/40 resize-none" />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                                    <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                                        <input type="checkbox" checked={method.enabled} onChange={(e) => updateMethod(method.id, { enabled: e.target.checked })} className="accent-blue-600" />
+                                        Enabled
+                                    </label>
+                                    <button type="button" onClick={() => removeMethod(method.id)} className="h-9 px-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/15 text-xs font-semibold flex items-center justify-center gap-2">
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="flex justify-end">

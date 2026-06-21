@@ -11,9 +11,10 @@ interface ModalProps {
     description?: string;
     children: React.ReactNode;
     footer?: React.ReactNode;
+    panelClassName?: string;
 }
 
-export function Modal({ isOpen, onClose, title, description, children, footer }: ModalProps) {
+export function Modal({ isOpen, onClose, title, description, children, footer, panelClassName }: ModalProps) {
     // Lock body scroll while open
     useEffect(() => {
         if (!isOpen) return;
@@ -42,7 +43,7 @@ export function Modal({ isOpen, onClose, title, description, children, footer }:
 
             {/* Panel */}
             <div
-                className="relative bg-zinc-900 w-full max-w-lg rounded-[2.5rem] shadow-[0_0_80px_rgba(59,130,246,0.08)] border border-zinc-800 my-8 flex flex-col overflow-hidden"
+                className={`relative bg-zinc-900 w-full max-w-lg rounded-[2.5rem] shadow-[0_0_80px_rgba(59,130,246,0.08)] border border-zinc-800 my-8 flex flex-col overflow-hidden ${panelClassName || ""}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Top glow accent */}

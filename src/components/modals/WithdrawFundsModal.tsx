@@ -24,6 +24,7 @@ interface WithdrawFundsModalProps {
     availableBalance: number;
     payoutMethods: any[];
     userEmail: string;
+    locked?: boolean;
 }
 
 const METHOD_ICON: Record<string, React.ElementType> = {
@@ -40,6 +41,7 @@ export default function WithdrawFundsModal({
     availableBalance,
     payoutMethods,
     userEmail,
+    locked = false,
 }: WithdrawFundsModalProps) {
     const [amount, setAmount] = useState("");
     const [selectedMethodId, setSelectedMethodId] = useState("");
@@ -51,6 +53,7 @@ export default function WithdrawFundsModal({
     const quickPcts = [25, 50, 75, 100];
 
     const handleWithdraw = async () => {
+        if (locked) { toast.error("Withdrawals are locked for this account."); return; }
         if (!parsed || parsed <= 0) { toast.error("Enter a valid amount."); return; }
         if (parsed > availableBalance) { toast.error("Amount exceeds available balance."); return; }
         if (!selectedMethodId) { toast.error("Select a payout method."); return; }
@@ -134,6 +137,11 @@ export default function WithdrawFundsModal({
                     </div>
 
                     {/* Amount input */}
+                    {locked && (
+                        <div className="p-3 bg-rose-500/[0.07] border border-rose-500/20 rounded-xl text-xs text-rose-200">
+                            Withdrawals are locked for this account.
+                        </div>
+                    )}
                     <div className="space-y-2.5">
                         <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Amount (USD)</label>
                         <div className="relative">
@@ -231,7 +239,7 @@ export default function WithdrawFundsModal({
                     {/* CTA */}
                     <button
                         onClick={handleWithdraw}
-                        disabled={loading || !parsed || !selectedMethodId || parsed > availableBalance}
+                        disabled={loading || locked || !parsed || !selectedMethodId || parsed > availableBalance}
                         className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-500/20"
                     >
                         {loading ? (

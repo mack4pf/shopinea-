@@ -41,6 +41,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
     const availableBalance = userData?.payoutBalance || 0;
     const lockedBalance = userData?.pendingPayout || 0;
     const adDebt = userData?.pendingAdDebt || 0;
+    const withdrawalsLocked = !!(userData?.withdrawalsLocked || userData?.payoutLocked);
     const minWithdrawal = 500; // Lowered for better accessibility
 
     const payoutMethods = userData?.payoutMethods || [];
@@ -49,6 +50,10 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
         const numAmount = parseFloat(amount);
         const totalNeeded = numAmount + adDebt;
 
+        if (withdrawalsLocked) {
+            toast.error("Withdrawals are locked for this account. Please contact support.");
+            return;
+        }
         if (numAmount < minWithdrawal) {
             toast.error(`Minimum withdrawal is ${currencySymbol}${minWithdrawal.toLocaleString()}`);
             return;
@@ -187,7 +192,17 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 </div>
 
                 {/* Ad Debt Alert / Block */}
-                {adDebt > 0 ? (
+                {withdrawalsLocked ? (
+                    <div className="space-y-5 text-center py-10">
+                        <AlertCircle className="w-14 h-14 text-rose-500 mx-auto" />
+                        <div>
+                            <h3 className="text-2xl font-black text-rose-500 tracking-tighter italic uppercase">Withdrawals Locked</h3>
+                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mt-2 max-w-xs mx-auto">
+                                This account cannot submit withdrawal requests right now.
+                            </p>
+                        </div>
+                    </div>
+                ) : adDebt > 0 ? (
                     <div className="space-y-6 text-center py-10 animate-in slide-in-from-top-4 duration-500">
                         <AlertCircle className="w-16 h-16 text-rose-500 mx-auto" />
                         <div>
@@ -257,7 +272,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                         <div className="pt-4">
                             <Button
                                 onClick={handleWithdraw}
-                                disabled={loading || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || !selectedMethod || parseFloat(amount) > availableBalance || parseFloat(amount) < minWithdrawal}
+                                disabled={loading || withdrawalsLocked || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || !selectedMethod || parseFloat(amount) > availableBalance || parseFloat(amount) < minWithdrawal}
                                 className="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-500/30 active:scale-95 transition-all text-[11px] uppercase tracking-[0.3em] italic gap-4 flex border-b-4 border-blue-800 active:border-b-0"
                             >
                                 {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (

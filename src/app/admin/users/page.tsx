@@ -29,7 +29,9 @@ import {
     Plus,
     X,
     BarChart3,
-    Package
+    Package,
+    LockKeyhole,
+    UnlockKeyhole
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, cn } from "@/components/ui/button";
@@ -89,6 +91,7 @@ export default function UserMatrixPage() {
     const [manualPaymentNote, setManualPaymentNote] = useState("");
     const [manualPaymentPlanId, setManualPaymentPlanId] = useState(ADMIN_PAYMENT_PLANS[0].id);
     const [manualPaymentSaving, setManualPaymentSaving] = useState(false);
+    const [lockSavingField, setLockSavingField] = useState<string | null>(null);
 
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
@@ -114,7 +117,26 @@ export default function UserMatrixPage() {
         try {
             const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
             const snap = await getDocs(q);
-            setUsers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const usersList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const ordersSnap = await getDocs(collection(db, "orders"));
+            const salesByUser: Record<string, { totalSales: number; totalProfit: number; totalOrders: number }> = {};
+
+            ordersSnap.docs.forEach(orderDoc => {
+                const order = orderDoc.data();
+                const userId = order.resellerId;
+                if (!userId) return;
+                if (!salesByUser[userId]) salesByUser[userId] = { totalSales: 0, totalProfit: 0, totalOrders: 0 };
+                salesByUser[userId].totalSales += Number(order.resellPrice || order.totalAmount || 0);
+                salesByUser[userId].totalProfit += Number(order.resellerProfit || 0);
+                salesByUser[userId].totalOrders += 1;
+            });
+
+            setUsers(usersList.map(user => ({
+                ...user,
+                totalSales: salesByUser[user.id]?.totalSales || 0,
+                totalProfit: salesByUser[user.id]?.totalProfit || 0,
+                totalOrders: salesByUser[user.id]?.totalOrders || 0,
+            })));
         } catch (err) {
             console.error(err);
             toast.error("Failed to fetch user database.");
@@ -145,7 +167,14 @@ export default function UserMatrixPage() {
                 where("resellerId", "==", user.id),
                 orderBy("createdAt", "desc")
             ));
-            setUserOrders(ordersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+            const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const salesSummary = orders.reduce((summary, order: any) => ({
+                totalSales: summary.totalSales + Number(order.resellPrice || order.totalAmount || 0),
+                totalProfit: summary.totalProfit + Number(order.resellerProfit || 0),
+                totalOrders: summary.totalOrders + 1,
+            }), { totalSales: 0, totalProfit: 0, totalOrders: 0 });
+            setUserOrders(orders);
+            setSelectedUser((prev: any) => prev ? { ...prev, ...salesSummary } : prev);
 
             // Extract unique products from orders for "View Products"
             const products = ordersSnap.docs.map(d => ({ id: d.data().productId, name: d.data().productName }));
@@ -607,6 +636,26 @@ export default function UserMatrixPage() {
         toast.error("Feature restricted. Please contact central ops for database deletions.");
     };
 
+    const toggleUserLock = async (field: string, label: string, currentStatus: boolean) => {
+        if (!selectedUser) return;
+        setLockSavingField(field);
+        try {
+            await updateDoc(doc(db, "users", selectedUser.id), {
+                [field]: !currentStatus,
+                updatedAt: serverTimestamp(),
+            });
+            const updatedUser = { ...selectedUser, [field]: !currentStatus };
+            setSelectedUser(updatedUser);
+            setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, [field]: !currentStatus } : user));
+            toast.success(`${label} ${!currentStatus ? "locked" : "unlocked"}.`);
+        } catch (err) {
+            console.error(err);
+            toast.error(`Failed to update ${label.toLowerCase()} lock.`);
+        } finally {
+            setLockSavingField(null);
+        }
+    };
+
     const filtered = users.filter(u =>
         u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -620,7 +669,7 @@ export default function UserMatrixPage() {
     );
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-20">
             <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Users</h1>
@@ -639,12 +688,65 @@ export default function UserMatrixPage() {
             </div>
 
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="md:hidden divide-y divide-white/[0.06]">
+                    {filtered.length === 0 ? (
+                        <div className="px-5 py-12 text-center">
+                            <p className="text-sm text-zinc-600">No users found</p>
+                        </div>
+                    ) : filtered.map((u) => (
+                        <div key={u.id} className="p-4 space-y-4">
+                            <div className="flex items-start gap-3">
+                                <div className="w-11 h-11 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0 overflow-hidden">
+                                    {u.photoURL ? (
+                                        <img src={u.photoURL} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-xs font-semibold text-zinc-400">{(u.displayName?.slice(0, 2) || u.email?.slice(0, 2) || '??').toUpperCase()}</span>
+                                    )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-white truncate">{u.displayName || 'Anonymous'}</p>
+                                    <p className="text-xs text-zinc-500 truncate">{u.email}</p>
+                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                        {u.isAdmin && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-medium rounded border border-blue-500/20"><Shield className="w-2.5 h-2.5" /> Admin</span>}
+                                        {(u.walletLocked || u.adWalletLocked || u.payoutLocked || u.depositsLocked || u.withdrawalsLocked) && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 text-rose-300 text-[10px] font-medium rounded border border-rose-500/20"><LockKeyhole className="w-2.5 h-2.5" /> Locked</span>}
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/[0.04] text-zinc-400 text-[10px] font-medium rounded border border-white/[0.06]">{u.kycStatus || 'Unverified'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Sales</p>
+                                    <p className="text-sm font-semibold text-emerald-400">${(u.totalSales || 0).toLocaleString()}</p>
+                                    <p className="text-[10px] text-zinc-600">{(u.totalOrders || 0).toLocaleString()} orders</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Wallet</p>
+                                    <p className="text-sm font-semibold text-white">${(u.walletBalance || 0).toLocaleString()}</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Ads</p>
+                                    <p className="text-sm font-semibold text-blue-400">${(u.adWalletBalance || 0).toLocaleString()}</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Earned</p>
+                                    <p className="text-sm font-semibold text-emerald-400">${(u.payoutBalance || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => fetchUserDetails(u)} className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">View</button>
+                                <button onClick={() => toggleAdminStatus(u.id, !!u.isAdmin)} className="w-10 h-10 flex items-center justify-center bg-white/[0.04] border border-white/[0.06] rounded-lg text-zinc-500 hover:text-blue-400 transition-colors"><Shield className="w-4 h-4" /></button>
+                                <button onClick={() => deleteUserRecord(u.id)} className="w-10 h-10 flex items-center justify-center bg-white/[0.04] border border-white/[0.06] rounded-lg text-zinc-500 hover:text-rose-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="border-b border-white/[0.06]">
                             <tr className="text-xs font-semibold text-zinc-500">
                                 <th className="px-5 py-4">User</th>
                                 <th className="px-4 py-4">Status</th>
+                                <th className="px-4 py-4">Sales</th>
                                 <th className="px-4 py-4">Balances</th>
                                 <th className="px-4 py-4">Plan</th>
                                 <th className="px-5 py-4 text-right">Actions</th>
@@ -653,7 +755,7 @@ export default function UserMatrixPage() {
                         <tbody className="divide-y divide-white/[0.04]">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-5 py-16 text-center">
+                                    <td colSpan={6} className="px-5 py-16 text-center">
                                         <p className="text-sm text-zinc-600">No users found</p>
                                     </td>
                                 </tr>
@@ -682,6 +784,11 @@ export default function UserMatrixPage() {
                                                         <Shield className="w-2.5 h-2.5" /> Admin
                                                     </span>
                                                 )}
+                                                {(u.walletLocked || u.adWalletLocked || u.payoutLocked || u.depositsLocked || u.withdrawalsLocked) && (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-500/10 text-rose-300 text-[10px] font-medium rounded w-fit border border-rose-500/20">
+                                                        <LockKeyhole className="w-2.5 h-2.5" /> Locked
+                                                    </span>
+                                                )}
                                                 <span className={cn(
                                                     "inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded w-fit border",
                                                     u.kycStatus === 'verified'
@@ -692,6 +799,12 @@ export default function UserMatrixPage() {
                                                 )}>
                                                     <ShieldCheck className="w-2.5 h-2.5" /> {u.kycStatus || 'Unverified'}
                                                 </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="space-y-0.5">
+                                                <p className="text-xs font-semibold text-emerald-400">${(u.totalSales || 0).toLocaleString()}</p>
+                                                <p className="text-[10px] text-zinc-500">{(u.totalOrders || 0).toLocaleString()} orders</p>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
@@ -713,7 +826,7 @@ export default function UserMatrixPage() {
                                             </div>
                                         </td>
                                         <td className="px-5 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => fetchUserDetails(u)}
                                                     className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
@@ -742,7 +855,7 @@ export default function UserMatrixPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
                         <TrendingUp className="w-5 h-5 text-blue-400" />
@@ -750,6 +863,15 @@ export default function UserMatrixPage() {
                     <div>
                         <p className="text-xs text-zinc-500">Total Users</p>
                         <p className="text-xl font-bold text-white">{users.length}</p>
+                    </div>
+                </div>
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <BarChart3 className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div>
+                        <p className="text-xs text-zinc-500">Total Sales</p>
+                        <p className="text-xl font-bold text-white">${users.reduce((acc, curr) => acc + (curr.totalSales || 0), 0).toLocaleString()}</p>
                     </div>
                 </div>
                 <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
@@ -773,7 +895,7 @@ export default function UserMatrixPage() {
             </div>
 
             {/* User Detail Modal */}
-            <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title="User Details">
+            <Modal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} title="User Details" panelClassName="sm:max-w-2xl lg:max-w-4xl">
                 {selectedUser && (
                     <div className="space-y-6 py-2 animate-in fade-in duration-300">
                         {/* Header Section */}
@@ -789,6 +911,60 @@ export default function UserMatrixPage() {
                                 <h2 className="text-lg font-semibold text-white">{selectedUser.displayName || 'Anonymous'}</h2>
                                 <p className="text-sm text-zinc-500">{selectedUser.email}</p>
                                 <p className="text-xs text-zinc-600 mt-0.5 font-mono">ID: {selectedUser.id.slice(0, 12)}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                <p className="text-xs text-zinc-500">Total Sales</p>
+                                <p className="text-xl font-bold text-emerald-400">${(selectedUser.totalSales || 0).toLocaleString()}</p>
+                            </div>
+                            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                <p className="text-xs text-zinc-500">Sales Orders</p>
+                                <p className="text-xl font-bold text-white">{(selectedUser.totalOrders || 0).toLocaleString()}</p>
+                            </div>
+                            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                <p className="text-xs text-zinc-500">Total Profit</p>
+                                <p className="text-xl font-bold text-blue-400">${(selectedUser.totalProfit || 0).toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-rose-500/[0.04] border border-rose-500/15 p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <LockKeyhole className="w-4 h-4 text-rose-300" />
+                                <h3 className="text-sm font-semibold text-white">Balance Locks</h3>
+                                <span className="ml-auto text-[10px] text-rose-200/70">Controls user access</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {[
+                                    { field: "walletLocked", label: "Wallet Balance", value: !!selectedUser.walletLocked },
+                                    { field: "adWalletLocked", label: "Ads Balance", value: !!selectedUser.adWalletLocked },
+                                    { field: "payoutLocked", label: "Earnings Balance", value: !!selectedUser.payoutLocked },
+                                    { field: "depositsLocked", label: "Deposits", value: !!selectedUser.depositsLocked },
+                                    { field: "withdrawalsLocked", label: "Withdrawals", value: !!selectedUser.withdrawalsLocked },
+                                ].map(item => (
+                                    <button
+                                        key={item.field}
+                                        type="button"
+                                        onClick={() => toggleUserLock(item.field, item.label, item.value)}
+                                        disabled={lockSavingField === item.field}
+                                        className={cn(
+                                            "h-12 rounded-xl border px-3 flex items-center justify-between text-left transition-colors disabled:opacity-60",
+                                            item.value
+                                                ? "bg-rose-500/10 border-rose-500/25 text-rose-200"
+                                                : "bg-white/[0.03] border-white/[0.07] text-zinc-300 hover:bg-white/[0.05]"
+                                        )}
+                                    >
+                                        <span className="text-xs font-semibold">{item.label}</span>
+                                        {lockSavingField === item.field ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : item.value ? (
+                                            <LockKeyhole className="w-4 h-4" />
+                                        ) : (
+                                            <UnlockKeyhole className="w-4 h-4 text-emerald-400" />
+                                        )}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
