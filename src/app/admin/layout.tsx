@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
     Shield, LayoutDashboard, Package, Users, LogOut,
@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             )}
 
             {/* Sidebar */}
-            <aside className={`w-64 border-r border-white/[0.06] bg-[#0c0c10] flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+            <aside className={`w-[min(20rem,calc(100vw-2rem))] lg:w-64 border-r border-white/[0.06] bg-[#0c0c10] flex flex-col fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 shadow-2xl shadow-black/40 ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:shadow-none`}>
 
                 {/* Logo */}
                 <div className="px-5 py-5 border-b border-white/[0.06]">
@@ -77,18 +77,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Main */}
             <div className="flex-1 flex flex-col lg:ml-64 min-h-screen">
                 {/* Top bar */}
-                <header className="sticky top-0 z-30 bg-[#0f0f13]/90 backdrop-blur-md border-b border-white/[0.06] px-5 py-3 flex items-center gap-4">
-                    <button onClick={() => setOpen(v => !v)} className="lg:hidden w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center transition-colors">
+                <header className="sticky top-0 z-30 bg-[#0f0f13]/95 backdrop-blur-md border-b border-white/[0.06] px-3 sm:px-5 py-2.5 sm:py-3 flex items-center gap-3 sm:gap-4">
+                    <button onClick={() => setOpen(v => !v)} className="lg:hidden w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] flex items-center justify-center transition-colors">
                         {open ? <X className="w-4 h-4 text-zinc-400" /> : <Menu className="w-4 h-4 text-zinc-400" />}
                     </button>
 
                     {/* Breadcrumb */}
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                    <div className="min-w-0 flex items-center gap-1.5 text-xs text-zinc-500">
                         <span>Admin</span>
                         {pathname !== "/admin" && (
                             <>
                                 <ChevronRight className="w-3 h-3" />
-                                <span className="text-zinc-300 capitalize">{adminNav.find(n => n.href !== "/admin" && pathname.startsWith(n.href))?.name || "Overview"}</span>
+                                <span className="text-zinc-300 capitalize truncate">{adminNav.find(n => n.href !== "/admin" && pathname.startsWith(n.href))?.name || "Overview"}</span>
                             </>
                         )}
                     </div>
@@ -102,9 +102,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </header>
 
                 {/* Content */}
-                <main className="flex-1 p-5 md:p-8">
+                <main className="flex-1 p-3 sm:p-5 md:p-8 pb-24 lg:pb-8">
                     {children}
                 </main>
+
+                <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-[#0c0c10]/95 backdrop-blur-md border-t border-white/[0.08] px-2 py-2">
+                    <div className="flex gap-1 overflow-x-auto">
+                        {adminNav.map((item) => {
+                            const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={`min-w-[74px] h-14 rounded-xl flex flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors ${active ? "bg-blue-600/15 text-blue-300 border border-blue-500/20" : "text-zinc-500 hover:text-white"}`}
+                                >
+                                    <item.icon className="w-4 h-4" />
+                                    <span className="truncate max-w-[64px]">{item.name}</span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </nav>
             </div>
         </div>
     );

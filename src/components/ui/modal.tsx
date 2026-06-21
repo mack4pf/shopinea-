@@ -35,7 +35,7 @@ export function Modal({ isOpen, onClose, title, description, children, footer, p
 
     return (
         <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
             onClick={onClose}
         >
             {/* Backdrop */}
@@ -43,16 +43,16 @@ export function Modal({ isOpen, onClose, title, description, children, footer, p
 
             {/* Panel */}
             <div
-                className={`relative bg-zinc-900 w-full max-w-lg rounded-[2.5rem] shadow-[0_0_80px_rgba(59,130,246,0.08)] border border-zinc-800 my-8 flex flex-col overflow-hidden ${panelClassName || ""}`}
+                className={`relative bg-zinc-900 w-full max-w-lg rounded-t-3xl sm:rounded-[2.5rem] shadow-[0_0_80px_rgba(59,130,246,0.08)] border border-zinc-800 my-0 sm:my-8 flex flex-col overflow-hidden max-h-[92vh] sm:max-h-none ${panelClassName || ""}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Top glow accent */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-[2px] bg-gradient-to-r from-transparent via-blue-500/60 to-transparent pointer-events-none" />
 
                 {/* Header — sticky, never scrolls away */}
-                <div className="flex-shrink-0 px-8 py-6 border-b border-zinc-800/60 flex items-center justify-between bg-zinc-900">
-                    <div>
-                        <h2 className="text-2xl font-black text-white tracking-tight italic uppercase">{title}</h2>
+                <div className="flex-shrink-0 px-4 sm:px-8 py-4 sm:py-6 border-b border-zinc-800/60 flex items-center justify-between bg-zinc-900">
+                    <div className="min-w-0">
+                        <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight italic uppercase truncate">{title}</h2>
                         {description && <p className="text-[11px] font-bold text-zinc-500 mt-1.5 uppercase tracking-widest">{description}</p>}
                     </div>
                     <button
@@ -65,7 +65,7 @@ export function Modal({ isOpen, onClose, title, description, children, footer, p
                 </div>
 
                 {/* Scrollable content */}
-                <div className="overflow-y-auto max-h-[65vh] p-8">
+                <div className="overflow-y-auto max-h-[78vh] sm:max-h-[65vh] p-4 sm:p-8">
                     {children}
                 </div>
 
