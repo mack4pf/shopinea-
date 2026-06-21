@@ -1338,6 +1338,11 @@ export default function UserMatrixPage() {
                                             } else if (e.target.value === 'upgrade-plan') {
                                                 setAdminSubject('Your Shopinea account is ready to upgrade');
                                                 setAdminBody('Sharp AI template: tells the merchant to upgrade for more products, advanced analytics, and AI growth tools.');
+                                            } else if (e.target.value === 'escrow-unlocked') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "Merchant";
+                                                const unlockedAmount = Number(selectedUser?.pendingPayout || selectedUser?.payoutBalance || 0);
+                                                setAdminSubject('Your escrow balance has been unlocked');
+                                                setAdminBody(`Hello ${merchantName},\n\nGood news: your escrow balance has been reviewed and unlocked for withdrawal.\n\nUnlocked amount: $${unlockedAmount.toLocaleString()}\nStatus: Available for payout\n\nYou can now continue with your withdrawal request from your Shopinea dashboard. Please make sure your payout details are correct before submitting.\n\nThank you,\nShopinea Finance Team`);
                                             } else {
                                                 setAdminSubject('');
                                                 setAdminBody('');
@@ -1347,6 +1352,7 @@ export default function UserMatrixPage() {
                                         <option value="custom" className="bg-zinc-900">Custom Message</option>
                                         <option value="winning-product" className="bg-zinc-900">Winning Product Ads</option>
                                         <option value="upgrade-plan" className="bg-zinc-900">Upgrade Plan Prompt</option>
+                                        <option value="escrow-unlocked" className="bg-zinc-900">Escrow Unlocked</option>
                                         <option value="billing" className="bg-zinc-900">Billing / Fee Request</option>
                                     </select>
                                 </div>
