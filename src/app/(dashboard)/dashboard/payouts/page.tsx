@@ -288,6 +288,7 @@ export default function PayoutsPage() {
                 availableBalance={userData?.payoutBalance || 0}
                 payoutMethods={userData?.payoutMethods || []}
                 userEmail={user?.email || ""}
+                locked={!!(userData?.withdrawalsLocked || userData?.payoutLocked)}
             />
         </div>
     );

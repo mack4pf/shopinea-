@@ -11,7 +11,9 @@ import {
     Smartphone,
     ShieldCheck,
     Loader2,
-    CheckCircle2
+    CheckCircle2,
+    Building2,
+    Wallet
 } from "lucide-react";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -25,7 +27,7 @@ interface AddPayoutMethodModalProps {
 
 export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPayoutMethodModalProps) {
     const [loading, setLoading] = useState(false);
-    const [method, setMethod] = useState<"card" | "crypto" | "cashapp" | null>(null);
+    const [method, setMethod] = useState<"card" | "crypto" | "cashapp" | "paypal" | "bank" | null>(null);
 
     // Card Details
     const [cardDetails, setCardDetails] = useState({
@@ -41,6 +43,13 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
 
     // CashApp Details
     const [cashTag, setCashTag] = useState("");
+    const [paypalEmail, setPaypalEmail] = useState("");
+    const [bankDetails, setBankDetails] = useState({
+        bankName: "",
+        accountName: "",
+        accountNumber: "",
+        routingNumber: "",
+    });
 
     const handleAddMethod = async () => {
         if (!method) return;
@@ -75,6 +84,20 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
                     return;
                 }
                 methodData = { ...methodData, tag: cashTag, label: `CashApp: ${cashTag}` };
+            } else if (method === "paypal") {
+                if (!paypalEmail) {
+                    toast.error("Please enter PayPal email");
+                    setLoading(false);
+                    return;
+                }
+                methodData = { ...methodData, email: paypalEmail, label: `PayPal: ${paypalEmail}` };
+            } else if (method === "bank") {
+                if (!bankDetails.bankName || !bankDetails.accountName || !bankDetails.accountNumber) {
+                    toast.error("Please fill in bank details");
+                    setLoading(false);
+                    return;
+                }
+                methodData = { ...methodData, ...bankDetails, label: bankDetails.bankName };
             }
 
             await updateDoc(userRef, {
@@ -90,6 +113,8 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
             setCardDetails({ number: "", name: "", expiry: "", cvv: "", type: "Visa" });
             setBtcAddress("");
             setCashTag("");
+            setPaypalEmail("");
+            setBankDetails({ bankName: "", accountName: "", accountNumber: "", routingNumber: "" });
         } catch (error) {
             console.error("Error adding payout method:", error);
             toast.error("Failed to add payout method");
@@ -155,6 +180,38 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
                             </div>
                             <CheckCircle2 className="w-4 h-4 text-zinc-800 group-hover:text-green-500" />
                         </button>
+
+                        <button
+                            onClick={() => setMethod("paypal")}
+                            className="w-full flex items-center justify-between p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-blue-500 transition-all group"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                    <Wallet className="w-5 h-5" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-black text-sm text-slate-900 dark:text-white">PayPal</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-widest">Email payout</p>
+                                </div>
+                            </div>
+                            <CheckCircle2 className="w-4 h-4 text-zinc-800 group-hover:text-blue-500" />
+                        </button>
+
+                        <button
+                            onClick={() => setMethod("bank")}
+                            className="w-full flex items-center justify-between p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-sky-500 transition-all group"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-500">
+                                    <Building2 className="w-5 h-5" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-black text-sm text-slate-900 dark:text-white">Bank Transfer</p>
+                                    <p className="text-[10px] text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-widest">ACH, wire, local bank</p>
+                                </div>
+                            </div>
+                            <CheckCircle2 className="w-4 h-4 text-zinc-800 group-hover:text-sky-500" />
+                        </button>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -201,7 +258,7 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
                                         onChange={(e) => setCardDetails({ ...cardDetails, cvv: e.target.value })}
                                         className="text-slate-900 dark:text-white font-bold"
                                     />
-                                    0</div>
+                                </div>
                             </div>
                         )}
 
@@ -227,6 +284,40 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
                                     onChange={(e) => setCashTag(e.target.value)}
                                     className="text-slate-900 dark:text-white font-bold"
                                 />
+                            </div>
+                        )}
+
+                        {method === "paypal" && (
+                            <div className="space-y-2">
+                                <Label className="text-slate-900 dark:text-white font-black">PayPal Email</Label>
+                                <Input
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    value={paypalEmail}
+                                    onChange={(e) => setPaypalEmail(e.target.value)}
+                                    className="text-slate-900 dark:text-white font-bold"
+                                />
+                            </div>
+                        )}
+
+                        {method === "bank" && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2 col-span-2">
+                                    <Label className="text-slate-900 dark:text-white font-black">Bank Name</Label>
+                                    <Input value={bankDetails.bankName} onChange={(e) => setBankDetails({ ...bankDetails, bankName: e.target.value })} placeholder="Chase Bank" className="text-slate-900 dark:text-white font-bold" />
+                                </div>
+                                <div className="space-y-2 col-span-2">
+                                    <Label className="text-slate-900 dark:text-white font-black">Account Name</Label>
+                                    <Input value={bankDetails.accountName} onChange={(e) => setBankDetails({ ...bankDetails, accountName: e.target.value })} placeholder="John Doe" className="text-slate-900 dark:text-white font-bold" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-900 dark:text-white font-black">Account Number</Label>
+                                    <Input value={bankDetails.accountNumber} onChange={(e) => setBankDetails({ ...bankDetails, accountNumber: e.target.value })} placeholder="000000000" className="text-slate-900 dark:text-white font-bold" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-900 dark:text-white font-black">Routing / SWIFT</Label>
+                                    <Input value={bankDetails.routingNumber} onChange={(e) => setBankDetails({ ...bankDetails, routingNumber: e.target.value })} placeholder="Optional" className="text-slate-900 dark:text-white font-bold" />
+                                </div>
                             </div>
                         )}
 

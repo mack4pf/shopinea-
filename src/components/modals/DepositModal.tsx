@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 import {
     Check, Copy, CheckCircle2, Loader2, ArrowRight,
-    Building2, UploadCloud, Clock, ChevronLeft
+    Building2, UploadCloud, Clock, ChevronLeft, CreditCard
 } from "lucide-react";
 import { BitcoinLogo, EthereumLogo, USDTLogo, PayPalLogo, CashAppLogo } from "@/components/shared/BrandLogos";
 import { addDoc, collection, serverTimestamp, doc, getDoc } from "firebase/firestore";
@@ -34,15 +34,18 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
     const [receiptName, setReceiptName] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [adminConfig, setAdminConfig] = useState<any>(null);
+    const [userData, setUserData] = useState<any>(null);
+    const [selectedMethodConfig, setSelectedMethodConfig] = useState<any>(null);
     const fileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         getDoc(doc(db, "settings", "payments")).then(s => { if (s.exists()) setAdminConfig(s.data()); });
-    }, []);
+        if (userId) getDoc(doc(db, "users", userId)).then(s => { if (s.exists()) setUserData(s.data()); });
+    }, [userId]);
 
     useEffect(() => {
         if (!isOpen) return;
-        setStep(1); setAmount(""); setMethod(null); setCryptoAsset(null); setReceiptUrl(null); setReceiptName(null);
+        setStep(1); setAmount(""); setMethod(null); setSelectedMethodConfig(null); setCryptoAsset(null); setReceiptUrl(null); setReceiptName(null);
     }, [isOpen]);
 
     const labelIdx = step <= 1 ? 0 : step <= 3 ? 1 : 2;
@@ -71,13 +74,17 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
     };
 
     const handleDeposit = async () => {
+        if (userData?.depositsLocked || userData?.walletLocked) {
+            toast.error("Deposits are locked for this account. Please contact support.");
+            return;
+        }
         if (!receiptUrl) { toast.error("Please upload your payment receipt first."); return; }
         setLoading(true);
         try {
             await addDoc(collection(db, "transactions"), {
                 userId, type: "deposit",
                 amount: Number(amount), status: "pending",
-                method, asset: cryptoAsset || "N/A",
+                method, methodLabel: selectedMethodConfig?.label || method, asset: cryptoAsset || "N/A",
                 receiptUrl,
                 description: "Wallet deposit",
                 createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
@@ -106,8 +113,15 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
         finally { setLoading(false); }
     };
 
-    const paypalRecipient = adminConfig?.paypalEmail || "";
-    const cashappRecipient = adminConfig?.cashappTag || "";
+    const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
+    const customDepositMethods = configuredMethods.filter((m: any) => m?.enabled && (m.flow === "deposit" || m.flow === "both"));
+    const depositMethods = customDepositMethods.length > 0 ? customDepositMethods : [
+        { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT", logoUrl: "", destination: "" },
+        { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", logoUrl: "", destination: adminConfig?.cashappTag || "" },
+        { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", logoUrl: "", destination: adminConfig?.paypalEmail || "" },
+    ];
+    const paypalRecipient = selectedMethodConfig?.type === "paypal" ? selectedMethodConfig?.destination : adminConfig?.paypalEmail || "";
+    const cashappRecipient = selectedMethodConfig?.type === "cashapp" ? selectedMethodConfig?.destination : adminConfig?.cashappTag || "";
     const cryptoAddress =
         cryptoAsset === "btc"  ? adminConfig?.btcAddress :
         cryptoAsset === "eth"  ? adminConfig?.ethAddress :
@@ -199,22 +213,26 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
                 {step === 2 && (
                     <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
                         <p className="text-sm text-zinc-400">How would you like to deposit <span className="text-white font-medium">{currencySymbol}{Number(amount).toLocaleString()}</span>?</p>
-                        {[
-                            { id: "crypto",  label: "Cryptocurrency",  sub: "BTC · ETH · USDT",             icon: <BitcoinLogo size={20} />,                        bg: "bg-white/[0.04] border-white/[0.06]" },
-                            { id: "cashapp", label: "Cash App",        sub: "Instant \ transfer",       icon: <CashAppLogo size={20} />,                        bg: "bg-white/[0.04] border-white/[0.06]" },
-                            { id: "paypal",  label: "PayPal",          sub: "Pay with your PayPal account", icon: <PayPalLogo size={20} />,                         bg: "bg-white/[0.04] border-white/[0.06]" },
-                        ].map((m: any) => (
+                        {depositMethods.map((m: any) => {
+                            const type = (m.type || m.id || "").toLowerCase();
+                            const icon = m.logoUrl ? <img src={m.logoUrl} alt="" className="w-7 h-7 object-contain" /> :
+                                type === "crypto" ? <BitcoinLogo size={20} /> :
+                                type === "cashapp" ? <CashAppLogo size={20} /> :
+                                type === "paypal" ? <PayPalLogo size={20} /> :
+                                type === "bank" ? <Building2 className="w-5 h-5 text-blue-400" /> :
+                                <CreditCard className="w-5 h-5 text-blue-400" />;
+                            return (
                             <button key={m.id}
-                                onClick={() => { setMethod(m.id); if (m.id === "crypto") setStep(3); else setStep(4); }}
+                                onClick={() => { setMethod(m.id); setSelectedMethodConfig(m); if (type === "crypto") setStep(3); else setStep(4); }}
                                 className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:border-blue-500/30 hover:bg-white/[0.05] transition-all text-left group">
-                                <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border", m.bg)}>{m.icon}</div>
+                                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border bg-white/[0.04] border-white/[0.06] overflow-hidden">{icon}</div>
                                 <div className="flex-1">
                                     <p className="text-sm font-medium text-white">{m.label}</p>
-                                    <p className="text-xs text-zinc-500 mt-0.5">{m.sub}</p>
+                                    <p className="text-xs text-zinc-500 mt-0.5">{m.sub || m.instructions || m.type}</p>
                                 </div>
                                 <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-blue-400 transition-colors" />
                             </button>
-                        ))}
+                        )})}
                         <button onClick={() => setStep(1)} className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
                             <ChevronLeft className="w-3.5 h-3.5" /> Back
                         </button>
@@ -257,7 +275,20 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
 
                         {/* Payment destination */}
                         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
-                            {method === "cashapp" && (<>
+                            {selectedMethodConfig && !["cashapp", "paypal", "crypto"].includes((selectedMethodConfig.type || selectedMethodConfig.id || "").toLowerCase()) && (<>
+                                <p className="text-xs font-medium text-zinc-400">{selectedMethodConfig.label} Details</p>
+                                <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 text-xs text-zinc-300 break-words leading-relaxed">
+                                    {selectedMethodConfig.destination || "Not configured"}
+                                </div>
+                                {selectedMethodConfig.destination && (
+                                    <button onClick={() => handleCopy(selectedMethodConfig.destination, "custom")}
+                                        className="w-full h-8 flex items-center justify-center gap-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors">
+                                        {copied === "custom" ? <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy details</>}
+                                    </button>
+                                )}
+                                {selectedMethodConfig.instructions && <p className="text-[11px] text-zinc-600">{selectedMethodConfig.instructions}</p>}
+                            </>)}
+                            {method === "cashapp" || selectedMethodConfig?.type === "cashapp" ? (<>
                                 <p className="text-xs font-medium text-zinc-400">Cash App Details</p>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-semibold text-white">{cashappRecipient || "Not configured"}</span>
@@ -265,9 +296,9 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
                                         {copied === "ca" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                                     </button>}
                                 </div>
-                                <p className="text-[11px] text-zinc-600">Include your user ID <span className="text-zinc-400 font-mono">{userId.slice(0,8)}</span> in the note.</p>
-                            </>)}
-                            {method === "paypal" && (<>
+                                <p className="text-[11px] text-zinc-600">{selectedMethodConfig?.instructions || <>Include your user ID <span className="text-zinc-400 font-mono">{userId.slice(0,8)}</span> in the note.</>}</p>
+                            </>) : null}
+                            {method === "paypal" || selectedMethodConfig?.type === "paypal" ? (<>
                                 <p className="text-xs font-medium text-zinc-400">Send PayPal payment to</p>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm font-semibold text-white">{paypalRecipient || "Not configured"}</span>
@@ -275,20 +306,21 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
                                         {copied === "pp" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                                     </button>}
                                 </div>
-                                <p className="text-[11px] text-zinc-600">Send as "Friends &amp; Family". Reference: <span className="text-zinc-400 font-mono">{userId.slice(0,8)}</span></p>
-                            </>)}
-                            {method === "crypto" && (<>
+                                <p className="text-[11px] text-zinc-600">{selectedMethodConfig?.instructions || <>Reference: <span className="text-zinc-400 font-mono">{userId.slice(0,8)}</span></>}</p>
+                            </>) : null}
+                            {method === "crypto" || selectedMethodConfig?.type === "crypto" ? (<>
                                 <p className="text-xs font-medium text-zinc-400">{cryptoAsset?.toUpperCase()} wallet address</p>
                                 <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 font-mono text-xs text-zinc-300 break-all leading-relaxed">
-                                    {cryptoAddress || "Address not configured"}
+                                    {selectedMethodConfig?.destination || cryptoAddress || "Address not configured"}
                                 </div>
-                                {cryptoAddress && (
-                                    <button onClick={() => handleCopy(cryptoAddress, "cr")}
+                                {(selectedMethodConfig?.destination || cryptoAddress) && (
+                                    <button onClick={() => handleCopy(selectedMethodConfig?.destination || cryptoAddress, "cr")}
                                         className="w-full h-8 flex items-center justify-center gap-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors">
                                         {copied === "cr" ? <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy address</>}
                                     </button>
                                 )}
-                            </>)}
+                                {selectedMethodConfig?.instructions && <p className="text-[11px] text-zinc-600">{selectedMethodConfig.instructions}</p>}
+                            </>) : null}
                         </div>
 
                         {/* Divider */}
@@ -328,7 +360,12 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
                             <p className="text-xs text-zinc-400">Verification typically completes in <span className="text-white font-medium">1–5 minutes</span> after your receipt is submitted.</p>
                         </div>
 
-                        <button onClick={handleDeposit} disabled={loading || !receiptUrl}
+                        {(userData?.depositsLocked || userData?.walletLocked) && (
+                            <div className="p-3 bg-rose-500/[0.07] border border-rose-500/20 rounded-xl text-xs text-rose-200">
+                                Deposits are locked for this account.
+                            </div>
+                        )}
+                        <button onClick={handleDeposit} disabled={loading || !receiptUrl || userData?.depositsLocked || userData?.walletLocked}
                             className={cn("w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all",
                                 receiptUrl ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-white/[0.04] border border-white/[0.06] text-zinc-600 cursor-not-allowed")}>
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Deposit"}
