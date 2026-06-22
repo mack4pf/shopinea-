@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
     Building2,
     Wallet
 } from "lucide-react";
-import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { toast } from "sonner";
 
@@ -27,7 +27,10 @@ interface AddPayoutMethodModalProps {
 
 export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPayoutMethodModalProps) {
     const [loading, setLoading] = useState(false);
-    const [method, setMethod] = useState<"card" | "crypto" | "cashapp" | "paypal" | "bank" | null>(null);
+    const [method, setMethod] = useState<"card" | "crypto" | "cashapp" | "paypal" | "bank" | "custom" | null>(null);
+    const [adminMethods, setAdminMethods] = useState<any[]>([]);
+    const [selectedAdminMethod, setSelectedAdminMethod] = useState<any>(null);
+    const [customDetails, setCustomDetails] = useState("");
 
     // Card Details
     const [cardDetails, setCardDetails] = useState({
@@ -50,6 +53,21 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
         accountNumber: "",
         routingNumber: "",
     });
+
+    useEffect(() => {
+        if (!isOpen) return;
+        let alive = true;
+        getDoc(doc(db, "settings", "payments"))
+            .then(snap => {
+                const methods = snap.exists() && Array.isArray(snap.data()?.paymentMethods) ? snap.data()?.paymentMethods : [];
+                const withdrawalMethods = methods.filter((item: any) => item?.enabled && (item.flow === "withdrawal" || item.flow === "both"));
+                if (alive) setAdminMethods(withdrawalMethods);
+            })
+            .catch(() => {
+                if (alive) setAdminMethods([]);
+            });
+        return () => { alive = false; };
+    }, [isOpen]);
 
     const handleAddMethod = async () => {
         if (!method) return;
@@ -98,6 +116,21 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
                     return;
                 }
                 methodData = { ...methodData, ...bankDetails, label: bankDetails.bankName };
+            } else if (method === "custom") {
+                if (!selectedAdminMethod || !customDetails.trim()) {
+                    toast.error("Please enter your payout details.");
+                    setLoading(false);
+                    return;
+                }
+                methodData = {
+                    ...methodData,
+                    type: selectedAdminMethod.type || "custom",
+                    label: selectedAdminMethod.label || "Custom payout",
+                    adminMethodId: selectedAdminMethod.id,
+                    logoUrl: selectedAdminMethod.logoUrl || "",
+                    instructions: selectedAdminMethod.instructions || "",
+                    details: customDetails.trim(),
+                };
             }
 
             await updateDoc(userRef, {
@@ -115,6 +148,8 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
             setCashTag("");
             setPaypalEmail("");
             setBankDetails({ bankName: "", accountName: "", accountNumber: "", routingNumber: "" });
+            setSelectedAdminMethod(null);
+            setCustomDetails("");
         } catch (error) {
             console.error("Error adding payout method:", error);
             toast.error("Failed to add payout method");
@@ -133,6 +168,32 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
             <div className="space-y-6">
                 {!method ? (
                     <div className="space-y-3">
+                        {adminMethods.map((adminMethod) => (
+                            <button
+                                key={adminMethod.id}
+                                onClick={() => {
+                                    setSelectedAdminMethod(adminMethod);
+                                    setMethod("custom");
+                                }}
+                                className="w-full flex items-center justify-between p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-emerald-500 transition-all group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 overflow-hidden">
+                                        {adminMethod.logoUrl ? (
+                                            <img src={adminMethod.logoUrl} alt="" className="w-full h-full object-contain p-1.5" />
+                                        ) : (
+                                            <Wallet className="w-5 h-5" />
+                                        )}
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-sm text-slate-900 dark:text-white">{adminMethod.label || "Custom payout"}</p>
+                                        <p className="text-[10px] text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-widest">{adminMethod.type || "custom"} details</p>
+                                    </div>
+                                </div>
+                                <CheckCircle2 className="w-4 h-4 text-zinc-800 group-hover:text-emerald-500" />
+                            </button>
+                        ))}
+
                         <button
                             onClick={() => setMethod("card")}
                             className="w-full flex items-center justify-between p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-blue-500 transition-all group"
@@ -317,6 +378,36 @@ export default function AddPayoutMethodModal({ isOpen, onClose, userId }: AddPay
                                 <div className="space-y-2">
                                     <Label className="text-slate-900 dark:text-white font-black">Routing / SWIFT</Label>
                                     <Input value={bankDetails.routingNumber} onChange={(e) => setBankDetails({ ...bankDetails, routingNumber: e.target.value })} placeholder="Optional" className="text-slate-900 dark:text-white font-bold" />
+                                </div>
+                            </div>
+                        )}
+
+                        {method === "custom" && selectedAdminMethod && (
+                            <div className="space-y-4">
+                                <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 overflow-hidden shrink-0">
+                                        {selectedAdminMethod.logoUrl ? (
+                                            <img src={selectedAdminMethod.logoUrl} alt="" className="w-full h-full object-contain p-1.5" />
+                                        ) : (
+                                            <Wallet className="w-5 h-5" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-900 dark:text-white">{selectedAdminMethod.label}</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">{selectedAdminMethod.type || "custom"}</p>
+                                        {selectedAdminMethod.instructions && (
+                                            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 leading-relaxed">{selectedAdminMethod.instructions}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-slate-900 dark:text-white font-black">Your {selectedAdminMethod.label} Details</Label>
+                                    <textarea
+                                        placeholder="Enter the exact details needed to receive payout, e.g. PIX key, PayPal email, account name, wallet address."
+                                        value={customDetails}
+                                        onChange={(e) => setCustomDetails(e.target.value)}
+                                        className="w-full min-h-28 rounded-xl border border-zinc-800 bg-white px-3 py-3 text-sm font-bold text-slate-900 outline-none focus:border-blue-500 dark:bg-zinc-950 dark:text-white"
+                                    />
                                 </div>
                             </div>
                         )}

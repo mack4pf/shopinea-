@@ -50,6 +50,9 @@ const ADMIN_PAYMENT_PLANS = [
     { id: "enterprise_5000", name: "Enterprise", aiCredits: 2500, adCredits: 1000, maxStores: 999 },
 ];
 
+const money = (value: number) => `$${Number(value || 0).toLocaleString()}`;
+const supplierCostFor = (user: any) => Math.max(0, Number(user?.totalSales || 0) - Number(user?.totalProfit || 0));
+
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
 async function fetchCitiesForCountry(country: string): Promise<string[]> {
@@ -715,21 +718,31 @@ export default function UserMatrixPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-                                    <p className="text-[10px] text-zinc-600">Sales</p>
-                                    <p className="text-sm font-semibold text-emerald-400">${(u.totalSales || 0).toLocaleString()}</p>
+                                    <p className="text-[10px] text-zinc-600">Total Sales</p>
+                                    <p className="text-sm font-semibold text-emerald-400">{money(u.totalSales || 0)}</p>
                                     <p className="text-[10px] text-zinc-600">{(u.totalOrders || 0).toLocaleString()} orders</p>
                                 </div>
                                 <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-                                    <p className="text-[10px] text-zinc-600">Wallet</p>
-                                    <p className="text-sm font-semibold text-white">${(u.walletBalance || 0).toLocaleString()}</p>
+                                    <p className="text-[10px] text-zinc-600">Sales Funds</p>
+                                    <p className="text-sm font-semibold text-blue-400">{money(u.totalProfit || 0)}</p>
+                                    <p className="text-[10px] text-zinc-600">after supplier cost</p>
                                 </div>
                                 <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-                                    <p className="text-[10px] text-zinc-600">Ads</p>
-                                    <p className="text-sm font-semibold text-blue-400">${(u.adWalletBalance || 0).toLocaleString()}</p>
+                                    <p className="text-[10px] text-zinc-600">Available Funds</p>
+                                    <p className="text-sm font-semibold text-emerald-400">{money(u.payoutBalance || 0)}</p>
                                 </div>
                                 <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
-                                    <p className="text-[10px] text-zinc-600">Earned</p>
-                                    <p className="text-sm font-semibold text-emerald-400">${(u.payoutBalance || 0).toLocaleString()}</p>
+                                    <p className="text-[10px] text-zinc-600">Locked Funds</p>
+                                    <p className="text-sm font-semibold text-amber-400">{money(u.pendingPayout || 0)}</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Supplier Cost</p>
+                                    <p className="text-sm font-semibold text-zinc-300">{money(supplierCostFor(u))}</p>
+                                </div>
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Wallet / Ads</p>
+                                    <p className="text-xs font-semibold text-white">{money(u.walletBalance || 0)}</p>
+                                    <p className="text-xs font-semibold text-blue-400">{money(u.adWalletBalance || 0)}</p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -803,19 +816,29 @@ export default function UserMatrixPage() {
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="space-y-0.5">
-                                                <p className="text-xs font-semibold text-emerald-400">${(u.totalSales || 0).toLocaleString()}</p>
+                                                <p className="text-xs font-semibold text-emerald-400">Sales: {money(u.totalSales || 0)}</p>
+                                                <p className="text-[10px] text-blue-400">Sales funds: {money(u.totalProfit || 0)}</p>
+                                                <p className="text-[10px] text-zinc-500">Supplier cost: {money(supplierCostFor(u))}</p>
                                                 <p className="text-[10px] text-zinc-500">{(u.totalOrders || 0).toLocaleString()} orders</p>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="space-y-0.5">
                                                 <div className="flex items-center gap-1.5">
+                                                    <DollarSign className="w-3 h-3 text-emerald-500" />
+                                                    <p className="text-xs text-emerald-400">Available {money(u.payoutBalance || 0)}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <LockKeyhole className="w-3 h-3 text-amber-500" />
+                                                    <p className="text-xs text-amber-400">Locked {money(u.pendingPayout || 0)}</p>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
                                                     <Wallet className="w-3 h-3 text-zinc-600" />
-                                                    <p className="text-xs text-white">${(u.walletBalance || 0).toLocaleString()}</p>
+                                                    <p className="text-xs text-white">Wallet {money(u.walletBalance || 0)}</p>
                                                 </div>
                                                 <div className="flex items-center gap-1.5">
                                                     <Megaphone className="w-3 h-3 text-zinc-600" />
-                                                    <p className="text-xs text-blue-400">${(u.adWalletBalance || 0).toLocaleString()}</p>
+                                                    <p className="text-xs text-blue-400">Ads {money(u.adWalletBalance || 0)}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -914,18 +937,27 @@ export default function UserMatrixPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                             <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
                                 <p className="text-xs text-zinc-500">Total Sales</p>
-                                <p className="text-xl font-bold text-emerald-400">${(selectedUser.totalSales || 0).toLocaleString()}</p>
+                                <p className="text-xl font-bold text-emerald-400">{money(selectedUser.totalSales || 0)}</p>
                             </div>
                             <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
-                                <p className="text-xs text-zinc-500">Sales Orders</p>
-                                <p className="text-xl font-bold text-white">{(selectedUser.totalOrders || 0).toLocaleString()}</p>
+                                <p className="text-xs text-zinc-500">Supplier Cost</p>
+                                <p className="text-xl font-bold text-zinc-200">{money(supplierCostFor(selectedUser))}</p>
                             </div>
                             <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
-                                <p className="text-xs text-zinc-500">Total Profit</p>
-                                <p className="text-xl font-bold text-blue-400">${(selectedUser.totalProfit || 0).toLocaleString()}</p>
+                                <p className="text-xs text-zinc-500">Sales Funds</p>
+                                <p className="text-xl font-bold text-blue-400">{money(selectedUser.totalProfit || 0)}</p>
+                            </div>
+                            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                <p className="text-xs text-zinc-500">Available Funds</p>
+                                <p className="text-xl font-bold text-emerald-400">{money(selectedUser.payoutBalance || 0)}</p>
+                            </div>
+                            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                <p className="text-xs text-zinc-500">Locked Funds</p>
+                                <p className="text-xl font-bold text-amber-400">{money(selectedUser.pendingPayout || 0)}</p>
+                                <p className="text-[10px] text-zinc-600">{(selectedUser.totalOrders || 0).toLocaleString()} orders</p>
                             </div>
                         </div>
 

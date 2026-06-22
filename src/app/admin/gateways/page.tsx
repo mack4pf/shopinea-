@@ -34,7 +34,7 @@ type PaymentMethod = {
 const defaultMethod = (label = "New Method"): PaymentMethod => ({
     id: `method-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     label,
-    type: "bank",
+    type: "custom",
     flow: "deposit",
     destination: "",
     instructions: "",
@@ -134,7 +134,7 @@ export default function GatewaysPage() {
         <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
             <div>
                 <h1 className="text-2xl font-bold text-white">Payment Gateways</h1>
-                <p className="text-sm text-zinc-500 mt-1">Configure payment methods and deposit addresses.</p>
+                <p className="text-sm text-zinc-500 mt-1">Configure deposit instructions and withdrawal method options.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -209,7 +209,7 @@ export default function GatewaysPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h2 className="text-sm font-semibold text-white">Custom Payment Methods</h2>
-                        <p className="text-xs text-zinc-500 mt-1">Add cards, PayPal, Cash App, bank, crypto, or any manual method for deposits and withdrawals.</p>
+                        <p className="text-xs text-zinc-500 mt-1">Add PIX, cards, PayPal, Cash App, bank, crypto, or any custom method. Deposit methods include admin payment details; withdrawal methods only ask users for their own details.</p>
                     </div>
                     <button
                         type="button"
@@ -241,12 +241,12 @@ export default function GatewaysPage() {
                                     <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-3 gap-3">
                                         <div className="space-y-1">
                                             <Label className="text-xs text-zinc-500">Name</Label>
-                                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={method.label} onChange={(e) => updateMethod(method.id, { label: e.target.value })} placeholder="PayPal, Cash App, Visa Card" />
+                                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={method.label} onChange={(e) => updateMethod(method.id, { label: e.target.value })} placeholder="PIX, PayPal, Cash App, Visa Card" />
                                         </div>
                                         <div className="space-y-1">
                                             <Label className="text-xs text-zinc-500">Type</Label>
                                             <select className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm px-3 outline-none" value={method.type} onChange={(e) => updateMethod(method.id, { type: e.target.value })}>
-                                                {["bank", "card", "paypal", "cashapp", "crypto", "manual"].map(type => <option key={type} value={type} className="bg-zinc-900">{type}</option>)}
+                                                {["custom", "pix", "bank", "card", "paypal", "cashapp", "crypto", "manual"].map(type => <option key={type} value={type} className="bg-zinc-900">{type}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1">
@@ -261,10 +261,19 @@ export default function GatewaysPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className="space-y-1">
-                                        <Label className="text-xs text-zinc-500">Payment Details</Label>
-                                        <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={method.destination} onChange={(e) => updateMethod(method.id, { destination: e.target.value })} placeholder="Email, tag, bank info, card instruction, wallet" />
-                                    </div>
+                                    {method.flow !== "withdrawal" ? (
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">Deposit Details</Label>
+                                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" value={method.destination} onChange={(e) => updateMethod(method.id, { destination: e.target.value })} placeholder="Email, tag, bank info, card instruction, wallet" />
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            <Label className="text-xs text-zinc-500">Withdrawal Details</Label>
+                                            <div className="h-10 rounded-lg border border-emerald-500/15 bg-emerald-500/5 px-3 flex items-center text-xs text-emerald-300">
+                                                User enters their own payout details.
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="space-y-1">
                                         <Label className="text-xs text-zinc-500">Logo URL</Label>
                                         <div className="flex gap-2">
@@ -276,7 +285,7 @@ export default function GatewaysPage() {
                                     </div>
                                     <div className="space-y-1 md:col-span-2">
                                         <Label className="text-xs text-zinc-500">Instructions</Label>
-                                        <textarea value={method.instructions} onChange={(e) => updateMethod(method.id, { instructions: e.target.value })} placeholder="Tell users what to include in notes, reference fields, or upload receipts." className="w-full h-20 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm p-3 outline-none focus:border-blue-500/40 resize-none" />
+                                        <textarea value={method.instructions} onChange={(e) => updateMethod(method.id, { instructions: e.target.value })} placeholder={method.flow === "withdrawal" ? "Tell users what payout details they should enter, e.g. PIX key, PayPal email, account name." : "Tell users what to include in notes, reference fields, or upload receipts."} className="w-full h-20 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm p-3 outline-none focus:border-blue-500/40 resize-none" />
                                     </div>
                                 </div>
 
