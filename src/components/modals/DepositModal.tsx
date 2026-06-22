@@ -18,11 +18,13 @@ interface DepositModalProps {
     onClose: () => void;
     userId: string;
     currencySymbol: string;
+    currencyCode?: string;
+    exchangeRate?: number;
 }
 
 const STEPS = ["Amount", "Method", "Pay"];
 
-export default function DepositModal({ isOpen, onClose, userId, currencySymbol }: DepositModalProps) {
+export default function DepositModal({ isOpen, onClose, userId, currencySymbol, currencyCode = "USD", exchangeRate = 1 }: DepositModalProps) {
     const router = useRouter();
     const [amount, setAmount] = useState("");
     const [step, setStep] = useState(1);
@@ -49,6 +51,8 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
     }, [isOpen]);
 
     const labelIdx = step <= 1 ? 0 : step <= 3 ? 1 : 2;
+    const amountLocal = Number(amount) || 0;
+    const amountUsd = amountLocal / (exchangeRate || 1);
 
     const handleCopy = async (text: string, key: string) => {
         if (!text) { toast.error("Not configured yet."); return; }
@@ -83,7 +87,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
         try {
             await addDoc(collection(db, "transactions"), {
                 userId, type: "deposit",
-                amount: Number(amount), status: "pending",
+                amount: amountUsd, amountLocal, currencyCode, exchangeRate, status: "pending",
                 method, methodLabel: selectedMethodConfig?.label || method, asset: cryptoAsset || "N/A",
                 receiptUrl,
                 description: "Wallet deposit",
@@ -101,7 +105,8 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
                         data: {
                             subject: "Deposit Request Received",
                             html: `<p>Hello ${userData.displayName || userData.fullName || "Merchant"},</p>
-                                <p>We received your wallet deposit request for <strong>${currencySymbol}${Number(amount).toLocaleString()}</strong>.</p>
+                                <p>We received your wallet deposit request for <strong>${currencySymbol}${amountLocal.toLocaleString()} ${currencyCode}</strong>.</p>
+                                <p><strong>USD equivalent:</strong> $${amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                                 <p><strong>Status:</strong> Pending review. We will email you again once the payment receipt is approved or rejected.</p>
                                 <p><strong>Payment method:</strong> ${(method || "transfer").toUpperCase()}${cryptoAsset ? ` (${cryptoAsset.toUpperCase()})` : ""}</p>`
                         }
@@ -137,7 +142,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
                     <div className="space-y-2">
                         <h3 className="text-lg font-semibold text-white">Deposit submitted</h3>
                         <p className="text-sm text-zinc-400 max-w-xs mx-auto">
-                            Your receipt is under review. We'll credit {currencySymbol}{Number(amount).toLocaleString()} to your wallet once confirmed.
+                            Your receipt is under review. We'll credit the USD equivalent of {currencySymbol}{amountLocal.toLocaleString()} once confirmed.
                         </p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/[0.08] border border-blue-500/15 rounded-xl w-full justify-center">
@@ -270,7 +275,8 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol }
                     <div className="space-y-4 animate-in slide-in-from-right-3 duration-300">
                         <div>
                             <p className="text-sm font-semibold text-white mb-0.5">Send your payment</p>
-                            <p className="text-xs text-zinc-500">Transfer exactly <span className="text-white font-medium">{currencySymbol}{Number(amount).toLocaleString()}</span> to the details below, then upload your receipt.</p>
+                            <p className="text-xs text-zinc-500">Transfer exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span> to the details below, then upload your receipt.</p>
+                            {currencyCode !== "USD" && <p className="text-[11px] text-zinc-600 mt-1">Estimated USD credit: ${amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>}
                         </div>
 
                         {/* Payment destination */}

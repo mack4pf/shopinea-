@@ -15,6 +15,7 @@ import {
 import { Line, Doughnut } from 'react-chartjs-2';
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/hooks/useCurrency";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement, Filler);
 
@@ -125,11 +126,7 @@ export default function AnalyticsPage() {
     });
 
     const chartData = computeChartData(rawOrders, timeframe);
-
-    const getCurrencySymbol = (code: string = "USD") => {
-        switch (code) { case "EUR": return "€"; case "GBP": return "£"; default: return "$"; }
-    };
-    const currencySymbol = getCurrencySymbol(userData?.currency);
+    const currency = useCurrency(userData);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -203,7 +200,7 @@ export default function AnalyticsPage() {
             y: {
                 grid: { color: 'rgba(255,255,255,0.03)', drawTicks: false },
                 border: { display: false },
-                ticks: { color: '#52525b', font: { size: 11 }, callback: (v: any) => `${currencySymbol}${v}` }
+                ticks: { color: '#52525b', font: { size: 11 }, callback: (v: any) => currency.money(Number(v)) }
             },
             x: {
                 grid: { display: false }, border: { display: false },
@@ -274,10 +271,10 @@ export default function AnalyticsPage() {
                             <span className="text-xs font-semibold text-blue-200 uppercase tracking-widest">Total Revenue</span>
                         </div>
                         <p className="text-4xl font-black text-white tracking-tight">
-                            {currencySymbol}{stats.totalRevenue.toLocaleString()}
+                            {currency.money(stats.totalRevenue)}
                         </p>
                         <p className="text-sm text-blue-200 mt-2">
-                            Avg. {currencySymbol}{stats.avgOrderValue.toFixed(2)} per order
+                            Avg. {currency.money(stats.avgOrderValue)} per order
                         </p>
                         <div className="mt-6 flex items-center gap-4">
                             <div>
@@ -304,7 +301,7 @@ export default function AnalyticsPage() {
                         { label: "Total Orders", value: stats.totalOrders.toLocaleString(), icon: Package, iconColor: "text-blue-400", iconBg: "bg-blue-500/10", change: "+0%" },
                         { label: "Store Views", value: stats.totalImpressions.toLocaleString(), icon: Eye, iconColor: "text-violet-400", iconBg: "bg-violet-500/10", change: "+0%" },
                         { label: "Conversion Rate", value: `${stats.conversionRate.toFixed(1)}%`, icon: Target, iconColor: "text-amber-400", iconBg: "bg-amber-500/10", change: "" },
-                        { label: "Avg. Order Value", value: `${currencySymbol}${stats.avgOrderValue.toFixed(0)}`, icon: TrendingUp, iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", change: "" },
+                        { label: "Avg. Order Value", value: currency.money(stats.avgOrderValue), icon: TrendingUp, iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", change: "" },
                     ].map((item, i) => (
                         <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:bg-white/[0.05] transition-colors flex items-center gap-4">
                             <div className={`w-10 h-10 ${item.iconBg} rounded-xl flex items-center justify-center shrink-0`}>
@@ -410,7 +407,7 @@ export default function AnalyticsPage() {
                                                 <p className="text-sm font-medium text-zinc-200 truncate">{p.name}</p>
                                             </div>
                                             <div className="text-right shrink-0 ml-2">
-                                                <p className="text-sm font-semibold text-white">{currencySymbol}{p.revenue.toLocaleString()}</p>
+                                                <p className="text-sm font-semibold text-white">{currency.money(p.revenue)}</p>
                                                 <p className="text-[10px] text-zinc-600">{p.sales} sold</p>
                                             </div>
                                         </div>
@@ -454,7 +451,7 @@ export default function AnalyticsPage() {
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0 ml-2">
-                                        <p className="text-sm font-semibold text-white">{currencySymbol}{o.resellPrice?.toLocaleString()}</p>
+                                        <p className="text-sm font-semibold text-white">{currency.money(o.resellPrice || 0)}</p>
                                         <span className={cn("text-[10px] font-medium capitalize",
                                             o.status === 'delivered' ? 'text-emerald-400' :
                                             o.status === 'cancelled' ? 'text-red-400' : 'text-blue-400'
@@ -471,3 +468,4 @@ export default function AnalyticsPage() {
         </div>
     );
 }
+

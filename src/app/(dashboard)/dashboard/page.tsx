@@ -11,6 +11,7 @@ import {
     BarChart3, Settings, BadgeCheck
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function ResellerHome() {
     const router = useRouter();
@@ -53,7 +54,7 @@ export default function ResellerHome() {
         </div>
     );
 
-    const $ = "$";
+    const currency = useCurrency(userData);
     const conversion = stats.ordersToday > 0 && stats.visitorsToday > 0
         ? `${((stats.ordersToday / stats.visitorsToday) * 100).toFixed(1)}%` : "0%";
 
@@ -100,7 +101,7 @@ export default function ResellerHome() {
             {/* ── KPI Row ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                    { label: "Revenue Today",  value: `${$}${stats.revenueToday.toLocaleString()}`, icon: TrendingUp,   color: "text-emerald-400", bg: "bg-emerald-500/10", trend: null },
+                    { label: "Revenue Today",  value: currency.money(stats.revenueToday), icon: TrendingUp,   color: "text-emerald-400", bg: "bg-emerald-500/10", trend: null },
                     { label: "Orders Today",   value: stats.ordersToday.toString(),                 icon: ShoppingCart, color: "text-blue-400",    bg: "bg-blue-500/10",    trend: null },
                     { label: "Impressions",    value: stats.visitorsToday.toLocaleString(),          icon: Eye,          color: "text-violet-400",  bg: "bg-violet-500/10",  trend: null },
                     { label: "Conversion",     value: conversion,                                    icon: Zap,          color: "text-amber-400",   bg: "bg-amber-500/10",   trend: null },
@@ -219,7 +220,7 @@ export default function ResellerHome() {
                             <div className="space-y-4">
                                 <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.05]">
                                     <p className="text-xs text-zinc-500 mb-1.5">Main Balance</p>
-                                    <p className="text-2xl font-bold text-white">{$}{(userData?.walletBalance || 0).toLocaleString()}</p>
+                                    <p className="text-2xl font-bold text-white">{currency.money(userData?.walletBalance || 0)}</p>
                                 </div>
                                 <div className="p-4 rounded-lg bg-white/[0.03] border border-white/[0.05]">
                                     <div className="flex items-center justify-between mb-1.5">
@@ -228,7 +229,7 @@ export default function ResellerHome() {
                                             <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">Active</span>
                                         )}
                                     </div>
-                                    <p className="text-2xl font-bold text-white">{$}{(userData?.adWalletBalance || 0).toLocaleString()}</p>
+                                    <p className="text-2xl font-bold text-white">{currency.money(userData?.adWalletBalance || 0)}</p>
                                 </div>
                             </div>
                         </div>
@@ -297,7 +298,7 @@ export default function ResellerHome() {
                                             <p className="text-xs font-semibold text-zinc-200 truncate">#{o.id.slice(0, 8)}</p>
                                             <p className="text-[11px] text-zinc-600">{o.customerName || 'Customer'}</p>
                                         </div>
-                                        <p className="text-xs font-semibold text-white shrink-0">{$}{(o.resellPrice || 0).toLocaleString()}</p>
+                                        <p className="text-xs font-semibold text-white shrink-0">{currency.money(o.resellPrice || 0)}</p>
                                     </div>
                                 ))}
                             </div>

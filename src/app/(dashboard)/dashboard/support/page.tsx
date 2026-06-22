@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { HelpCircle, MessageSquare, Book, FileText, Mail, Phone, Zap, ChevronRight, Search, Loader2, Send, PlayCircle } from "lucide-react";
+import { MessageSquare, Book, FileText, Mail, Zap, ChevronRight, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 
 function TargetIcon(props: any) {
@@ -157,14 +157,14 @@ export default function SupportPage() {
                                 <Mail className="w-4 h-4 text-blue-400" />
                                 <div>
                                     <p className="text-xs text-zinc-500">Email</p>
-                                    <p className="text-sm text-white">ops@restock.global</p>
+                                    <p className="text-sm text-white">support@shoplinea.shop</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg">
-                                <Phone className="w-4 h-4 text-emerald-400" />
+                                <Send className="w-4 h-4 text-emerald-400" />
                                 <div>
-                                    <p className="text-xs text-zinc-500">WhatsApp</p>
-                                    <p className="text-sm text-white">+1(543) 901 884 0638</p>
+                                    <p className="text-xs text-zinc-500">Telegram</p>
+                                    <p className="text-sm text-white">@shoplinea</p>
                                 </div>
                             </div>
                         </div>

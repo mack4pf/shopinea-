@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import DepositModal from "@/components/modals/DepositModal";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "sonner";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function MarketingPage() {
     const [user, setUser] = useState<any>(null);
@@ -52,6 +53,7 @@ export default function MarketingPage() {
     const [adType, setAdType] = useState<"prepaid" | "postpaid" | null>(null);
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
     const [budget, setBudget] = useState(200);
+    const currency = useCurrency(userData);
 
     const platforms = [
         { id: "tiktok", name: "TikTok", icon: PlayCircle, color: "rose", brandColor: "#FE2C55" },
@@ -120,10 +122,11 @@ export default function MarketingPage() {
             return;
         }
 
+        const budgetUsd = currency.toUsd(budget);
         if (adType === "prepaid") {
-            const currentBalance = userData?.balance || 0;
-            if (currentBalance < budget) {
-                toast.error(`Insufficient balance. You need ${getCurrencySymbol(userData?.currency)}${budget} to run these ads.`);
+            const currentBalance = userData?.balance || userData?.walletBalance || 0;
+            if (currentBalance < budgetUsd) {
+                toast.error(`Insufficient balance. You need ${currencySymbol}${budget} ${currency.currencyCode} to run these ads.`);
                 setIsDepositModalOpen(true);
                 return;
             }
@@ -135,7 +138,8 @@ export default function MarketingPage() {
                 userId: user.uid,
                 type: adType,
                 platforms: selectedPlatforms,
-                budget: budget,
+                budget: budgetUsd,
+                budgetLocal: budget,
                 currency: userData?.currency || "USD",
                 status: "pending",
                 leads: 0,
@@ -184,16 +188,7 @@ export default function MarketingPage() {
         }
     };
 
-    const getCurrencySymbol = (code: string = "USD") => {
-        switch (code) {
-            case "EUR": return "€";
-            case "GBP": return "£";
-            case "NGN": return "₦";
-            default: return "$";
-        }
-    };
-
-    const currencySymbol = getCurrencySymbol(userData?.currency);
+    const currencySymbol = currency.currencySymbol;
 
     if (loading) {
         return (
@@ -213,7 +208,7 @@ export default function MarketingPage() {
                 <div className="flex items-center gap-4 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800">
                     <div className="px-4">
                         <p className="text-[10px] font-black text-zinc-500 uppercase">Wallet Balance</p>
-                        <p className="text-lg font-black text-white">{currencySymbol}{(userData?.balance || 0).toLocaleString()}</p>
+                        <p className="text-lg font-black text-white">{currency.money(userData?.balance || userData?.walletBalance || 0)}</p>
                     </div>
                     <Button
                         onClick={() => setIsDepositModalOpen(true)}
@@ -293,7 +288,7 @@ export default function MarketingPage() {
                                     </div>
                                     <div>
                                         <h4 className="text-lg font-black text-white uppercase italic">Postpaid Ads</h4>
-                                        <p className="text-xs font-medium text-zinc-500 mt-1 leading-relaxed">We spend {currencySymbol}200 on your ads first. You pay once you start withdrawing earnings.</p>
+                                        <p className="text-xs font-medium text-zinc-500 mt-1 leading-relaxed">We spend {currency.money(200)} on your ads first. You pay once you start withdrawing earnings.</p>
                                     </div>
                                 </button>
                             </div>
@@ -340,7 +335,7 @@ export default function MarketingPage() {
                         <div className="p-8 bg-zinc-900/50 border border-zinc-800 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
                             <div className="space-y-1 text-center md:text-left">
                                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Total Investment</p>
-                                <h4 className="text-3xl font-black text-white italic">{currencySymbol}{adType === 'postpaid' ? '200' : budget}</h4>
+                                <h4 className="text-3xl font-black text-white italic">{adType === 'postpaid' ? currency.money(200) : `${currencySymbol}${budget}`}</h4>
                             </div>
                             <Button
                                 onClick={handleRunAds}
@@ -500,7 +495,7 @@ export default function MarketingPage() {
                                         </div>
                                         <div>
                                             <p className="text-[9px] font-black text-zinc-500 uppercase mb-1">Budget</p>
-                                            <p className="text-sm font-black text-blue-500">{currencySymbol}{c.budget}</p>
+                                            <p className="text-sm font-black text-blue-500">{currency.money(c.budget || 0)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -557,6 +552,8 @@ export default function MarketingPage() {
                     onClose={() => setIsDepositModalOpen(false)}
                     userId={user.uid}
                     currencySymbol={currencySymbol}
+                    currencyCode={currency.currencyCode}
+                    exchangeRate={currency.rates[currency.currencyCode] || 1}
                 />
             )}
         </div>
@@ -582,3 +579,4 @@ function Terminal(props: any) {
         </svg>
     )
 }
+

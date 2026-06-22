@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import AddPayoutMethodModal from "@/components/modals/AddPayoutMethodModal";
 import WithdrawFundsModal from "@/components/modals/WithdrawFundsModal";
 import { Smartphone, Bitcoin } from "lucide-react";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function PayoutsPage() {
     const [user, setUser] = useState<any>(null);
@@ -65,15 +66,7 @@ export default function PayoutsPage() {
         return () => unsubscribe();
     }, []);
 
-    const getCurrencySymbol = (code: string = "USD") => {
-        switch (code) {
-            case "EUR": return "€";
-            case "GBP": return "£";
-            default: return "$";
-        }
-    };
-
-    const currencySymbol = getCurrencySymbol(userData?.currency);
+    const currency = useCurrency(userData);
 
     if (loading) {
         return (
@@ -202,7 +195,7 @@ export default function PayoutsPage() {
                                                     </p>
                                                 </td>
                                                 <td className="py-10 px-8">
-                                                    <p className="text-2xl font-black text-white italic tracking-tighter">{currencySymbol}{p.amount?.toLocaleString()}</p>
+                                                    <p className="text-2xl font-black text-white italic tracking-tighter">{currency.money(p.amount || 0)}</p>
                                                 </td>
                                                 <td className="py-10 px-8">
                                                     <div className="flex items-center gap-3">
@@ -289,7 +282,11 @@ export default function PayoutsPage() {
                 payoutMethods={userData?.payoutMethods || []}
                 userEmail={user?.email || ""}
                 locked={!!(userData?.withdrawalsLocked || userData?.payoutLocked)}
+                currencyCode={currency.currencyCode}
+                currencySymbol={currency.currencySymbol}
+                exchangeRate={currency.rates[currency.currencyCode] || 1}
             />
         </div>
     );
 }
+

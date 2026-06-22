@@ -12,6 +12,7 @@ import DepositModal from "@/components/modals/DepositModal";
 import RefundModal from "@/components/modals/RefundModal";
 import WithdrawalModal from "@/components/modals/WithdrawalModal";
 import AdDepositModal from "@/components/modals/AdDepositModal";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function WalletPage() {
     const [user, setUser] = useState<any>(null);
@@ -48,7 +49,7 @@ export default function WalletPage() {
         return () => unsubscribe();
     }, []);
 
-    const currencySymbol = "$";
+    const currency = useCurrency(userData);
 
     if (loading) return (
         <div className="h-[80vh] flex items-center justify-center">
@@ -57,10 +58,10 @@ export default function WalletPage() {
     );
 
     const walletCards = [
-        { label: "Available Earnings", value: `${currencySymbol}${(userData?.payoutBalance || 0).toLocaleString()}`, icon: Wallet, iconColor: "text-emerald-500", iconBg: "bg-emerald-500/10", desc: "Ready to withdraw" },
-        { label: "Locked Earnings", value: `${currencySymbol}${(userData?.pendingPayout || 0).toLocaleString()}`, icon: Clock, iconColor: "text-amber-500", iconBg: "bg-amber-500/10", desc: "Awaiting delivery" },
-        { label: "Buying Wallet", value: `${currencySymbol}${(userData?.walletBalance || 0).toLocaleString()}`, icon: CreditCard, iconColor: "text-blue-500", iconBg: "bg-blue-500/10", desc: "For supplier costs" },
-        { label: "Ads Budget", value: `${currencySymbol}${(userData?.adWalletBalance || 0).toLocaleString()}`, icon: Zap, iconColor: "text-violet-500", iconBg: "bg-violet-500/10", desc: "Marketing spend" },
+        { label: "Available Earnings", value: currency.money(userData?.payoutBalance || 0), icon: Wallet, iconColor: "text-emerald-500", iconBg: "bg-emerald-500/10", desc: "Ready to withdraw" },
+        { label: "Locked Earnings", value: currency.money(userData?.pendingPayout || 0), icon: Clock, iconColor: "text-amber-500", iconBg: "bg-amber-500/10", desc: "Awaiting delivery" },
+        { label: "Buying Wallet", value: currency.money(userData?.walletBalance || 0), icon: CreditCard, iconColor: "text-blue-500", iconBg: "bg-blue-500/10", desc: "For supplier costs" },
+        { label: "Ads Budget", value: currency.money(userData?.adWalletBalance || 0), icon: Zap, iconColor: "text-violet-500", iconBg: "bg-violet-500/10", desc: "Marketing spend" },
     ];
 
     const getTypeIcon = (type: string) => {
@@ -169,8 +170,8 @@ export default function WalletPage() {
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <p className="text-sm font-semibold text-white">{currencySymbol}{t.amount?.toLocaleString()}</p>
-                                                {t.bonus > 0 && <p className="text-[10px] text-emerald-400">+${t.bonus} bonus</p>}
+                                                <p className="text-sm font-semibold text-white">{currency.money(t.amount || 0)}</p>
+                                                {t.bonus > 0 && <p className="text-[10px] text-emerald-400">+{currency.money(t.bonus)} bonus</p>}
                                             </td>
                                             <td className="py-4 px-5 text-right">
                                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium capitalize ${getStatusStyle(t.status)}`}>
@@ -202,7 +203,7 @@ export default function WalletPage() {
                             <h3 className="text-sm font-semibold text-zinc-300">Deposit Bonus</h3>
                         </div>
                         <p className="text-xs text-zinc-500 leading-relaxed">
-                            Deposits over $100 may qualify for automatic ad wallet bonuses.
+                            Deposits over {currency.money(100)} may qualify for automatic ad wallet bonuses.
                         </p>
                     </div>
                     <button onClick={() => setIsDepositModalOpen(true)}
@@ -212,10 +213,10 @@ export default function WalletPage() {
                 </div>
             </div>
 
-            <WithdrawalModal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} userData={userData} currencySymbol={currencySymbol} onSuccess={() => { if (user) refreshUserData(user.uid); }} />
-            <DepositModal isOpen={isDepositModalOpen} onClose={() => setIsDepositModalOpen(false)} userId={user?.uid} currencySymbol={currencySymbol} />
-            <AdDepositModal isOpen={isAdModalOpen} onClose={() => setIsAdModalOpen(false)} userId={user?.uid} />
-            <RefundModal isOpen={isRefundModalOpen} onClose={() => setIsRefundModalOpen(false)} userId={user?.uid} availableBalance={userData?.walletBalance || 0} currencySymbol={currencySymbol} />
+            <WithdrawalModal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} userData={userData} currencySymbol={currency.currencySymbol} onSuccess={() => { if (user) refreshUserData(user.uid); }} />
+            <DepositModal isOpen={isDepositModalOpen} onClose={() => setIsDepositModalOpen(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.rates[currency.currencyCode] || 1} />
+            <AdDepositModal isOpen={isAdModalOpen} onClose={() => setIsAdModalOpen(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.rates[currency.currencyCode] || 1} />
+            <RefundModal isOpen={isRefundModalOpen} onClose={() => setIsRefundModalOpen(false)} userId={user?.uid} availableBalance={userData?.walletBalance || 0} currencySymbol={currency.currencySymbol} />
         </div>
     );
 }

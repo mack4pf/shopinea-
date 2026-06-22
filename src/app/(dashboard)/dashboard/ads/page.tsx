@@ -26,6 +26,7 @@ import {
     BarElement, ArcElement, Tooltip, Legend, Filler
 } from "chart.js";
 import { Line, Doughnut, Bar } from "react-chartjs-2";
+import { useCurrency } from "@/hooks/useCurrency";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -72,6 +73,7 @@ export default function AdsPage() {
     const [paymentMode, setPaymentMode] = useState<'now' | 'later'>('now');
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const currency = useCurrency(userData);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -97,8 +99,9 @@ export default function AdsPage() {
     };
 
     const days = calculateDays();
-    const dailySpend = days > 0 ? (parseFloat(budget) / days) : 0;
-    const budgetNum = parseFloat(budget) || 0;
+    const budgetLocal = parseFloat(budget) || 0;
+    const budgetNum = currency.toUsd(budgetLocal);
+    const dailySpend = days > 0 ? (budgetNum / days) : 0;
     const maxDays = budgetNum < 100 ? 20 : 365;
 
     const getMaxEndDate = () => {
@@ -211,7 +214,7 @@ export default function AdsPage() {
 
         if (paymentMode === 'now') {
             if ((userData?.adWalletBalance || 0) < budgetNum) {
-                toast.error(`Insufficient balance ($${userData?.adWalletBalance || 0}). Please add funds.`);
+                toast.error(`Insufficient balance (${currency.money(userData?.adWalletBalance || 0)}). Please add funds.`);
                 setShowCampaignModal(false);
                 setTimeout(() => setShowDepositModal(true), 300);
                 return;
@@ -298,7 +301,7 @@ export default function AdsPage() {
                         <Wallet className="w-4 h-4 text-blue-400" />
                         <div>
                             <p className="text-xs text-zinc-500">Ad Balance</p>
-                            <p className="text-sm font-semibold text-white">${(userData?.adWalletBalance || 0).toLocaleString()}</p>
+                            <p className="text-sm font-semibold text-white">{currency.money(userData?.adWalletBalance || 0)}</p>
                         </div>
                         <button onClick={() => setShowDepositModal(true)} className="ml-2 p-1.5 bg-blue-600 rounded-md text-white hover:bg-blue-700 transition-colors">
                             <Plus className="w-3.5 h-3.5" />
@@ -732,7 +735,7 @@ export default function AdsPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-sm font-medium text-white">${camp.dailyBudget?.toFixed(2)}/day</p>
+                                                    <p className="text-sm font-medium text-white">{currency.money(camp.dailyBudget || 0)}/day</p>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <p className="text-sm text-zinc-300">{(camp.impressions || 0).toLocaleString()}</p>
@@ -786,7 +789,7 @@ export default function AdsPage() {
                                             </span>
                                         </div>
                                         <div className="grid grid-cols-3 gap-3">
-                                            <div><p className="text-[10px] text-zinc-600">Budget</p><p className="text-xs font-medium text-white">${camp.dailyBudget?.toFixed(2)}/d</p></div>
+                                            <div><p className="text-[10px] text-zinc-600">Budget</p><p className="text-xs font-medium text-white">{currency.money(camp.dailyBudget || 0)}/d</p></div>
                                             <div><p className="text-[10px] text-zinc-600">Impressions</p><p className="text-xs font-medium text-white">{(camp.impressions || 0).toLocaleString()}</p></div>
                                             <div><p className="text-[10px] text-zinc-600">Clicks</p><p className="text-xs font-medium text-white">{(camp.clicks || 0).toLocaleString()}</p></div>
                                         </div>
@@ -799,7 +802,7 @@ export default function AdsPage() {
             </div>
 
             {/* Modals */}
-            <AdDepositModal isOpen={showDepositModal} onClose={() => setShowDepositModal(false)} userId={user?.uid} />
+            <AdDepositModal isOpen={showDepositModal} onClose={() => setShowDepositModal(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.rates[currency.currencyCode] || 1} />
             <KYCModal isOpen={showKYCModal} onClose={() => setShowKYCModal(false)} userId={user?.uid} />
 
             <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Start Ads with AI" description="Claude.ai and Open Claw AI prepare your campaign before admin approval.">
@@ -978,7 +981,7 @@ export default function AdsPage() {
                         {days > 0 && (
                             <div className="flex items-center justify-between p-3 bg-white/[0.03] border border-white/[0.04] rounded-lg">
                                 <span className="text-xs text-zinc-500">Duration: {days} days</span>
-                                <span className="text-xs font-medium text-white">${dailySpend.toFixed(2)}/day</span>
+                                <span className="text-xs font-medium text-white">{currency.money(dailySpend)}/day</span>
                             </div>
                         )}
 
@@ -986,12 +989,12 @@ export default function AdsPage() {
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <Label className="text-xs font-medium text-zinc-400">Total Budget</Label>
-                                <span className="text-sm font-semibold text-white">${budget}</span>
+                                <span className="text-sm font-semibold text-white">{currency.currencySymbol}{budget} {currency.currencyCode}</span>
                             </div>
                             <Input type="number" value={budget} onChange={(e) => setBudget(e.target.value)}
                                 className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white" />
                             {budgetNum > 0 && budgetNum < 100 && (
-                                <p className="text-[10px] text-amber-400">Budgets under $100 are limited to {maxDays} days.</p>
+                                <p className="text-[10px] text-amber-400">Budgets under {currency.money(100)} are limited to {maxDays} days.</p>
                             )}
                         </div>
 

@@ -22,6 +22,7 @@ import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from "
 import { db } from "@/lib/firebase/config";
 import { toast } from "sonner";
 import AdDepositModal from "@/components/modals/AdDepositModal";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface WithdrawalModalProps {
     isOpen: boolean;
@@ -37,6 +38,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
     const [step, setStep] = useState(1); // 1: Amount & Method Selection, 2: Details, 3: Success
     const [selectedMethod, setSelectedMethod] = useState<any>(null);
     const [showAdDeposit, setShowAdDeposit] = useState(false);
+    const currency = useCurrency(userData);
 
     const availableBalance = userData?.payoutBalance || 0;
     const lockedBalance = userData?.pendingPayout || 0;
@@ -47,7 +49,8 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
     const payoutMethods = userData?.payoutMethods || [];
 
     const handleWithdraw = async () => {
-        const numAmount = parseFloat(amount);
+        const localAmount = parseFloat(amount);
+        const numAmount = currency.toUsd(localAmount);
         const totalNeeded = numAmount + adDebt;
 
         if (withdrawalsLocked) {
@@ -55,7 +58,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
             return;
         }
         if (numAmount < minWithdrawal) {
-            toast.error(`Minimum withdrawal is ${currencySymbol}${minWithdrawal.toLocaleString()}`);
+            toast.error(`Minimum withdrawal is ${currency.money(minWithdrawal)}`);
             return;
         }
         if (totalNeeded > availableBalance) {
@@ -74,6 +77,8 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 userId: userData.uid,
                 userName: userData.displayName || userData.fullName || "Merchant",
                 amount: numAmount,
+                amountLocal: localAmount,
+                currencyCode: currency.currencyCode,
                 status: "pending",
                 method: selectedMethod.type,
                 methodLabel: selectedMethod.label,
@@ -112,7 +117,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                             subject: "Withdrawal Request Received",
                             html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
                                 <h2 style="color: #111827; margin-bottom: 16px;">Withdrawal Request Received</h2>
-                                <p style="color: #4b5563; line-height: 1.6;">Your withdrawal request for <strong>${currencySymbol}${numAmount.toLocaleString()}</strong> has been successfully received.</p>
+                                <p style="color: #4b5563; line-height: 1.6;">Your withdrawal request for <strong>${currency.currencySymbol}${localAmount.toLocaleString()} ${currency.currencyCode}</strong> has been successfully received.</p>
                                 <p style="color: #4b5563; line-height: 1.6;">Your funds are on their way to your selected payout destination (${selectedMethod.label}). Expected settlement is within 24-48 business hours.</p>
                             </div>`
                         }
@@ -163,12 +168,12 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                     <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
                         <p className="text-[9px] font-black uppercase text-emerald-500 mb-2 leading-none tracking-[0.2em] relative z-10">Liquid Assets</p>
-                        <p className="text-2xl font-black text-white tracking-tighter italic relative z-10">{currencySymbol}{availableBalance.toLocaleString()}</p>
+                        <p className="text-2xl font-black text-white tracking-tighter italic relative z-10">{currency.money(availableBalance)}</p>
                     </div>
                     <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-[2rem] shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-zinc-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
                         <p className="text-[9px] font-black uppercase text-zinc-600 mb-2 leading-none tracking-[0.2em] relative z-10">Escrow Locked</p>
-                        <p className="text-2xl font-black text-zinc-500 tracking-tighter italic relative z-10">{currencySymbol}{lockedBalance.toLocaleString()}</p>
+                        <p className="text-2xl font-black text-zinc-500 tracking-tighter italic relative z-10">{currency.money(lockedBalance)}</p>
                     </div>
                 </div>
 
@@ -186,8 +191,8 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                         />
                     </div>
                     <div className="flex justify-between px-2">
-                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Min Limit: {currencySymbol}{minWithdrawal.toLocaleString()}</p>
-                        {parseFloat(amount) > availableBalance && <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest animate-pulse">Insufficient Liquidity</p>}
+                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Min Limit: {currency.money(minWithdrawal)}</p>
+                        {currency.toUsd(parseFloat(amount) || 0) > availableBalance && <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest animate-pulse">Insufficient Liquidity</p>}
                     </div>
                 </div>
 
@@ -208,7 +213,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                         <div>
                             <h3 className="text-3xl font-black text-rose-500 tracking-tighter italic uppercase">Outstanding Ad Debt</h3>
                             <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mt-2 max-w-xs mx-auto">
-                                You currently owe {currencySymbol}{adDebt.toLocaleString()} for postpaid ad campaigns. You must clear this balance before initiating any withdrawals.
+                                You currently owe {currency.money(adDebt)} for postpaid ad campaigns. You must clear this balance before initiating any withdrawals.
                             </p>
                         </div>
                         <Button 
@@ -222,6 +227,9 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                             onClose={() => { setShowAdDeposit(false); onClose(); }} 
                             userId={userData?.uid} 
                             requiredDebtAmount={adDebt} 
+                            currencySymbol={currency.currencySymbol}
+                            currencyCode={currency.currencyCode}
+                            exchangeRate={currency.rates[currency.currencyCode] || 1}
                         />
                     </div>
                 ) : (
@@ -272,7 +280,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                         <div className="pt-4">
                             <Button
                                 onClick={handleWithdraw}
-                                disabled={loading || withdrawalsLocked || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || !selectedMethod || parseFloat(amount) > availableBalance || parseFloat(amount) < minWithdrawal}
+                                disabled={loading || withdrawalsLocked || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || !selectedMethod || currency.toUsd(parseFloat(amount) || 0) > availableBalance || currency.toUsd(parseFloat(amount) || 0) < minWithdrawal}
                                 className="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-500/30 active:scale-95 transition-all text-[11px] uppercase tracking-[0.3em] italic gap-4 flex border-b-4 border-blue-800 active:border-b-0"
                             >
                                 {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (

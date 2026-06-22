@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { Modal } from "@/components/ui/modal";
+import { CountrySelect } from "@/components/ui/country-select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -31,7 +32,8 @@ export default function SettingsPage() {
     });
 
     const [formData, setFormData] = useState({
-        displayName: "", phone: "", storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981"
+        displayName: "", phone: "", country: "United States", countryCode: "US", currency: "USD", currencySymbol: "$",
+        storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981"
     });
     const [host, setHost] = useState("");
 
@@ -48,6 +50,10 @@ export default function SettingsPage() {
                     setFormData({
                         displayName: data.displayName || "",
                         phone: data.phoneNumber || "",
+                        country: data.country || "United States",
+                        countryCode: data.countryCode || "US",
+                        currency: data.currency || "USD",
+                        currencySymbol: data.currencySymbol || "$",
                         storeName: data.storeName || "",
                         storeSlug: data.storeSlug || "",
                         storeTagline: data.storeTagline || "",
@@ -72,6 +78,10 @@ export default function SettingsPage() {
             await updateDoc(userRef, {
                 displayName: formData.displayName,
                 phoneNumber: formData.phone,
+                country: formData.country,
+                countryCode: formData.countryCode,
+                currency: formData.currency,
+                currencySymbol: formData.currencySymbol,
                 storeName: formData.storeName,
                 storeSlug: formData.storeSlug,
                 storeTagline: formData.storeTagline,
@@ -221,6 +231,26 @@ export default function SettingsPage() {
                                         <Label className="text-xs font-medium text-zinc-400">Phone Number</Label>
                                         <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                             className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20" placeholder="+1 234 567 890" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-medium text-zinc-400">Country</Label>
+                                        <CountrySelect
+                                            value={formData.country}
+                                            onChange={(countryName, country) => setFormData({
+                                                ...formData,
+                                                country: countryName,
+                                                countryCode: country?.code || formData.countryCode,
+                                                currency: country?.currencyCode || formData.currency,
+                                                currencySymbol: country?.currencySymbol || formData.currencySymbol,
+                                            })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-medium text-zinc-400">Currency</Label>
+                                        <div className="h-11 px-4 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-between">
+                                            <span className="text-sm text-white">{formData.currencySymbol} {formData.currency}</span>
+                                            <span className="text-[10px] text-zinc-500">Auto-matched to country</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
