@@ -20,6 +20,7 @@ export default function ResellerHome() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ revenueToday: 0, ordersToday: 0, visitorsToday: 0 });
     const [recentOrders, setRecentOrders] = useState<any[]>([]);
+    const currency = useCurrency(userData);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -54,7 +55,6 @@ export default function ResellerHome() {
         </div>
     );
 
-    const currency = useCurrency(userData);
     const conversion = stats.ordersToday > 0 && stats.visitorsToday > 0
         ? `${((stats.ordersToday / stats.visitorsToday) * 100).toFixed(1)}%` : "0%";
 
