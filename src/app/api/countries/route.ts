@@ -3,7 +3,7 @@ import { FALLBACK_COUNTRIES, getFlagEmoji } from "@/lib/currency";
 
 export async function GET() {
     try {
-        const res = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2,currencies,flag", {
+        const res = await fetch("https://cdn.jsdelivr.net/npm/world-countries@5.0.0/countries.json", {
             next: { revalidate: 60 * 60 * 24 },
         });
         if (!res.ok) throw new Error(`Countries API failed: ${res.status}`);
