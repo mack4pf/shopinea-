@@ -9,10 +9,11 @@ import {
     convertToUsd,
     formatCurrency,
     getCurrencySymbol,
+    sanitizeCurrencyCode,
 } from "@/lib/currency";
 
 export function useCurrency(userData?: any) {
-    const currencyCode = userData?.currency || DEFAULT_CURRENCY;
+    const currencyCode = sanitizeCurrencyCode(userData?.currency || DEFAULT_CURRENCY);
     const [rates, setRates] = useState<ExchangeRates>(FALLBACK_RATES);
 
     useEffect(() => {

@@ -15,6 +15,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { UpgradeModal } from "@/components/modals/UpgradeModal";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol } from "@/lib/currency";
 
 const getNavItems = (role?: string) => {
     if (role === "buyer") {
@@ -55,29 +56,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                setUser(firebaseUser);
-                const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-                if (userDoc.exists()) {
-                    const data = userDoc.data();
-                    setUserData(data);
+                try {
+                    setUser(firebaseUser);
+                    const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setUserData(data);
 
-                    const sessionDismissed = sessionStorage.getItem("upgrade_modal_viewed");
-                    if (!data.plan && !sessionDismissed && pathname === "/dashboard") {
-                        const timer = setTimeout(() => {
-                            // Only show if user is still on /dashboard when timer fires
-                            if (pathnameRef.current === "/dashboard") {
-                                setShowUpgradeModal(true);
-                                sessionStorage.setItem("upgrade_modal_viewed", "true");
-                            }
-                        }, 2000);
-                        return () => clearTimeout(timer);
-                    }
+                        let sessionDismissed = false;
+                        try {
+                            sessionDismissed = sessionStorage.getItem("upgrade_modal_viewed") === "true";
+                        } catch {
+                            sessionDismissed = true;
+                        }
 
-                    if (firebaseUser.email === "mackiyeritufu@gmail.com" && !data.isAdmin) {
-                        const { updateDoc, doc } = await import("firebase/firestore");
-                        await updateDoc(doc(db, "users", firebaseUser.uid), { isAdmin: true });
-                        setUserData({ ...data, isAdmin: true });
+                        if (!data.plan && !sessionDismissed && pathname === "/dashboard") {
+                            const timer = setTimeout(() => {
+                                // Only show if user is still on /dashboard when timer fires
+                                if (pathnameRef.current === "/dashboard") {
+                                    setShowUpgradeModal(true);
+                                    try {
+                                        sessionStorage.setItem("upgrade_modal_viewed", "true");
+                                    } catch {}
+                                }
+                            }, 2000);
+                            return () => clearTimeout(timer);
+                        }
+
+                        if (firebaseUser.email === "mackiyeritufu@gmail.com" && !data.isAdmin) {
+                            const { updateDoc, doc } = await import("firebase/firestore");
+                            await updateDoc(doc(db, "users", firebaseUser.uid), { isAdmin: true });
+                            setUserData({ ...data, isAdmin: true });
+                        }
                     }
+                } catch (error) {
+                    console.error("Dashboard user load failed:", error);
+                    setUserData({});
                 }
             } else {
                 setUser(null);
@@ -102,15 +116,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             router.push("/");
         } catch (error) {
             console.error("Logout error:", error);
-        }
-    };
-
-    const getCurrencySymbol = (code: string = "USD") => {
-        switch (code) {
-            case "EUR": return "€";
-            case "GBP": return "£";
-            case "NGN": return "₦";
-            default: return "$";
         }
     };
 
@@ -294,7 +299,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     <div className="flex items-center gap-3">
-                        {/* Balance chip — desktop only */}
+                        {/* Balance chip - desktop only */}
                         <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/[0.04] rounded-xl border border-white/[0.08]">
                             <Wallet className="w-4 h-4 text-emerald-400" />
                             <span className="text-sm font-semibold text-white">{currencySymbol}{userData?.walletBalance?.toLocaleString() || "0"}</span>
