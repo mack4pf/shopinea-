@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
-import { COUNTRY_NAMES } from "@/lib/countries";
+import { CountrySelect } from "@/components/ui/country-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,7 +37,9 @@ function RegisterPageInner() {
         password: "",
         phone: "",
         country: "United States",
+        countryCode: "US",
         currency: "USD",
+        currencySymbol: "$",
         role: "reseller" as "reseller" | "supplier"
     });
 
@@ -133,7 +135,9 @@ function RegisterPageInner() {
                 email: formData.email,
                 phoneNumber: formData.phone,
                 country: formData.country,
+                countryCode: formData.countryCode,
                 currency: formData.currency,
+                currencySymbol: formData.currencySymbol,
                 role: formData.role,
                 isVerified: true,
                 onboardingCompleted: false,
@@ -272,17 +276,26 @@ function RegisterPageInner() {
                                         />
                                     </div>
                                     <div className="relative">
-                                        <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none z-10" />
-                                        <select
+                                        <CountrySelect
                                             value={formData.country}
-                                            onChange={e => setFormData({ ...formData, country: e.target.value })}
-                                            className="w-full h-11 pl-11 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white focus:outline-none focus:border-blue-500/50 transition-all cursor-pointer appearance-none"
-                                        >
-                                            {COUNTRY_NAMES.map(c => (
-                                                <option key={c} value={c} className="bg-zinc-900">{c}</option>
-                                            ))}
-                                        </select>
+                                            onChange={(countryName, country) => setFormData({
+                                                ...formData,
+                                                country: countryName,
+                                                countryCode: country?.code || "US",
+                                                currency: country?.currencyCode || "USD",
+                                                currencySymbol: country?.currencySymbol || "$",
+                                            })}
+                                            size="md"
+                                        />
                                     </div>
+                                </div>
+
+                                <div className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                        <CreditCard className="w-4 h-4 text-zinc-600" />
+                                        <span className="text-xs text-zinc-500">Platform currency</span>
+                                    </div>
+                                    <span className="text-sm font-semibold text-white">{formData.currencySymbol} {formData.currency}</span>
                                 </div>
 
                                 <div className="relative">

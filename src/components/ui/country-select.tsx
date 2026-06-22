@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Globe, Search, ChevronDown, Check } from "lucide-react";
-import { COUNTRIES } from "@/lib/countries";
+import { CountryCurrency, FALLBACK_COUNTRIES } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 interface CountrySelectProps {
     value: string;
-    onChange: (value: string) => void;
+    onChange: (value: string, country?: CountryCurrency) => void;
     className?: string;
     placeholder?: string;
     size?: "sm" | "md";
@@ -22,14 +22,28 @@ export function CountrySelect({
 }: CountrySelectProps) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
+    const [countries, setCountries] = useState<CountryCurrency[]>(FALLBACK_COUNTRIES);
     const ref = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const filtered = query.trim()
-        ? COUNTRIES.filter((c) =>
-              c.name.toLowerCase().includes(query.toLowerCase())
+        ? countries.filter((c) =>
+              `${c.name} ${c.currencyCode}`.toLowerCase().includes(query.toLowerCase())
           )
-        : COUNTRIES;
+        : countries;
+
+    const selectedCountry = countries.find(country => country.name === value);
+
+    useEffect(() => {
+        let alive = true;
+        fetch("/api/countries")
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (alive && Array.isArray(data?.countries)) setCountries(data.countries);
+            })
+            .catch(() => {});
+        return () => { alive = false; };
+    }, []);
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
@@ -63,10 +77,11 @@ export function CountrySelect({
                     open ? "border-blue-500/50 ring-1 ring-blue-500/20" : "hover:border-white/[0.14]"
                 )}
             >
-                <Globe className="w-4 h-4 text-zinc-500 shrink-0" />
+                <span className="w-5 text-center text-base shrink-0">{selectedCountry?.flag || <Globe className="w-4 h-4 text-zinc-500" />}</span>
                 <span className={cn("flex-1 truncate", value ? "text-white" : "text-zinc-600")}>
                     {value || placeholder}
                 </span>
+                {selectedCountry && <span className="text-[10px] font-semibold text-zinc-500">{selectedCountry.currencyCode}</span>}
                 <ChevronDown className={cn("w-4 h-4 text-zinc-500 shrink-0 transition-transform", open && "rotate-180")} />
             </button>
 
@@ -97,7 +112,7 @@ export function CountrySelect({
                                     key={c.code}
                                     type="button"
                                     onClick={() => {
-                                        onChange(c.name);
+                                        onChange(c.name, c);
                                         setOpen(false);
                                         setQuery("");
                                     }}
@@ -108,7 +123,9 @@ export function CountrySelect({
                                             : "text-zinc-300 hover:bg-white/[0.05] hover:text-white"
                                     )}
                                 >
-                                    <span className="flex-1">{c.name}</span>
+                                    <span className="text-base">{c.flag}</span>
+                                    <span className="flex-1 truncate">{c.name}</span>
+                                    <span className="text-[10px] text-zinc-500">{c.currencyCode}</span>
                                     {value === c.name && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
                                 </button>
                             ))

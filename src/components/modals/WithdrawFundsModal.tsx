@@ -25,6 +25,9 @@ interface WithdrawFundsModalProps {
     payoutMethods: any[];
     userEmail: string;
     locked?: boolean;
+    currencyCode?: string;
+    currencySymbol?: string;
+    exchangeRate?: number;
 }
 
 const METHOD_ICON: Record<string, React.ElementType> = {
@@ -42,13 +45,17 @@ export default function WithdrawFundsModal({
     payoutMethods,
     userEmail,
     locked = false,
+    currencyCode = "USD",
+    currencySymbol = "$",
+    exchangeRate = 1,
 }: WithdrawFundsModalProps) {
     const [amount, setAmount] = useState("");
     const [selectedMethodId, setSelectedMethodId] = useState("");
     const [loading, setLoading] = useState(false);
     const [done, setDone] = useState(false);
 
-    const parsed = parseFloat(amount) || 0;
+    const parsedLocal = parseFloat(amount) || 0;
+    const parsed = parsedLocal / (exchangeRate || 1);
     const pct = availableBalance > 0 ? Math.min((parsed / availableBalance) * 100, 100) : 0;
     const quickPcts = [25, 50, 75, 100];
 
@@ -63,6 +70,8 @@ export default function WithdrawFundsModal({
         try {
             await addDoc(collection(db, "payouts"), {
                 userId, amount: parsed,
+                amountLocal: parsedLocal,
+                currencyCode,
                 methodId: selectedMethodId,
                 method: selectedMethod.label,
                 methodType: selectedMethod.type,
@@ -110,7 +119,7 @@ export default function WithdrawFundsModal({
                     </div>
                     <div className="space-y-1.5">
                         <h3 className="text-lg font-bold text-white">Request Submitted</h3>
-                        <p className="text-sm text-zinc-400">Your withdrawal of <span className="text-white font-semibold">${parsed.toFixed(2)}</span> is being reviewed.</p>
+                        <p className="text-sm text-zinc-400">Your withdrawal of <span className="text-white font-semibold">{currencySymbol}{parsedLocal.toFixed(2)}</span> is being reviewed.</p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/[0.07] border border-amber-500/20 rounded-xl">
                         <Clock className="w-4 h-4 text-amber-400 shrink-0" />
@@ -132,7 +141,7 @@ export default function WithdrawFundsModal({
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600/20 via-purple-600/10 to-transparent border border-indigo-500/20 p-5">
                         <div className="absolute -top-6 -right-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
                         <p className="text-[10px] font-semibold text-indigo-300/60 uppercase tracking-widest mb-1">Available Balance</p>
-                        <p className="text-3xl font-bold text-white tracking-tight">${availableBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="text-3xl font-bold text-white tracking-tight">{currencySymbol}{(availableBalance * (exchangeRate || 1)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         <p className="text-[11px] text-indigo-300/40 mt-1">Ready for payout</p>
                     </div>
 
@@ -143,9 +152,9 @@ export default function WithdrawFundsModal({
                         </div>
                     )}
                     <div className="space-y-2.5">
-                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Amount (USD)</label>
+                        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Amount ({currencyCode})</label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-zinc-500 pointer-events-none">$</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-zinc-500 pointer-events-none">{currencySymbol}</span>
                             <input
                                 type="number"
                                 placeholder="0.00"
@@ -159,7 +168,7 @@ export default function WithdrawFundsModal({
                             {quickPcts.map(p => (
                                 <button
                                     key={p}
-                                    onClick={() => setAmount(((availableBalance * p) / 100).toFixed(2))}
+                                    onClick={() => setAmount((((availableBalance * (exchangeRate || 1)) * p) / 100).toFixed(2))}
                                     className="h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] text-xs font-semibold text-zinc-400 hover:text-white hover:border-indigo-500/40 hover:bg-indigo-500/10 transition-colors"
                                 >
                                     {p === 100 ? "Max" : `${p}%`}
@@ -176,8 +185,8 @@ export default function WithdrawFundsModal({
                                     />
                                 </div>
                                 <div className="flex justify-between text-[10px] text-zinc-600">
-                                    <span>Withdrawing <span className={parsed > availableBalance ? "text-rose-400" : "text-white"}>${parsed.toFixed(2)}</span></span>
-                                    <span>Remaining: <span className="text-white">${Math.max(availableBalance - parsed, 0).toFixed(2)}</span></span>
+                                    <span>Withdrawing <span className={parsed > availableBalance ? "text-rose-400" : "text-white"}>{currencySymbol}{parsedLocal.toFixed(2)}</span></span>
+                                    <span>Remaining: <span className="text-white">{currencySymbol}{Math.max((availableBalance - parsed) * (exchangeRate || 1), 0).toFixed(2)}</span></span>
                                 </div>
                             </div>
                         )}
@@ -232,7 +241,7 @@ export default function WithdrawFundsModal({
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                                 <p className="text-xs text-emerald-300">Ready to withdraw</p>
                             </div>
-                            <p className="text-sm font-bold text-white">${parsed.toFixed(2)}</p>
+                            <p className="text-sm font-bold text-white">{currencySymbol}{parsedLocal.toFixed(2)}</p>
                         </div>
                     )}
 

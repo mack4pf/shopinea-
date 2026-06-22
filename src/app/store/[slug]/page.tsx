@@ -28,6 +28,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getDefaultStock } from "@/lib/catalog";
+import { useCurrency } from "@/hooks/useCurrency";
 
 const TEMPLATE_STYLES: Record<string, { page: string; hero: string; card: string; section: string; label: string }> = {
     classic: {
@@ -87,6 +88,7 @@ export default function StorePage() {
     // Modal State
     const [inquiryProduct, setInquiryProduct] = useState<any>(null);
     const [checkoutProduct, setCheckoutProduct] = useState<any>(null);
+    const currency = useCurrency(storeUser);
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (u) => setUser(u));
@@ -331,7 +333,7 @@ export default function StorePage() {
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                                         <div className="absolute bottom-0 left-0 right-0 p-3">
                                             <p className="text-white text-[10px] font-bold line-clamp-1 leading-tight">{p.name}</p>
-                                            <p className="text-emerald-300 text-[9px] font-bold mt-0.5">${(p.resellPrice || p.price || 0).toLocaleString()}</p>
+                                            <p className="text-emerald-300 text-[9px] font-bold mt-0.5">{currency.money(p.resellPrice || p.price || 0)}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -374,7 +376,7 @@ export default function StorePage() {
                                         <div className="p-3">
                                             <p className="text-xs font-bold text-slate-800 line-clamp-1 mb-1">{product.name}</p>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm font-bold text-slate-900">${(product.resellPrice || product.price || 0).toLocaleString()}</span>
+                                                <span className="text-sm font-bold text-slate-900">{currency.money(product.resellPrice || product.price || 0)}</span>
                                                 <span className="flex items-center gap-1 text-[9px] font-bold bg-white/90 border rounded-full px-2 py-0.5"
                                                     style={{ color: accentColor, borderColor: accentColor + '33' }}>
                                                     <ShoppingCart className="w-2.5 h-2.5" /> {(orderCounts[product.id] || 0).toLocaleString()} sold
@@ -422,6 +424,7 @@ export default function StorePage() {
                                     viewCount={productViewsMap[product.id] || 0}
                                     cardRadius={template.card}
                                     layout={storeLayout}
+                                    formattedPrice={currency.money(product.resellPrice ?? product.price ?? 0)}
                                     onInquiry={() => { handleProductView(product); setInquiryProduct(product); }}
                                     onBuyNow={() => { handleProductView(product); setCheckoutProduct(product); }}
                                 />
@@ -475,7 +478,7 @@ export default function StorePage() {
     );
 }
 
-function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount = 0, cardRadius = "rounded-2xl", layout = "grid" }: { product: any; onInquiry: () => void; onBuyNow: () => void; salesCount?: number; viewCount?: number; cardRadius?: string; layout?: string }) {
+function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount = 0, cardRadius = "rounded-2xl", layout = "grid", formattedPrice }: { product: any; onInquiry: () => void; onBuyNow: () => void; salesCount?: number; viewCount?: number; cardRadius?: string; layout?: string; formattedPrice: string }) {
     const [imageLoaded, setImageLoaded] = useState(false);
     const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
     const inStock = stock > 0;
@@ -545,7 +548,7 @@ function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount =
                 <div className="flex justify-between items-end mt-6 pt-4 border-t border-slate-200">
                     <div>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 leading-none mb-1">Price</p>
-                        <p className={cn("font-bold tracking-tight text-slate-900", isCompact ? "text-lg" : "text-2xl")}>${(product.resellPrice ?? product.price ?? 0).toLocaleString()}</p>
+                        <p className={cn("font-bold tracking-tight text-slate-900", isCompact ? "text-lg" : "text-2xl")}>{formattedPrice}</p>
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Verified</span>
                 </div>

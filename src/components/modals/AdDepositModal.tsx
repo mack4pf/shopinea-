@@ -17,13 +17,16 @@ interface AdDepositModalProps {
     onClose: () => void;
     userId: string;
     requiredDebtAmount?: number;
+    currencySymbol?: string;
+    currencyCode?: string;
+    exchangeRate?: number;
 }
 
 const STEPS = ["Amount", "Method", "Pay"];
 
-export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAmount }: AdDepositModalProps) {
+export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAmount, currencySymbol = "$", currencyCode = "USD", exchangeRate = 1 }: AdDepositModalProps) {
     const router = useRouter();
-    const [amount, setAmount] = useState(requiredDebtAmount ? String(requiredDebtAmount) : "");
+    const [amount, setAmount] = useState(requiredDebtAmount ? String(requiredDebtAmount * (exchangeRate || 1)) : "");
     const [step, setStep] = useState(1);
     const [method, setMethod] = useState<string | null>(null);
     const [cryptoAsset, setCryptoAsset] = useState<string | null>(null);
@@ -45,8 +48,9 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
     useEffect(() => {
         if (!isOpen) return;
         setStep(1); setMethod(null); setSelectedMethodConfig(null); setCryptoAsset(null); setReceiptUrl(null); setReceiptName(null);
-        if (!requiredDebtAmount) setAmount("");
-    }, [isOpen, requiredDebtAmount]);
+        if (requiredDebtAmount) setAmount(String(requiredDebtAmount * (exchangeRate || 1)));
+        else setAmount("");
+    }, [isOpen, requiredDebtAmount, exchangeRate]);
 
     // Body scroll lock
     useEffect(() => {
@@ -66,7 +70,8 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
 
     if (!isOpen) return null;
 
-    const numAmount = parseFloat(amount) || 0;
+    const numAmountLocal = parseFloat(amount) || 0;
+    const numAmount = numAmountLocal / (exchangeRate || 1);
     const cryptoDiscount = method === "crypto" ? numAmount * 0.05 : 0;
     const amountToPay = numAmount - cryptoDiscount;
     const bonus = !requiredDebtAmount
@@ -108,7 +113,8 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
         try {
             await addDoc(collection(db, "transactions"), {
                 userId, type: "ad_deposit",
-                amount: numAmount, amountPaid: amountToPay, totalCredits,
+                amount: numAmount, amountLocal: numAmountLocal, amountPaid: amountToPay, totalCredits,
+                currencyCode, exchangeRate,
                 bonus, cryptoDiscount, status: "pending",
                 method, methodLabel: selectedMethodConfig?.label || method, asset: cryptoAsset || "N/A",
                 receiptUrl, requiredDebt: requiredDebtAmount || null,
@@ -127,7 +133,8 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                         data: {
                             subject: "Ad Wallet Deposit Request Received",
                             html: `<p>Hello ${userData.displayName || userData.fullName || "Merchant"},</p>
-                                <p>We received your ad wallet deposit request for <strong>$${numAmount.toLocaleString()}</strong>.</p>
+                                <p>We received your ad wallet deposit request for <strong>${currencySymbol}${numAmountLocal.toLocaleString()} ${currencyCode}</strong>.</p>
+                                <p><strong>USD equivalent:</strong> $${numAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
                                 <p><strong>Status:</strong> Pending review. We will email you again once your receipt is approved or rejected.</p>
                                 <p><strong>Total ad credits after approval:</strong> $${totalCredits.toLocaleString()}</p>
                                 <p><strong>Payment method:</strong> ${(method || "transfer").toUpperCase()}${cryptoAsset ? ` (${cryptoAsset.toUpperCase()})` : ""}</p>`
@@ -163,7 +170,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                         <div className="space-y-2">
                             <h3 className="text-lg font-semibold text-white">Ad deposit submitted</h3>
                             <p className="text-sm text-zinc-400 max-w-xs mx-auto">
-                                Your receipt is under review. We'll credit <span className="text-white font-medium">${totalCredits.toFixed(2)}</span> to your ad wallet once confirmed.
+                                Your receipt is under review. We'll credit <span className="text-white font-medium">${totalCredits.toFixed(2)} USD</span> to your ad wallet once confirmed.
                             </p>
                         </div>
                         {bonus > 0 && (
@@ -249,7 +256,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                                     {[100, 500, 1000, 5000].map(v => (
                                         <button key={v} onClick={() => setAmount(v.toString())}
                                             className="h-9 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs font-medium text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-all">
-                                            ${v}
+                                            {currencySymbol}{v}
                                         </button>
                                     ))}
                                 </div>
@@ -259,7 +266,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                             {bonus > 0 && (
                                 <div className="flex items-center gap-2.5 p-3 bg-emerald-500/[0.07] border border-emerald-500/20 rounded-xl">
                                     <Tag className="w-4 h-4 text-emerald-400 shrink-0" />
-                                    <p className="text-xs text-zinc-300">Deposit ${numAmount.toFixed(2)} and get <span className="text-emerald-300 font-semibold">+${bonus.toFixed(2)} bonus</span> — total credits: <span className="text-white font-semibold">${totalCredits.toFixed(2)}</span></p>
+                                    <p className="text-xs text-zinc-300">Deposit {currencySymbol}{numAmountLocal.toFixed(2)} and get <span className="text-emerald-300 font-semibold">+${bonus.toFixed(2)} USD bonus</span> — total credits: <span className="text-white font-semibold">${totalCredits.toFixed(2)} USD</span></p>
                                 </div>
                             )}
 
@@ -275,7 +282,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                     {/* Step 2: Payment method */}
                     {step === 2 && (
                         <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
-                            <p className="text-sm text-zinc-400">How would you like to deposit <span className="text-white font-medium">${numAmount.toFixed(2)}</span>?</p>
+                            <p className="text-sm text-zinc-400">How would you like to deposit <span className="text-white font-medium">{currencySymbol}{numAmountLocal.toFixed(2)} {currencyCode}</span>?</p>
                             {depositMethods.map((m: any) => {
                                 const type = (m.type || m.id || "").toLowerCase();
                                 const icon = m.logoUrl ? <img src={m.logoUrl} alt="" className="w-7 h-7 object-contain" /> :
@@ -335,10 +342,11 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                                 <p className="text-sm font-semibold text-white mb-0.5">Send your payment</p>
                                 <p className="text-xs text-zinc-500">
                                     {method === "crypto"
-                                        ? <>Transfer exactly <span className="text-white font-medium">${amountToPay.toFixed(2)}</span> <span className="text-emerald-400">(5% crypto discount applied)</span></>
-                                        : <>Transfer exactly <span className="text-white font-medium">${amountToPay.toFixed(2)}</span></>
+                                        ? <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{(amountToPay * (exchangeRate || 1)).toFixed(2)}</span> <span className="text-emerald-400">(5% crypto discount applied)</span></>
+                                        : <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{numAmountLocal.toFixed(2)}</span></>
                                     } to the details below, then upload your receipt.
                                 </p>
+                                {currencyCode !== "USD" && <p className="text-[11px] text-zinc-600 mt-1">Estimated USD credit: ${numAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>}
                             </div>
 
                             {/* Payment destination */}

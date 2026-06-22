@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { COUNTRY_NAMES } from "@/lib/countries";
 import { getDefaultStock } from "@/lib/catalog";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -36,6 +37,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
     const productImage = product?.image || product?.productImage || null;
     const basePrice = Number(product?.price ?? product?.initialPrice ?? 0);
     const sellPrice = Number(product?.resellPrice ?? product?.price ?? 0);
+    const currency = useCurrency(storeUser);
     const [formData, setFormData] = useState({
         name: "", email: "", phone: "", address: "", zip: "", city: "", country: "United States",
         cardNumber: "", expiry: "", cvv: ""
@@ -358,7 +360,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                                 </div>
                                 <div className="text-right">
                                     <p className="text-lg font-bold text-white tracking-tight">
-                                        ${(paymentMethod === 'crypto' ? sellPrice * 0.95 : sellPrice).toLocaleString()}
+                                        {currency.money(paymentMethod === 'crypto' ? sellPrice * 0.95 : sellPrice)}
                                     </p>
                                     {paymentMethod === 'crypto' && <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">5% Crypto Discount</p>}
                                 </div>
