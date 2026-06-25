@@ -55,6 +55,7 @@ export default function GatewaysPage() {
         ethAddress: "",
         usdtAddress: "",
         paymentMethods: [] as PaymentMethod[],
+        extraCryptos: [] as { id: string; name: string; ticker: string; address: string; network: string; enabled: boolean }[],
     });
 
     const fetchData = async () => {
@@ -66,6 +67,7 @@ export default function GatewaysPage() {
                     ...prev,
                     ...data,
                     paymentMethods: Array.isArray(data.paymentMethods) ? data.paymentMethods : [],
+                    extraCryptos: Array.isArray(data.extraCryptos) ? data.extraCryptos : [],
                 }));
             }
         } catch (err) {
@@ -121,6 +123,34 @@ export default function GatewaysPage() {
         setPaymentConfig(prev => ({
             ...prev,
             paymentMethods: prev.paymentMethods.filter(method => method.id !== id),
+        }));
+    };
+
+    const addCrypto = () => {
+        setPaymentConfig(prev => ({
+            ...prev,
+            extraCryptos: [...prev.extraCryptos, {
+                id: `crypto-${Date.now()}`,
+                name: "",
+                ticker: "",
+                address: "",
+                network: "",
+                enabled: true,
+            }],
+        }));
+    };
+
+    const updateCrypto = (id: string, updates: Partial<typeof paymentConfig.extraCryptos[0]>) => {
+        setPaymentConfig(prev => ({
+            ...prev,
+            extraCryptos: prev.extraCryptos.map(c => c.id === id ? { ...c, ...updates } : c),
+        }));
+    };
+
+    const removeCrypto = (id: string) => {
+        setPaymentConfig(prev => ({
+            ...prev,
+            extraCryptos: prev.extraCryptos.filter(c => c.id !== id),
         }));
     };
 
@@ -197,6 +227,55 @@ export default function GatewaysPage() {
                             <Label className="text-xs text-zinc-500">USDT (ERC20 / TRC20)</Label>
                             <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm font-mono" value={paymentConfig.usdtAddress} onChange={(e) => setPaymentConfig({...paymentConfig, usdtAddress: e.target.value})} />
                         </div>
+
+                        {/* Extra crypto wallets */}
+                        <div className="pt-2 border-t border-white/[0.06] space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-zinc-400 font-semibold">Additional Wallets</Label>
+                                <button
+                                    type="button"
+                                    onClick={addCrypto}
+                                    className="h-7 px-3 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white text-[11px] font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
+                                >
+                                    <Plus className="w-3 h-3" /> Add Coin
+                                </button>
+                            </div>
+                            {paymentConfig.extraCryptos.length === 0 && (
+                                <p className="text-[11px] text-zinc-600">Add Solana, BNB, TRON, or any custom coin.</p>
+                            )}
+                            {paymentConfig.extraCryptos.map(c => (
+                                <div key={c.id} className="space-y-2 p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-zinc-500">Coin Name</Label>
+                                            <Input className="bg-white/[0.04] border-white/[0.08] h-9 text-white text-xs" placeholder="Solana" value={c.name} onChange={e => updateCrypto(c.id, { name: e.target.value })} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-[10px] text-zinc-500">Ticker</Label>
+                                            <Input className="bg-white/[0.04] border-white/[0.08] h-9 text-white text-xs uppercase" placeholder="SOL" value={c.ticker} onChange={e => updateCrypto(c.id, { ticker: e.target.value.toUpperCase() })} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-zinc-500">Wallet Address</Label>
+                                        <Input className="bg-white/[0.04] border-white/[0.08] h-9 text-white text-xs font-mono" placeholder="Wallet address..." value={c.address} onChange={e => updateCrypto(c.id, { address: e.target.value })} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label className="text-[10px] text-zinc-500">Network / Note (optional)</Label>
+                                        <Input className="bg-white/[0.04] border-white/[0.08] h-9 text-white text-xs" placeholder="e.g. Solana Mainnet, BEP-20" value={c.network} onChange={e => updateCrypto(c.id, { network: e.target.value })} />
+                                    </div>
+                                    <div className="flex items-center justify-between pt-1">
+                                        <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                                            <input type="checkbox" checked={c.enabled} onChange={e => updateCrypto(c.id, { enabled: e.target.checked })} className="accent-blue-600" />
+                                            Enabled
+                                        </label>
+                                        <button type="button" onClick={() => removeCrypto(c.id)} className="h-7 px-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/15 text-[11px] font-semibold flex items-center gap-1">
+                                            <Trash2 className="w-3 h-3" /> Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
                         <div className="flex items-start gap-2 p-3 bg-orange-500/5 border border-orange-500/10 rounded-lg mt-2">
                             <Lock className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
                             <p className="text-xs text-orange-400/80">Ensure addresses are on supported networks. Cross-network deposits are non-recoverable.</p>

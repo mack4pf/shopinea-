@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
+import { getCryptoAddress, getEnabledCryptoOptions } from "@/lib/payments/crypto";
 
 interface SubscriptionPaymentModalProps {
     isOpen: boolean;
@@ -86,10 +87,8 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
         finally { setSubmitting(false); }
     };
 
-    const paymentAddress =
-        selectedCrypto === "btc" ? paymentConfig?.btcAddress :
-        selectedCrypto === "eth" ? paymentConfig?.ethAddress :
-        selectedCrypto === "usdt" ? paymentConfig?.usdtAddress : null;
+    const paymentAddress = getCryptoAddress(paymentConfig, selectedCrypto);
+    const cryptoOptions = getEnabledCryptoOptions(paymentConfig);
 
     return (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 overflow-y-auto">
@@ -203,11 +202,9 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                     {step === 3 && (
                         <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
                             <p className="text-sm text-zinc-400 mb-1">Select the asset you'll pay with.</p>
-                            {[
-                                { id: "btc",  name: "Bitcoin",    ticker: "BTC",               Logo: BitcoinLogo },
-                                { id: "eth",  name: "Ethereum",   ticker: "ETH",               Logo: EthereumLogo },
-                                { id: "usdt", name: "Tether USD", ticker: "USDT (ERC20/TRC20)", Logo: USDTLogo },
-                            ].map((coin) => (
+                            {cryptoOptions.map((coin) => ({ ...coin, Logo: coin.id === "btc" ? BitcoinLogo : coin.id === "eth" ? EthereumLogo : coin.id === "usdt" ? USDTLogo : null }))
+                                .filter((coin: any) => coin.Logo)
+                                .map((coin: any) => (
                                 <button key={coin.id}
                                     onClick={() => { setSelectedCrypto(coin.id); setStep(4); }}
                                     className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:border-blue-500/30 hover:bg-white/[0.05] transition-all text-left group">
