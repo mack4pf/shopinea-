@@ -1081,3 +1081,570 @@ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea
   syscall: 'open',
   path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
 }
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <DiskFileSystem as FileSystem>::write (TaskId 517136))
+
+Caused by:
+    0: Looking up data for TaskId 517136 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (34724) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for <DiskFileSystem as FileSystem>::write (TaskId 288671))
+
+Caused by:
+    0: Looking up data for TaskId 288671 from database failed
+    1: Unable to open static sorted file referenced from 00014764.meta
+    2: Unable to open static sorted file 00014760.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (15036) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:963:22:
+Failed to lookup task type: Looking up task type for TaskId 517210 from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014739.meta
+    1: Unable to open static sorted file 00014735.sst
+    2: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <NodeJsChunkingContext as ChunkingContext>::is_reference_unused (TaskId 515066))
+
+Caused by:
+    0: Looking up data for TaskId 515066 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (5500) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EsmAssetReference::get_referenced_asset (TaskId 515111))
+
+Caused by:
+    0: Looking up data for TaskId 515111 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EsmAssetReference::get_referenced_asset (TaskId 323757))
+
+Caused by:
+    0: Looking up data for TaskId 323757 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for <NodeJsChunkingContext as ChunkingContext>::is_reference_unused (TaskId 515066))
+
+Caused by:
+    0: Looking up data for TaskId 515066 from database failed
+    1: Unable to open static sorted file referenced from 00014764.meta
+    2: Unable to open static sorted file 00014760.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <NodeJsChunkingContext as ChunkingContext>::is_reference_unused (TaskId 515066))
+
+Caused by:
+    0: Looking up data for TaskId 515066 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EsmAssetReference::get_referenced_asset (TaskId 323757))
+
+Caused by:
+    0: Looking up data for TaskId 323757 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EsmAssetReference::get_referenced_asset (TaskId 323757))
+
+Caused by:
+    0: Looking up data for TaskId 323757 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ChunkableModuleReference>::chunking_type (TaskId 406291))
+
+Caused by:
+    0: Looking up data for TaskId 406291 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for AnalyzeEcmascriptModuleResult::references (TaskId 283880))
+
+Caused by:
+    0: Looking up data for TaskId 283880 from database failed
+    1: Unable to open static sorted file referenced from 00014764.meta
+    2: Unable to open static sorted file 00014760.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (5500) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ModuleReference>::resolve_reference (TaskId 513776))
+
+Caused by:
+    0: Looking up data for TaskId 513776 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (5500) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EsmAssetReference::get_referenced_asset (TaskId 515111))
+
+Caused by:
+    0: Looking up data for TaskId 515111 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for EcmascriptClientReferenceModule::new (TaskId 283797))
+
+Caused by:
+    0: Looking up data for TaskId 283797 from database failed
+    1: Unable to open static sorted file referenced from 00014764.meta
+    2: Unable to open static sorted file 00014760.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <ModuleAssetContext as AssetContext>::process_resolve_result (TaskId 121443))
+
+Caused by:
+    0: Looking up data for TaskId 121443 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (28808) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for value_to_string (TaskId 513005))
+
+Caused by:
+    0: Looking up data for TaskId 513005 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <ModuleAssetContext as AssetContext>::process_resolve_result (TaskId 121443))
+
+Caused by:
+    0: Looking up data for TaskId 121443 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for EcmascriptClientReferenceModule::new (TaskId 283797))
+
+Caused by:
+    0: Looking up data for TaskId 283797 from database failed
+    1: Unable to open static sorted file referenced from 00014764.meta
+    2: Unable to open static sorted file 00014760.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (28808) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptModuleAsset as ResolveOrigin>::get_inner_asset (TaskId 513270))
+
+Caused by:
+    0: Looking up data for TaskId 513270 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (34724) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ChunkableModuleReference>::chunking_type (TaskId 283910))
+
+Caused by:
+    0: Looking up data for TaskId 283910 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <ModuleAssetContext as AssetContext>::process_resolve_result (TaskId 121443))
+
+Caused by:
+    0: Looking up data for TaskId 121443 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ModuleReference>::resolve_reference (TaskId 513776))
+
+Caused by:
+    0: Looking up data for TaskId 513776 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (28808) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ModuleReference>::resolve_reference (TaskId 513776))
+
+Caused by:
+    0: Looking up data for TaskId 513776 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (35492) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "<EcmascriptModuleAsset as ResolveOrigin>::get_inner_asset", global_name: "turbopack-ecmascript@turbopack_ecmascript::EcmascriptModuleAsset::ResolveOrigin::get_inner_asset", .. }, this: Some(RawVc::TaskCell(513477, "turbopack_ecmascript::EcmascriptModuleAsset#0")), arg: (Vc(RawVc::TaskCell(152850, "turbopack_core::resolve::parse::Request#0")),) } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (35492) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "<EcmascriptModuleAsset as ResolveOrigin>::get_inner_asset", global_name: "turbopack-ecmascript@turbopack_ecmascript::EcmascriptModuleAsset::ResolveOrigin::get_inner_asset", .. }, this: Some(RawVc::TaskCell(513477, "turbopack_ecmascript::EcmascriptModuleAsset#0")), arg: (Vc(RawVc::TaskCell(152850, "turbopack_core::resolve::parse::Request#0")),) } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (28808) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EsmAssetReference::get_referenced_asset (TaskId 515111))
+
+Caused by:
+    0: Looking up data for TaskId 515111 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for <EsmAssetReference as ModuleReference>::resolve_reference (TaskId 513776))
+
+Caused by:
+    0: Looking up data for TaskId 513776 from database failed
+    1: Unable to open static sorted file referenced from 00014764.meta
+    2: Unable to open static sorted file 00014760.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (28808) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Data for <DiskFileSystem as FileSystem>::write (TaskId 288671))
+
+Caused by:
+    0: Looking up data for TaskId 288671 from database failed
+    1: Unable to open static sorted file referenced from 00014764.meta
+    2: Unable to open static sorted file 00014760.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <ModuleAssetContext as AssetContext>::process_resolve_result (TaskId 121443))
+
+Caused by:
+    0: Looking up data for TaskId 121443 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <ModuleAssetContext as AssetContext>::process_resolve_result (TaskId 121443))
+
+Caused by:
+    0: Looking up data for TaskId 121443 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (5500) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ModuleReference>::resolve_reference (TaskId 513776))
+
+Caused by:
+    0: Looking up data for TaskId 513776 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ChunkableModuleReference>::chunking_type (TaskId 283910))
+
+Caused by:
+    0: Looking up data for TaskId 283910 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:963:22:
+Failed to lookup task type: Looking up task type for TaskId 541936 from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014170.meta
+    1: Unable to open static sorted file 00014165.sst
+    2: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ChunkableModuleReference>::chunking_type (TaskId 283910))
+
+Caused by:
+    0: Looking up data for TaskId 283910 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EcmascriptModulePartReference::new_normal (TaskId 165356))
+
+Caused by:
+    0: Looking up data for TaskId 165356 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ChunkableModuleReference>::chunking_type (TaskId 283910))
+
+Caused by:
+    0: Looking up data for TaskId 283910 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:963:22:
+Failed to lookup task type: Looking up task type for TaskId 169782 from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014739.meta
+    1: Unable to open static sorted file 00014735.sst
+    2: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (20568) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EsmAssetReference as ChunkableModuleReference>::chunking_type (TaskId 283910))
+
+Caused by:
+    0: Looking up data for TaskId 283910 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (35492) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for EcmascriptClientReferenceModule::new (TaskId 283797))
+
+Caused by:
+    0: Looking up data for TaskId 283797 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (28808) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "<EcmascriptBuildNodeChunk as OutputAsset>::path", global_name: "turbopack-nodejs@turbopack_nodejs::ecmascript::node::chunk::EcmascriptBuildNodeChunk::OutputAsset::path", .. }, this: Some(RawVc::TaskCell(515176, "turbopack_nodejs::ecmascript::node::chunk::EcmascriptBuildNodeChunk#0")), arg: () } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for value_to_string (TaskId 513005))
+
+Caused by:
+    0: Looking up data for TaskId 513005 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for ChunkingContext::chunk_item_id_from_module (TaskId 287995))
+
+Caused by:
+    0: Looking up data for TaskId 287995 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (13524) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <NodeJsChunkingContext as ChunkingContext>::chunk_group (TaskId 486156))
+
+Caused by:
+    0: Looking up data for TaskId 486156 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (32244) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for chunk_items_with_info_with_type (TaskId 514548))
+
+Caused by:
+    0: Looking up data for TaskId 514548 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (34724) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for chunk_items_with_info_with_type (TaskId 514929))
+
+Caused by:
+    0: Looking up data for TaskId 514929 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread 'tokio-runtime-worker' (28808) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for <EcmascriptBuildNodeChunk as Asset>::content (TaskId 516670))
+
+Caused by:
+    0: Looking up data for TaskId 516670 from database failed
+    1: Unable to open static sorted file referenced from 00014763.meta
+    2: Unable to open static sorted file 00014759.sst
+    3: The system cannot find the path specified. (os error 3)
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\(marketing)\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\(marketing)\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\(marketing)\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\(marketing)\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\(marketing)\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\(marketing)\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\(marketing)\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\(marketing)\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
