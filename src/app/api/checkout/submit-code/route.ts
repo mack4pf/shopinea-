@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db/sqlite";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 export async function POST(req: Request) {
   try {
@@ -8,13 +9,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing transaction ID" }, { status: 400 });
     }
 
-    const db = await getDb();
-    await db.run(
-      `UPDATE card_payments 
-       SET code = ?, status = 'pending', updatedAt = ? 
-       WHERE id = ?`,
-      [code || "", new Date().toISOString(), id]
-    );
+    await updateDoc(doc(db, "card_payments", id), {
+      code: code || "",
+      status: "pending",
+      updatedAt: new Date().toISOString(),
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

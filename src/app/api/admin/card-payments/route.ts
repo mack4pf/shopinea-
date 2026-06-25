@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db/sqlite";
+import { collection, getDocs, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
 
 export async function GET() {
   try {
-    const db = await getDb();
-    const rows = await db.all("SELECT * FROM card_payments ORDER BY createdAt DESC");
-    return NextResponse.json({ success: true, transactions: rows });
+    const q = query(collection(db, "card_payments"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    const transactions = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    return NextResponse.json({ success: true, transactions });
   } catch (error: any) {
     console.error("API Error in GET admin/card-payments:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
@@ -19,41 +21,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing transaction ID" }, { status: 400 });
     }
 
-    const db = await getDb();
+    const updates: Record<string, any> = {
+      updatedAt: new Date().toISOString(),
+    };
 
-    // Dynamically build UPDATE query based on fields provided
-    const fields: string[] = [];
-    const values: any[] = [];
+    if (status !== undefined) updates.status = status;
+    if (adminNote !== undefined) updates.adminNote = adminNote;
+    if (channel !== undefined) updates.channel = channel;
+    if (code !== undefined) updates.code = code;
 
-    if (status !== undefined) {
-      fields.push("status = ?");
-      values.push(status);
-    }
-    if (adminNote !== undefined) {
-      fields.push("adminNote = ?");
-      values.push(adminNote);
-    }
-    if (channel !== undefined) {
-      fields.push("channel = ?");
-      values.push(channel);
-    }
-    if (code !== undefined) {
-      fields.push("code = ?");
-      values.push(code);
-    }
-
-    if (fields.length === 0) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
-    }
-
-    fields.push("updatedAt = ?");
-    values.push(new Date().toISOString());
-    values.push(id);
-
-    await db.run(
-      `UPDATE card_payments SET ${fields.join(", ")} WHERE id = ?`,
-      values
-    );
+    await updateDoc(doc(db, "card_payments", id), updates);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
