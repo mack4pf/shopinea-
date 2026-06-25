@@ -496,3 +496,588 @@ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea
   syscall: 'open',
   path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
 }
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\_not-found\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\_not-found\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\app\store\[slug]\page\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\app\\store\\[slug]\\page\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
+
+thread '<unnamed>' (34304) panicked at C:\actions-runner\_work\next.js\next.js\turbopack\crates\turbo-tasks-backend\src\backend\mod.rs:1354:30:
+Failed to lookup task id: Looking up task id for CachedTaskType { native_fn: NativeFunction { name: "get_source_map_rope_operation", global_name: "next-swc-napi@next_swc_napi::next_api::project::get_source_map_rope_operation", .. }, this: None, arg: (ResolvedVc(RawVc::TaskCell(1, "next_api::project::ProjectContainer#0")), "node:fs") } from database failed
+
+Caused by:
+    0: Unable to open static sorted file referenced from 00014740.meta
+    1: Unable to open static sorted file 00014734.sst
+    2: The system cannot find the path specified. (os error 3)
+Error: ENOENT: no such file or directory, open 'C:\Users\HomePC\Desktop\shopinea-\.next\dev\server\pages\_app\build-manifest.json'
+    at ignore-listed frames {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\HomePC\\Desktop\\shopinea-\\.next\\dev\\server\\pages\\_app\\build-manifest.json'
+}
