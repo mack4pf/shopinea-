@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, CheckCircle2, XCircle, ShieldCheck, CreditCard, RefreshCcw, User, MapPin, KeyRound } from "lucide-react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
 interface DraftState {
@@ -121,6 +121,24 @@ export default function CardPaymentsPage() {
           "cardVerification.adminNote": finalNote,
         };
         await updateDoc(doc(db, "transactions", tx.id), fbUpdate);
+        if (tx.orderId) {
+          await updateDoc(doc(db, "orders", tx.orderId), decision === "approved" ? {
+            status: "paid_to_site",
+            paymentStatus: "paid",
+            paidAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          } : decision === "declined" ? {
+            status: "payment_failed",
+            paymentStatus: "failed",
+            cancelledAt: serverTimestamp(),
+            cancellationReason: finalNote || "Card payment declined by admin.",
+            updatedAt: serverTimestamp(),
+          } : {
+            status: "payment_pending",
+            paymentStatus: "pending",
+            updatedAt: serverTimestamp(),
+          });
+        }
       } catch (err) {
         console.warn("Failed to update Firebase fallback sync, ignoring.", err);
       }

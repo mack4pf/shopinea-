@@ -31,7 +31,9 @@ import {
     BarChart3,
     Package,
     LockKeyhole,
-    UnlockKeyhole
+    UnlockKeyhole,
+    Bot,
+    Globe
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, cn } from "@/components/ui/button";
@@ -42,13 +44,9 @@ import { Modal } from "@/components/ui/modal";
 import { where, addDoc, serverTimestamp, getDoc, collection, doc, getDocs, increment, orderBy, query, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase/config";
 import { useState, useEffect } from "react";
+import { SUBSCRIPTION_PLANS, getPlanExpiryDate, getSubscriptionPlan } from "@/lib/plans";
 
-const ADMIN_PAYMENT_PLANS = [
-    { id: "pro_300", name: "Starter", aiCredits: 0, adCredits: 25, maxStores: 1 },
-    { id: "elite_500", name: "Professional", aiCredits: 200, adCredits: 75, maxStores: 3 },
-    { id: "venture_1200", name: "Scale", aiCredits: 750, adCredits: 250, maxStores: 10 },
-    { id: "enterprise_5000", name: "Enterprise", aiCredits: 2500, adCredits: 1000, maxStores: 999 },
-];
+const ADMIN_PAYMENT_PLANS = SUBSCRIPTION_PLANS;
 
 const money = (value: number) => `$${Number(value || 0).toLocaleString()}`;
 const supplierCostFor = (user: any) => Math.max(0, Number(user?.totalSales || 0) - Number(user?.totalProfit || 0));
@@ -94,6 +92,9 @@ export default function UserMatrixPage() {
     const [manualPaymentNote, setManualPaymentNote] = useState("");
     const [manualPaymentPlanId, setManualPaymentPlanId] = useState(ADMIN_PAYMENT_PLANS[0].id);
     const [manualPaymentSaving, setManualPaymentSaving] = useState(false);
+    const [quickPlanId, setQuickPlanId] = useState(ADMIN_PAYMENT_PLANS[0].id);
+    const [activatingPlan, setActivatingPlan] = useState(false);
+    const [userCustomStoreRequests, setUserCustomStoreRequests] = useState<any[]>([]);
     const [lockSavingField, setLockSavingField] = useState<string | null>(null);
 
     // Sales Simulator
@@ -184,6 +185,13 @@ export default function UserMatrixPage() {
             const uniqueProducts = Array.from(new Set(products.map(p => p.id)))
                 .map(id => products.find(p => p.id === id));
             setUserProducts(uniqueProducts);
+
+            const customStoreSnap = await getDocs(query(
+                collection(db, "custom_store_requests"),
+                where("userId", "==", user.id),
+                orderBy("createdAt", "desc")
+            ));
+            setUserCustomStoreRequests(customStoreSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
         } catch (err) {
             console.error(err);
@@ -457,7 +465,7 @@ export default function UserMatrixPage() {
                 userUpdates.maxStores = selectedPlan.maxStores;
                 userUpdates.multipleStoresEnabled = selectedPlan.maxStores > 1;
                 userUpdates.planStartDate = serverTimestamp();
-                userUpdates.planExpiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                userUpdates.planExpiryDate = getPlanExpiryDate(selectedPlan.id);
             }
 
             await updateDoc(doc(db, "users", selectedUser.id), userUpdates);
@@ -516,6 +524,71 @@ export default function UserMatrixPage() {
             toast.error("Failed to record payment.");
         } finally {
             setManualPaymentSaving(false);
+        }
+    };
+
+    const activateSubscriptionForSelectedUser = async () => {
+        if (!selectedUser) return;
+        const selectedPlan = getSubscriptionPlan(quickPlanId);
+        if (!confirm(`Activate ${selectedPlan.name} for ${selectedUser.email || selectedUser.displayName || "this user"}?`)) return;
+
+        setActivatingPlan(true);
+        try {
+            await updateDoc(doc(db, "users", selectedUser.id), {
+                plan: selectedPlan.id,
+                planName: selectedPlan.name,
+                aiCredits: increment(selectedPlan.aiCredits),
+                adWalletBalance: increment(selectedPlan.adCredits),
+                adsCreditBalance: increment(selectedPlan.adCredits),
+                monthlyAdsCredit: selectedPlan.adCredits,
+                maxStores: selectedPlan.maxStores,
+                multipleStoresEnabled: selectedPlan.maxStores > 1,
+                customDomainEnabled: selectedPlan.id !== "pro_300",
+                aiStoreBuilderEnabled: selectedPlan.id !== "pro_300",
+                customStoreEnabled: ["venture_1200", "enterprise_5000"].includes(selectedPlan.id),
+                planStartDate: serverTimestamp(),
+                planExpiryDate: getPlanExpiryDate(selectedPlan.id),
+                updatedAt: serverTimestamp(),
+            });
+
+            await addDoc(collection(db, "transactions"), {
+                userId: selectedUser.id,
+                userEmail: selectedUser.email || null,
+                type: "subscription_activation",
+                amount: selectedPlan.price,
+                status: "completed",
+                method: "Admin activation",
+                reference: `ADMIN-ACTIVATE-${Date.now()}`,
+                description: `${selectedPlan.name} subscription activated by admin`,
+                source: "admin_subscription_activation",
+                createdBy: auth.currentUser?.uid || "admin",
+                planId: selectedPlan.id,
+                planName: selectedPlan.name,
+                aiCredits: selectedPlan.aiCredits,
+                adCredits: selectedPlan.adCredits,
+                maxStores: selectedPlan.maxStores,
+                createdAt: serverTimestamp(),
+                approvedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            await addDoc(collection(db, "notifications"), {
+                userId: selectedUser.id,
+                type: "subscription",
+                title: `${selectedPlan.name} activated`,
+                description: `Your ${selectedPlan.name} subscription is active. AI store tools and plan benefits are now available.`,
+                read: false,
+                createdAt: serverTimestamp(),
+            });
+
+            toast.success(`${selectedPlan.name} activated.`);
+            await fetchUsers();
+            await fetchUserDetails({ ...selectedUser, plan: selectedPlan.id, planName: selectedPlan.name });
+        } catch (err) {
+            console.error(err);
+            toast.error("Could not activate subscription.");
+        } finally {
+            setActivatingPlan(false);
         }
     };
 
@@ -998,6 +1071,77 @@ export default function UserMatrixPage() {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div className="bg-blue-500/[0.04] border border-blue-500/15 p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Crown className="w-4 h-4 text-blue-300" />
+                                <h3 className="text-sm font-semibold text-white">Activate Subscription</h3>
+                                <span className="ml-auto text-[10px] text-blue-200/70">No buyer checkout required</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+                                <select
+                                    value={quickPlanId}
+                                    onChange={(e) => setQuickPlanId(e.target.value)}
+                                    className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm px-3 outline-none focus:border-blue-500/40"
+                                >
+                                    {ADMIN_PAYMENT_PLANS.map(plan => (
+                                        <option key={plan.id} value={plan.id} className="bg-zinc-900">
+                                            {plan.name} - ${plan.price.toLocaleString()}{plan.billingLabel} - {plan.maxStores} store{plan.maxStores === 1 ? "" : "s"}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={activateSubscriptionForSelectedUser}
+                                    disabled={activatingPlan}
+                                    className="h-11 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-bold flex items-center justify-center gap-2"
+                                >
+                                    {activatingPlan ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                    Activate
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                {["AI to run store", "Custom domain", "Custom store landing page"].map(item => (
+                                    <div key={item} className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2 text-xs text-zinc-300">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                        {item}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-violet-500/[0.04] border border-violet-500/15 p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Bot className="w-4 h-4 text-violet-300" />
+                                <h3 className="text-sm font-semibold text-white">Custom Store Requests</h3>
+                                <span className="ml-auto text-[10px] text-violet-200/70">{userCustomStoreRequests.length} request{userCustomStoreRequests.length === 1 ? "" : "s"}</span>
+                            </div>
+                            {userCustomStoreRequests.length === 0 ? (
+                                <p className="text-xs text-zinc-600 py-3 text-center border border-dashed border-white/[0.08] rounded-lg">No AI custom-store requests from this user yet.</p>
+                            ) : (
+                                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                    {userCustomStoreRequests.map(request => {
+                                        const createdAt = request.createdAt?.toDate ? request.createdAt.toDate() : (request.createdAt ? new Date(request.createdAt) : null);
+                                        return (
+                                            <div key={request.id} className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 space-y-2">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <Globe className="w-3.5 h-3.5 text-violet-300 shrink-0" />
+                                                        <p className="text-xs font-semibold text-white truncate">{request.storeName || selectedUser.storeName || "Custom store"}</p>
+                                                    </div>
+                                                    <span className="text-[10px] text-zinc-500 shrink-0">{createdAt ? createdAt.toLocaleString() : "Recent"}</span>
+                                                </div>
+                                                <p className="text-xs text-zinc-400 leading-5 whitespace-pre-wrap">{request.prompt}</p>
+                                                <div className="flex flex-wrap gap-2 text-[10px] text-zinc-500">
+                                                    <span className="rounded bg-white/[0.04] px-2 py-1">Status: {request.status || "submitted"}</span>
+                                                    <span className="rounded bg-white/[0.04] px-2 py-1">Plan: {request.planName || selectedUser.planName || "Free"}</span>
+                                                    <span className="rounded bg-white/[0.04] px-2 py-1">ETA: 3-24 hours</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-emerald-500/[0.04] border border-emerald-500/15 p-5 rounded-xl space-y-4">

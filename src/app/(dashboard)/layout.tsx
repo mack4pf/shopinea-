@@ -121,7 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const currencySymbol = getCurrencySymbol(userData?.currency);
 
-    if (userData?.role === "buyer") {
+    if (userData?.role === "buyer" || pathname === "/buyer-orders") {
         return (
             <div className="min-h-screen bg-slate-50 text-slate-950">
                 <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">

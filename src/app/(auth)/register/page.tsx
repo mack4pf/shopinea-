@@ -417,7 +417,7 @@ function RegisterPageInner() {
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-white">2. Platform Description</h3>
-                                    <p>Shopinea is a dropshipping and reseller marketplace connecting suppliers with resellers. We facilitate transactions but are not a party to any agreement between buyers, resellers, and suppliers.</p>
+                                    <p>Shopinea is a legitimate e-commerce infrastructure, dropshipping, reseller, and supplier marketplace platform. We provide storefront tools, order tracking, payment review, subscription tools, product sourcing workflows, AI-assisted store setup features, and administrative support for merchants. We facilitate transactions and platform services, but each reseller, supplier, and buyer remains responsible for the accuracy and legality of their own activity.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-white">3. Account Responsibilities</h3>
@@ -432,23 +432,31 @@ function RegisterPageInner() {
                                     <p>All customer payments are held in escrow and released to the reseller only upon confirmed delivery. Shopinea charges a platform fee as stated in your subscription plan. Fraudulent transactions will result in account suspension and potential legal action.</p>
                                 </section>
                                 <section className="space-y-2">
-                                    <h3 className="text-sm font-bold text-white">6. Prohibited Activities</h3>
+                                    <h3 className="text-sm font-bold text-white">6. Withdrawals, Taxes & Compliance Fees</h3>
+                                    <p>By using Shopinea, you acknowledge that withdrawals may be subject to manual compliance review, payout verification, tax checks, product-related duties, supplier settlement checks, chargeback review, payment gateway requirements, or other lawful administrative requirements. Before a withdrawal is completed, you may be asked to pay or clear applicable taxes, product taxes, duties, compliance fees, outstanding ad debt, supplier costs, subscription balances, or other amounts connected to your products, sales, store, or payout route. Failure to satisfy required obligations may delay, pause, or prevent withdrawal completion.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">7. Legitimacy, Reviews & Public Statements</h3>
+                                    <p>Shopinea operates as a legitimate commercial platform and expects users to communicate truthfully about their experience. Users must not publish false, misleading, defamatory, or bad-faith claims about Shopinea, its merchants, its buyers, or its platform operations. If you have a dispute, you agree to contact support and allow a reasonable review period before making public claims.</p>
+                                </section>
+                                <section className="space-y-2">
+                                    <h3 className="text-sm font-bold text-white">8. Prohibited Activities</h3>
                                     <p>You may not list counterfeit, illegal, or hazardous products. Spam, phishing, or manipulation of the platform's review or ranking systems is strictly prohibited. Automated scraping or API abuse will result in permanent bans.</p>
                                 </section>
                                 <section className="space-y-2">
-                                    <h3 className="text-sm font-bold text-white">7. Termination</h3>
+                                    <h3 className="text-sm font-bold text-white">9. Termination</h3>
                                     <p>Shopinea reserves the right to suspend or terminate any account at any time for violations of these terms, fraudulent activity, or any other reason deemed necessary to protect the platform and its users.</p>
                                 </section>
                                 <section className="space-y-2">
-                                    <h3 className="text-sm font-bold text-white">8. Limitation of Liability</h3>
+                                    <h3 className="text-sm font-bold text-white">10. Limitation of Liability</h3>
                                     <p>Shopinea is not liable for any indirect, incidental, or consequential damages arising from the use or inability to use the platform. Our total liability shall not exceed the fees paid by you in the 30 days preceding the claim.</p>
                                 </section>
                                 <section className="space-y-2">
-                                    <h3 className="text-sm font-bold text-white">9. Changes to Terms</h3>
+                                    <h3 className="text-sm font-bold text-white">11. Changes to Terms</h3>
                                     <p>We may update these terms at any time. Continued use of the platform after changes constitutes acceptance of the updated terms.</p>
                                 </section>
                                 <section className="space-y-2">
-                                    <h3 className="text-sm font-bold text-white">10. Contact</h3>
+                                    <h3 className="text-sm font-bold text-white">12. Contact</h3>
                                     <p>For questions about these terms, contact us at <span className="text-blue-400">support@shopinea.com</span>.</p>
                                 </section>
                             </>

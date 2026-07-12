@@ -20,70 +20,39 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { SUBSCRIPTION_PLANS } from "@/lib/plans";
 
-const plans = [
-    {
-        name: "Starter",
-        price: "300",
+const planMeta: Record<string, { description: string; icon: React.ElementType; color: string; iconColor: string; border: string; popular?: boolean }> = {
+    pro_300: {
         description: "Up to 50 active products.",
-        features: [
-            "Up to 50 active products",
-            "Professional storefront",
-            "Real-time order tracking",
-            "Standard support"
-        ],
         icon: Rocket,
         color: "bg-blue-600/10",
         iconColor: "text-blue-500",
-        border: "border-blue-500/20"
+        border: "border-blue-500/20",
     },
-    {
-        name: "Professional",
-        price: "500",
-        description: "Unlimited products with advanced intelligence.",
-        features: [
-            "Unlimited products",
-            "AI product recommendations",
-            "Advanced sales analytics",
-            "SEO optimization tools"
-        ],
+    elite_500: {
+        description: "Unlimited products with AI store intelligence.",
         icon: Zap,
         color: "bg-indigo-600/10",
         iconColor: "text-indigo-500",
         border: "border-indigo-500/30",
-        popular: true
+        popular: true,
     },
-    {
-        name: "Scale",
-        price: "1,200",
-        description: "For merchants scaling high-volume operations.",
-        features: [
-            "Bulk order processing",
-            "Dedicated account manager",
-            "White-label packaging",
-            "Custom API access"
-        ],
+    venture_1200: {
+        description: "Built for scaling operations.",
         icon: TrendingUp,
         color: "bg-emerald-600/10",
         iconColor: "text-emerald-500",
-        border: "border-emerald-500/20"
+        border: "border-emerald-500/20",
     },
-    {
-        name: "Enterprise",
-        price: "5,000",
+    enterprise_5000: {
         description: "Enterprise-grade infrastructure for large organizations.",
-        features: [
-            "Multi-store management",
-            "Full legal compliance suite",
-            "Automated tax management",
-            "Concierge support 24/7"
-        ],
         icon: Building2,
         color: "bg-purple-600/10",
         iconColor: "text-purple-500",
-        border: "border-purple-500/20"
-    }
-];
+        border: "border-purple-500/20",
+    },
+};
 
 export default function PricingPage() {
     return (
@@ -106,41 +75,44 @@ export default function PricingPage() {
                         <span className="text-zinc-500">pricing for every stage.</span>
                     </h1>
                     <p className="text-lg font-medium text-zinc-500 max-w-2xl mx-auto">
-                        Choose the plan that fits your operation. Transparent monthly pricing with secure in-app payment.
+                        Choose the plan that fits your operation. Scale and Enterprise are yearly plans with custom-store and domain support.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {plans.map((plan) => (
+                    {SUBSCRIPTION_PLANS.map((plan) => {
+                        const meta = planMeta[plan.id];
+                        const Icon = meta.icon;
+                        return (
                         <div 
                             key={plan.name}
                             className={cn(
                                 "group relative bg-zinc-900/40 border rounded-[2rem] p-8 transition-all duration-500 flex flex-col justify-between",
-                                plan.popular 
+                                meta.popular
                                     ? "border-blue-500/50 bg-blue-500/[0.02] shadow-2xl shadow-blue-500/10" 
                                     : "border-white/[0.06] hover:border-white/[0.12] hover:bg-zinc-900/60"
                             )}
                         >
-                            {plan.popular && (
+                            {meta.popular && (
                                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-blue-600 rounded-full shadow-lg shadow-blue-500/20">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-white">Most Recommended</span>
                                 </div>
                             )}
 
                             <div className="space-y-8">
-                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border", plan.color, plan.border)}>
-                                    <plan.icon className={cn("w-7 h-7", plan.iconColor)} />
+                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border", meta.color, meta.border)}>
+                                    <Icon className={cn("w-7 h-7", meta.iconColor)} />
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold text-white tracking-tight">{plan.name}</h3>
                                     <p className="mt-2 text-xs font-medium text-zinc-500 leading-relaxed">
-                                        {plan.description}
+                                        {meta.description}
                                     </p>
                                 </div>
                                 
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-4xl font-bold text-white tracking-tighter">${plan.price}</span>
-                                    <span className="text-sm font-bold text-zinc-600 uppercase tracking-widest">/mo</span>
+                                    <span className="text-4xl font-bold text-white tracking-tighter">${plan.price.toLocaleString()}</span>
+                                    <span className="text-sm font-bold text-zinc-600 uppercase tracking-widest">{plan.billingLabel}</span>
                                 </div>
 
                                 <div className="space-y-4">
@@ -162,7 +134,7 @@ export default function PricingPage() {
                                 <Link href="/dashboard/subscription" className="block">
                                     <Button className={cn(
                                         "w-full h-12 rounded-xl font-bold transition-all gap-2",
-                                        plan.popular 
+                                        meta.popular
                                             ? "bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/20" 
                                             : "bg-white text-zinc-950 hover:bg-zinc-200"
                                     )}>
@@ -172,7 +144,7 @@ export default function PricingPage() {
                                 </Link>
                             </div>
                         </div>
-                    ))}
+                    );})}
                 </div>
 
                 {/* FAQ Section Placeholder / Extra Visuals */}

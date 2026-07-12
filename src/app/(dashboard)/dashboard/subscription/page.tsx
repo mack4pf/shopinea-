@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ElementType } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -8,13 +8,14 @@ import { Crown, Rocket, Zap, Check, Loader2, Building2, TrendingUp } from "lucid
 import { Button } from "@/components/ui/button";
 import { SubscriptionPaymentModal } from "@/components/modals/SubscriptionPaymentModal";
 import { cn } from "@/lib/utils";
+import { SUBSCRIPTION_PLANS } from "@/lib/plans";
 
-const plans = [
-    { id: "pro_300", name: "Starter", price: 300, icon: Rocket, color: "text-blue-400", bg: "bg-blue-500/10", aiCredits: 0, adCredits: 25, maxStores: 1, features: ["Up to 50 active products", "Professional storefront", "Real-time order tracking", "Standard support", "$25 free ads credit monthly"] },
-    { id: "elite_500", name: "Professional", price: 500, icon: Zap, color: "text-violet-400", bg: "bg-violet-500/10", aiCredits: 200, adCredits: 75, maxStores: 3, features: ["Unlimited products", "Multiple stores up to 3", "Website AI credits to run store", "$75 free ads credit monthly", "AI product recommendations", "Advanced sales analytics", "SEO optimization tools"] },
-    { id: "venture_1200", name: "Scale", price: 1200, icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", aiCredits: 750, adCredits: 250, maxStores: 10, features: ["Bulk order processing", "Multiple stores up to 10", "750 website AI credits monthly", "$250 free ads credit monthly", "Dedicated account manager", "White-label packaging", "Custom API access"] },
-    { id: "enterprise_5000", name: "Enterprise", price: 5000, icon: Building2, color: "text-amber-400", bg: "bg-amber-500/10", aiCredits: 2500, adCredits: 1000, maxStores: 999, features: ["Multi-store management", "2,500 website AI credits monthly", "$1,000 free ads credit monthly", "Full legal compliance suite", "Automated tax management", "Concierge support 24/7"] },
-];
+const planVisuals: Record<string, { icon: ElementType; color: string; bg: string }> = {
+    pro_300: { icon: Rocket, color: "text-blue-400", bg: "bg-blue-500/10" },
+    elite_500: { icon: Zap, color: "text-violet-400", bg: "bg-violet-500/10" },
+    venture_1200: { icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    enterprise_5000: { icon: Building2, color: "text-amber-400", bg: "bg-amber-500/10" },
+};
 
 export default function SubscriptionPage() {
     const [user, setUser] = useState<any>(null);
@@ -52,8 +53,10 @@ export default function SubscriptionPage() {
 
             {/* Plans Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {plans.map((plan) => {
+                {SUBSCRIPTION_PLANS.map((plan) => {
                     const isActive = userData?.plan === plan.id;
+                    const visual = planVisuals[plan.id];
+                    const Icon = visual.icon;
                     return (
                         <div key={plan.id}
                             className={cn("bg-white/[0.03] border rounded-xl p-6 flex flex-col transition-all",
@@ -61,13 +64,13 @@ export default function SubscriptionPage() {
                             {isActive && (
                                 <span className="text-[10px] font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md w-fit mb-4">Current Plan</span>
                             )}
-                            <div className={`w-10 h-10 ${plan.bg} rounded-lg flex items-center justify-center mb-4`}>
-                                <plan.icon className={`w-5 h-5 ${plan.color}`} />
+                            <div className={`w-10 h-10 ${visual.bg} rounded-lg flex items-center justify-center mb-4`}>
+                                <Icon className={`w-5 h-5 ${visual.color}`} />
                             </div>
                             <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
                             <div className="flex items-baseline gap-1 mt-1 mb-6">
                                 <span className="text-3xl font-bold text-white">${plan.price.toLocaleString()}</span>
-                                <span className="text-xs text-zinc-500">/month</span>
+                                <span className="text-xs text-zinc-500">{plan.billingLabel}</span>
                             </div>
                             <div className="space-y-3 flex-1 mb-6">
                                 {plan.features.map((f, i) => (
@@ -94,7 +97,7 @@ export default function SubscriptionPage() {
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex items-center justify-between">
                     <div>
                         <p className="text-sm font-medium text-zinc-300">Billing Cycle</p>
-                        <p className="text-xs text-zinc-500 mt-0.5">Your subscription renews monthly via wallet deposit.</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">Scale and Enterprise are yearly plans. Monthly plans renew every 30 days.</p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-zinc-500">Next renewal</p>

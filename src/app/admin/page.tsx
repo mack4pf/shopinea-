@@ -95,14 +95,28 @@ function StatusBadge({ status }: { status: string }) {
     const map: Record<string, string> = {
         delivered: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
         shipped: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+        paid_to_site: "bg-blue-500/10 text-blue-400 border-blue-500/20",
         pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        pending_payment: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        payment_pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
         awaiting_seller_fulfillment: "bg-amber-500/10 text-amber-400 border-amber-500/20",
         awaiting_admin_confirmation: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+        void_no_payment: "bg-red-500/10 text-red-400 border-red-500/20",
+        payment_failed: "bg-red-500/10 text-red-400 border-red-500/20",
         cancelled: "bg-red-500/10 text-red-400 border-red-500/20",
+    };
+    const labels: Record<string, string> = {
+        pending_payment: "Pending payment",
+        payment_pending: "Pending payment",
+        awaiting_admin_confirmation: "Pending payment",
+        paid_to_site: "Processing",
+        awaiting_seller_fulfillment: "Processing",
+        void_no_payment: "Void - no payment",
+        payment_failed: "Payment failed",
     };
     return (
         <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium capitalize", map[status] || "bg-zinc-800 text-zinc-400 border-zinc-700")}>
-            {status?.replace(/_/g, " ") || "unknown"}
+            {labels[status] || status?.replace(/_/g, " ") || "unknown"}
         </span>
     );
 }
@@ -215,6 +229,66 @@ export default function AdminDashboard() {
             toast.success("KYC rejected."); setSelectedKyc(null); fetchData(true);
         } catch { toast.error("Failed to reject KYC."); }
         finally { setProcessingId(null); }
+    };
+
+    const handleApproveOrderPayment = async (order: any) => {
+        if (!confirm(`Approve payment and move order #${order.id.slice(0, 8)} to processing?`)) return;
+        setProcessingId(order.id);
+        try {
+            await updateDoc(doc(db, "orders", order.id), {
+                status: "paid_to_site",
+                paymentStatus: "paid",
+                paidAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            toast.success("Order payment approved. Buyer now sees Processing.");
+            fetchData(true);
+        } catch {
+            toast.error("Failed to approve this order.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleCancelOrderPayment = async (order: any) => {
+        const reason = prompt("Why is this order being voided?", "Void - no payment received.");
+        if (reason === null) return;
+        const finalReason = reason.trim() || "Void - no payment received.";
+        setProcessingId(order.id);
+        try {
+            await updateDoc(doc(db, "orders", order.id), {
+                status: "void_no_payment",
+                paymentStatus: "void",
+                cancelledAt: serverTimestamp(),
+                cancellationReason: finalReason,
+                updatedAt: serverTimestamp(),
+            });
+            if (order.customerEmail) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: order.customerEmail,
+                        data: {
+                            subject: "Order voided - no payment received",
+                            html: `<p>Hello ${order.customerName || "there"},</p>
+                                <p>Your order for <strong>${order.productName || "your item"}</strong> has been voided because no payment was received or the payment could not be confirmed.</p>
+                                <p><strong>Order:</strong> #${order.id.slice(0, 8)}</p>
+                                <p><strong>Status:</strong> Void - no payment received</p>
+                                <p><strong>Reason:</strong> ${finalReason}</p>
+                                <p>No shipment will be processed for this order. If you believe this is a mistake, please contact support or place the order again with a confirmed payment.</p>`
+                        }
+                    }),
+                });
+            }
+            toast.success("Order voided and customer notified when email is available.");
+            fetchData(true);
+        } catch {
+            toast.error("Failed to void this order.");
+        } finally {
+            setProcessingId(null);
+        }
     };
 
     const handleRunSimulator = async () => {
@@ -357,7 +431,7 @@ export default function AdminDashboard() {
 
     const totalRevenue   = orders.reduce((acc, o) => acc + (o.resellPrice || 0), 0);
     const totalWallets   = allUsers.reduce((acc, u) => acc + (u.walletBalance || 0), 0);
-    const pendingOrders  = orders.filter(o => ["pending","shipped","awaiting_seller_fulfillment","awaiting_admin_confirmation"].includes(o.status)).length;
+    const pendingOrders  = orders.filter(o => ["pending", "pending_payment", "payment_pending", "awaiting_seller_fulfillment", "awaiting_admin_confirmation"].includes(o.status)).length;
     const deliveredOrders = orders.filter(o => o.status === "delivered").length;
     const filteredOrders = orderSearch
         ? orders.filter(o =>
@@ -638,14 +712,14 @@ export default function AdminDashboard() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-white/[0.04]">
-                                    {["Order ID", "Customer", "Product", "Amount", "Profit", "Status"].map(h => (
+                                    {["Order ID", "Customer", "Product", "Amount", "Profit", "Status", "Action"].map(h => (
                                         <th key={h} className="px-6 py-3 text-left text-[11px] font-semibold text-zinc-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/[0.03]">
                                 {filteredOrders.length === 0 ? (
-                                    <tr><td colSpan={6} className="px-6 py-12 text-center text-xs text-zinc-600">No orders found</td></tr>
+                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-xs text-zinc-600">No orders found</td></tr>
                                 ) : filteredOrders.map(o => (
                                     <tr key={o.id} className="hover:bg-white/[0.02] transition-colors">
                                         <td className="px-6 py-3.5"><span className="text-[11px] text-zinc-600 font-mono">{o.id.slice(0, 8)}…</span></td>
@@ -663,6 +737,36 @@ export default function AdminDashboard() {
                                             <span className="text-[13px] font-semibold text-emerald-400">+${(o.resellerProfit || 0).toFixed(2)}</span>
                                         </td>
                                         <td className="px-6 py-3.5"><StatusBadge status={o.status} /></td>
+                                        <td className="px-6 py-3.5 whitespace-nowrap">
+                                            {["pending_payment", "payment_pending", "awaiting_admin_confirmation", "pending"].includes(o.status) ? (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleApproveOrderPayment(o)}
+                                                        disabled={processingId === o.id}
+                                                        className="h-8 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold transition-colors"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCancelOrderPayment(o)}
+                                                        disabled={processingId === o.id}
+                                                        className="h-8 px-3 rounded-lg border border-red-500/25 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-300 text-xs font-bold transition-colors"
+                                                    >
+                                                        Void
+                                                    </button>
+                                                </div>
+                                            ) : ["payment_failed", "void_no_payment"].includes(o.status) ? (
+                                                <span className="text-xs text-red-400">Voided</span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleCancelOrderPayment(o)}
+                                                    disabled={processingId === o.id || ["delivered", "cancelled", "void_no_payment"].includes(o.status)}
+                                                    className="h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.04] hover:border-red-500/25 hover:text-red-300 disabled:opacity-40 text-zinc-400 text-xs font-bold transition-colors"
+                                                >
+                                                    Void
+                                                </button>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

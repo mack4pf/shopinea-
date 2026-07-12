@@ -8,8 +8,10 @@ import Image from "next/image";
 import Link from "next/link";
 import {
     ArrowLeft,
+    AlertCircle,
     CheckCircle2,
     Clock,
+    CreditCard,
     ExternalLink,
     Loader2,
     MapPin,
@@ -17,16 +19,22 @@ import {
     Search,
     ShoppingBag,
     Truck,
+    XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const statusMap: Record<string, { label: string; tone: string; step: number }> = {
-    completed: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4 },
-    delivered: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4 },
-    shipped: { label: "On the way", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 3 },
-    awaiting_seller_fulfillment: { label: "Preparing", tone: "bg-violet-50 text-violet-700 border-violet-200", step: 2 },
-    paid_to_site: { label: "Processing", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 2 },
-    awaiting_admin_confirmation: { label: "Processing", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 2 },
+const statusMap: Record<string, { label: string; tone: string; step: number; paymentLabel: string }> = {
+    pending_payment: { label: "Pending payment", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 1, paymentLabel: "Pending" },
+    payment_pending: { label: "Pending payment", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 1, paymentLabel: "Pending" },
+    awaiting_admin_confirmation: { label: "Pending payment", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 1, paymentLabel: "Pending" },
+    void_no_payment: { label: "Void - no payment", tone: "bg-rose-50 text-rose-700 border-rose-200", step: 1, paymentLabel: "Void" },
+    payment_failed: { label: "Payment failed", tone: "bg-rose-50 text-rose-700 border-rose-200", step: 1, paymentLabel: "Failed" },
+    cancelled: { label: "Cancelled", tone: "bg-rose-50 text-rose-700 border-rose-200", step: 1, paymentLabel: "Cancelled" },
+    paid_to_site: { label: "Processing", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 2, paymentLabel: "Paid" },
+    completed: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4, paymentLabel: "Paid" },
+    delivered: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4, paymentLabel: "Paid" },
+    shipped: { label: "On the way", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 3, paymentLabel: "Paid" },
+    awaiting_seller_fulfillment: { label: "Processing", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 2, paymentLabel: "Pay on delivery" },
 };
 
 const steps = ["Placed", "Processing", "Shipped", "Delivered"];
@@ -98,6 +106,10 @@ export default function BuyerOrdersPage() {
     }, [orders, searchQuery]);
 
     const totalSpent = orders.reduce((sum, order) => sum + Number(order.resellPrice || 0), 0);
+    const pendingPaymentCount = orders.filter(order => ["pending_payment", "payment_pending", "awaiting_admin_confirmation"].includes(order.status)).length;
+    const processingCount = orders.filter(order => ["paid_to_site", "awaiting_seller_fulfillment", "shipped"].includes(order.status)).length;
+    const completedCount = orders.filter(order => ["completed", "delivered"].includes(order.status)).length;
+    const failedCount = orders.filter(order => ["payment_failed", "void_no_payment", "cancelled"].includes(order.status)).length;
 
     if (loading) {
         return (
@@ -134,7 +146,7 @@ export default function BuyerOrdersPage() {
                         <h1 className="text-3xl font-black tracking-tight text-slate-950">Your orders</h1>
                         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Track purchases, revisit stores, and follow delivery updates.</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 sm:w-80">
+                    <div className="grid grid-cols-2 gap-3 sm:w-96">
                         <div className="rounded-lg bg-slate-50 p-4">
                             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Orders</p>
                             <p className="mt-1 text-2xl font-black text-slate-950">{orders.length}</p>
@@ -145,6 +157,30 @@ export default function BuyerOrdersPage() {
                         </div>
                     </div>
                 </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-4">
+                    {[
+                        { label: "Pending payment", value: pendingPaymentCount, icon: CreditCard, tone: "text-amber-600 bg-amber-50" },
+                        { label: "Processing", value: processingCount, icon: Truck, tone: "text-blue-600 bg-blue-50" },
+                        { label: "Completed", value: completedCount, icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-50" },
+                        { label: "Failed", value: failedCount, icon: XCircle, tone: "text-rose-600 bg-rose-50" },
+                    ].map(item => (
+                        <div key={item.label} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
+                            <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", item.tone)}>
+                                <item.icon className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-black text-slate-950">{item.value}</p>
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{item.label}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                {pendingPaymentCount > 0 && (
+                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <p className="font-semibold">Some orders are waiting for payment approval. Admin will move them to Processing after payment is confirmed, or mark them failed if payment does not go through.</p>
+                    </div>
+                )}
                 <div className="mt-6 flex max-w-xl items-center rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5">
                     <Search className="h-4 w-4 text-slate-400" />
                     <input
@@ -170,7 +206,7 @@ export default function BuyerOrdersPage() {
             ) : (
                 <div className="space-y-4">
                     {filteredOrders.map(order => {
-                        const status = statusMap[order.status] || { label: "Pending", tone: "bg-slate-50 text-slate-600 border-slate-200", step: 1 };
+                        const status = statusMap[order.status] || { label: "Pending", tone: "bg-slate-50 text-slate-600 border-slate-200", step: 1, paymentLabel: "Pending" };
                         const createdAt = order.createdAt?.toDate ? order.createdAt.toDate() : (order.createdAt ? new Date(order.createdAt) : null);
                         const sellerStore = sellerStores[order.resellerId] || {};
                         const storeSlug = order.storeSlug || sellerStore.storeSlug;
@@ -212,11 +248,12 @@ export default function BuyerOrdersPage() {
                                     <div className="space-y-5">
                                         <div className="grid grid-cols-4 gap-2">
                                             {steps.map((step, index) => {
-                                                const done = index + 1 <= status.step;
+                                                const failed = ["payment_failed", "void_no_payment", "cancelled"].includes(order.status);
+                                                const done = !failed && index + 1 <= status.step;
                                                 return (
                                                     <div key={step} className="space-y-2">
-                                                        <div className={cn("h-2 rounded-full", done ? "bg-slate-950" : "bg-slate-200")} />
-                                                        <p className={cn("text-[11px] font-black", done ? "text-slate-950" : "text-slate-400")}>{step}</p>
+                                                        <div className={cn("h-2 rounded-full", failed && index === 0 ? "bg-rose-500" : done ? "bg-slate-950" : "bg-slate-200")} />
+                                                        <p className={cn("text-[11px] font-black", failed && index === 0 ? "text-rose-600" : done ? "text-slate-950" : "text-slate-400")}>{step}</p>
                                                     </div>
                                                 );
                                             })}
@@ -238,9 +275,14 @@ export default function BuyerOrdersPage() {
                                             <div className="rounded-lg bg-slate-50 p-4">
                                                 <CheckCircle2 className="h-4 w-4 text-slate-400" />
                                                 <p className="mt-2 text-xs font-bold text-slate-400">Payment</p>
-                                                <p className="mt-0.5 text-sm font-black text-slate-900">{order.paymentType || "Online"}</p>
+                                                <p className="mt-0.5 text-sm font-black text-slate-900">{status.paymentLabel}</p>
                                             </div>
                                         </div>
+                                        {order.cancellationReason && (
+                                            <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+                                                {order.cancellationReason}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="rounded-lg border border-slate-200 p-4">
@@ -255,8 +297,11 @@ export default function BuyerOrdersPage() {
                                             View seller store
                                             <ExternalLink className="h-4 w-4" />
                                         </Link>
-                                        <button className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50">
-                                            Track package
+                                        <button
+                                            disabled={["pending_payment", "payment_pending", "payment_failed", "void_no_payment", "cancelled"].includes(order.status)}
+                                            className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+                                        >
+                                            {["pending_payment", "payment_pending"].includes(order.status) ? "Waiting for payment" : order.status === "void_no_payment" ? "Order voided" : "Track package"}
                                         </button>
                                     </div>
                                 </div>

@@ -342,6 +342,25 @@ export default function StorePage() {
                     </div>
                 </section>
 
+                <section className="grid gap-3 md:grid-cols-4">
+                    {[
+                        { label: "Verified merchant", value: "Identity reviewed", icon: CheckCircle2 },
+                        { label: "Payment review", value: "Escrow protected", icon: ShieldCheck },
+                        { label: "Tracked delivery", value: "Order updates", icon: Truck },
+                        { label: "Buyer support", value: "Secure assistance", icon: MessageCircle },
+                    ].map((item) => (
+                        <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                                <item.icon className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-slate-900">{item.label}</p>
+                                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{item.value}</p>
+                            </div>
+                        </div>
+                    ))}
+                </section>
+
                 {/* Products Section */}
                 <div id="collection" className="space-y-12">
                     {/* Top Sellers strip */}
@@ -436,9 +455,9 @@ export default function StorePage() {
                 {/* Features Footer */}
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-8 py-20 border-t border-slate-200">
                     {[
-                        { title: "Escrow Protection", desc: "Your payment is held securely and only released once your order is successfully delivered.", icon: ShieldCheck },
-                        { title: "Verified Sourcing", desc: "Every product in this store is sourced from quality-vetted global manufacturers.", icon: ShoppingCart },
-                        { title: "24/7 Assistance", desc: "Need help? Contact the merchant directly through our secure messaging system.", icon: MessageCircle }
+                        { title: "Escrow Protection", desc: "Orders are reviewed through Shopinea payment and status workflows before fulfillment continues.", icon: ShieldCheck },
+                        { title: "Verified Sourcing", desc: "Products are managed through Shopinea storefront tools with stock, pricing, and order history visibility.", icon: ShoppingCart },
+                        { title: "Buyer Assistance", desc: "Track your orders from the buyer page and contact support if payment or delivery needs review.", icon: MessageCircle }
                     ].map((f, i) => (
                         <div key={i} className="flex flex-col items-center text-center gap-4 p-8 bg-white rounded-3xl border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">
                             <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-2">
@@ -472,7 +491,15 @@ export default function StorePage() {
             />
 
             <footer className="border-t border-slate-200 p-12 text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
-                &copy; 2026 {storeUser.storeName}. Powered by Shopinea.
+                <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
+                    <p>&copy; 2026 {storeUser.storeName}. Powered by Shopinea.</p>
+                    <div className="flex flex-wrap items-center justify-center gap-4 tracking-[0.2em]">
+                        <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms</Link>
+                        <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy</Link>
+                        <Link href="/support" className="hover:text-slate-900 transition-colors">Support</Link>
+                        <Link href="/buyer-orders" className="hover:text-slate-900 transition-colors">Track Orders</Link>
+                    </div>
+                </div>
             </footer>
         </div>
     );

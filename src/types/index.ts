@@ -53,7 +53,7 @@ export interface Order {
         priceAtPurchase: number;
     }[];
     totalAmount: number;
-    status: 'pending' | 'aggregated' | 'shipped' | 'delivered' | 'cancelled';
+    status: 'pending' | 'pending_payment' | 'payment_pending' | 'payment_failed' | 'void_no_payment' | 'paid_to_site' | 'awaiting_admin_confirmation' | 'awaiting_seller_fulfillment' | 'aggregated' | 'shipped' | 'delivered' | 'cancelled';
     createdAt: number;
     shippingAddress: {
         street: string;

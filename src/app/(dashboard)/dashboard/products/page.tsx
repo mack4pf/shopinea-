@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
     Package, Plus, Search, ExternalLink, Copy, Megaphone,
-    TrendingUp, Loader2, Eye, Palette, LayoutTemplate, Save, ImageIcon, Trash2
+    TrendingUp, Loader2, Eye, Palette, LayoutTemplate, Save, ImageIcon, Trash2,
+    Bot, Send, Crown, Clock, Globe
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { getDefaultStock, STORE_LAYOUTS, STORE_TEMPLATES, STORE_THEME_COLORS } from "@/lib/catalog";
+import { Modal } from "@/components/ui/modal";
 
 export default function ProductsPage() {
     const [user, setUser] = useState<any>(null);
@@ -21,6 +23,15 @@ export default function ProductsPage() {
     const [customizing, setCustomizing] = useState(false);
     const [creatingStore, setCreatingStore] = useState(false);
     const [removingProductId, setRemovingProductId] = useState<string | null>(null);
+    const [customStoreModalOpen, setCustomStoreModalOpen] = useState(false);
+    const [customStorePrompt, setCustomStorePrompt] = useState("");
+    const [customStoreSubmitting, setCustomStoreSubmitting] = useState(false);
+    const [customStoreMessages, setCustomStoreMessages] = useState([
+        {
+            role: "assistant",
+            content: "Hi, I am your Shopinea AI store builder. Tell me the design, colors, sections, products, domain ideas, and feeling you want. Once you submit, our team can review it and start the custom store build.",
+        },
+    ]);
     const [storeDraft, setStoreDraft] = useState({ storeName: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid", storeLogo: "" });
 
     const getCurrencySymbol = (code: string = "USD") => {
@@ -164,6 +175,68 @@ export default function ProductsPage() {
         }
     };
 
+    const hasActiveSubscription = !!userData?.plan && userData?.plan !== "free";
+    const hasCustomStoreAccess = hasActiveSubscription && (userData?.aiStoreBuilderEnabled || userData?.customStoreEnabled || ["elite_500", "venture_1200", "enterprise_5000"].includes(userData?.plan));
+
+    const openCustomStoreBuilder = () => {
+        if (!hasActiveSubscription) {
+            toast.error("Subscribe to a plan to use the AI custom store builder.");
+            window.location.href = "/dashboard/subscription";
+            return;
+        }
+        setCustomStoreModalOpen(true);
+    };
+
+    const submitCustomStoreRequest = async () => {
+        if (!user?.uid) return;
+        const prompt = customStorePrompt.trim();
+        if (!prompt) {
+            toast.error("Tell the AI what you want for your custom store.");
+            return;
+        }
+        if (!hasCustomStoreAccess) {
+            toast.error("Upgrade your plan to unlock custom store builds.");
+            window.location.href = "/dashboard/subscription";
+            return;
+        }
+
+        setCustomStoreSubmitting(true);
+        setCustomStoreMessages(prev => [...prev, { role: "user", content: prompt }]);
+        try {
+            await addDoc(collection(db, "custom_store_requests"), {
+                userId: user.uid,
+                userEmail: userData?.email || user.email || null,
+                userName: userData?.displayName || userData?.fullName || user.displayName || "Merchant",
+                storeName: storeDraft.storeName || userData?.storeName || "My Store",
+                storeSlug: userData?.storeSlug || "",
+                planId: userData?.plan || "free",
+                planName: userData?.planName || "Free",
+                prompt,
+                status: "submitted",
+                estimatedCompletionWindow: "3-24 hours",
+                source: "products_ai_custom_store",
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            await updateDoc(doc(db, "users", user.uid), {
+                lastCustomStoreRequestStatus: "submitted",
+                lastCustomStoreRequestAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            setCustomStoreMessages(prev => [...prev, {
+                role: "assistant",
+                content: "Perfect. Shopinea AI has accepted your custom-store brief. The store build queue usually completes custom landing pages, domain setup notes, and store layout work within 3 to 24 hours. Our admin team can now see your exact request and continue the setup.",
+            }]);
+            setCustomStorePrompt("");
+            toast.success("Custom store request sent to admin.");
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not submit custom store request.");
+        } finally {
+            setCustomStoreSubmitting(false);
+        }
+    };
+
     if (loading) return (
         <div className="h-[80vh] flex items-center justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
@@ -276,6 +349,37 @@ export default function ProductsPage() {
                         </div>
                     ))}
                 </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-violet-500/[0.10] via-blue-500/[0.06] to-emerald-500/[0.06] border border-white/[0.08] rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div className="flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center shrink-0">
+                        <Bot className="w-5 h-5 text-violet-300" />
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-semibold text-white">AI custom store builder</h2>
+                        <p className="text-xs text-zinc-400 mt-1 max-w-2xl leading-5">
+                            Describe the custom website, landing page, colors, domain, product sections, and brand feeling you want. Subscribed users can submit a build request and Shopinea starts the custom-store workflow within 3 to 24 hours.
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                            {["AI to run your store", "Custom domain", "Custom landing page", "Admin-reviewed request"].map(item => (
+                                <span key={item} className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] border border-white/[0.07] px-2.5 py-1 text-[10px] font-bold text-zinc-300">
+                                    <Globe className="w-3 h-3 text-emerald-300" />
+                                    {item}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <button
+                    onClick={openCustomStoreBuilder}
+                    className={`h-11 px-5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shrink-0 ${
+                        hasActiveSubscription ? "bg-violet-600 hover:bg-violet-700 text-white" : "bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                    }`}
+                >
+                    {hasActiveSubscription ? <Bot className="w-4 h-4" /> : <Crown className="w-4 h-4" />}
+                    {hasActiveSubscription ? "Start AI Store Builder" : "Subscribe to Unlock"}
+                </button>
             </div>
 
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-5">
@@ -512,6 +616,52 @@ export default function ProductsPage() {
                     })}
                 </div>
             )}
+
+            <Modal isOpen={customStoreModalOpen} onClose={() => setCustomStoreModalOpen(false)} title="AI Custom Store Builder" panelClassName="sm:max-w-2xl">
+                <div className="space-y-4">
+                    <div className="rounded-xl bg-blue-500/[0.07] border border-blue-500/15 p-4 flex items-start gap-3">
+                        <Clock className="w-4 h-4 text-blue-300 mt-0.5 shrink-0" />
+                        <p className="text-xs text-blue-100 leading-5">
+                            Custom store requests are available to subscribed users. Your brief is saved for admin review, and the custom-store landing page workflow takes 3 to 24 hours.
+                        </p>
+                    </div>
+                    <div className="h-72 overflow-y-auto rounded-xl bg-zinc-950/60 border border-white/[0.06] p-4 space-y-3">
+                        {customStoreMessages.map((message, index) => (
+                            <div key={index} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                                <div className={`max-w-[85%] rounded-xl px-4 py-3 text-sm leading-6 ${
+                                    message.role === "user"
+                                        ? "bg-violet-600 text-white"
+                                        : "bg-white/[0.06] border border-white/[0.08] text-zinc-200"
+                                }`}>
+                                    {message.content}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <textarea
+                        value={customStorePrompt}
+                        onChange={(e) => setCustomStorePrompt(e.target.value)}
+                        placeholder="Example: Build me a luxury electronics store with black and emerald colors, a hero section, custom domain idea, product categories, trust badges, fast-shipping message, and a landing page that feels premium."
+                        className="w-full h-32 rounded-xl bg-zinc-950/70 border border-white/[0.08] p-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-violet-500/50 resize-none"
+                    />
+                    <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                            onClick={() => setCustomStoreModalOpen(false)}
+                            className="h-11 flex-1 rounded-lg border border-white/[0.08] bg-white/[0.04] text-sm font-bold text-zinc-300 hover:bg-white/[0.08]"
+                        >
+                            Close
+                        </button>
+                        <button
+                            onClick={submitCustomStoreRequest}
+                            disabled={customStoreSubmitting}
+                            className="h-11 flex-1 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-sm font-bold text-white flex items-center justify-center gap-2"
+                        >
+                            {customStoreSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                            Send to AI Builder
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -76,6 +76,8 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
             await addDoc(collection(db, "subscription_requests"), {
                 userId, userName,
                 planId: plan.id, planName: plan.name, amount: plan.price,
+                billingLabel: plan.billingLabel || "/month",
+                durationDays: plan.durationDays || 30,
                 aiCredits: plan.aiCredits || 0,
                 adCredits: plan.adCredits || 0,
                 maxStores: plan.maxStores || 1,
@@ -103,7 +105,7 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-white leading-tight">Subscribe to {plan.name}</p>
-                            <p className="text-xs text-zinc-500">${plan.price.toLocaleString()}/month</p>
+                            <p className="text-xs text-zinc-500">${plan.price.toLocaleString()}{plan.billingLabel || "/month"}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center transition-colors">
@@ -158,11 +160,11 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                             <div className="flex items-center justify-between p-4 bg-blue-600/[0.07] border border-blue-500/20 rounded-xl">
                                 <div>
                                     <p className="text-xs text-zinc-400 mb-1">Total due today</p>
-                                    <p className="text-2xl font-bold text-white">${plan.price.toLocaleString()}<span className="text-sm font-normal text-zinc-500 ml-1">/mo</span></p>
+                                    <p className="text-2xl font-bold text-white">${plan.price.toLocaleString()}<span className="text-sm font-normal text-zinc-500 ml-1">{plan.billingLabel || "/mo"}</span></p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[11px] text-zinc-500">Billed monthly</p>
-                                    <p className="text-[11px] text-zinc-600 mt-0.5">Cancel anytime</p>
+                                    <p className="text-[11px] text-zinc-500">{(plan.billingLabel || "/month").includes("year") ? "Billed yearly" : "Billed monthly"}</p>
+                                    <p className="text-[11px] text-zinc-600 mt-0.5">Secure manual review</p>
                                 </div>
                             </div>
                             <button onClick={() => setStep(2)}

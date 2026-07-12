@@ -108,7 +108,9 @@ export default function OrdersPage() {
     const filteredOrders = orders.filter(o => {
         const matchesSearch = o.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             o.id.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || o.status === statusFilter;
+        const matchesStatus = statusFilter === 'all' ||
+            o.status === statusFilter ||
+            (statusFilter === 'pending_payment' && ['pending_payment', 'payment_pending', 'awaiting_admin_confirmation'].includes(o.status));
         return matchesSearch && matchesStatus;
     });
 
@@ -117,15 +119,25 @@ export default function OrdersPage() {
             case 'delivered': return 'bg-emerald-500/10 text-emerald-400';
             case 'shipped': return 'bg-blue-500/10 text-blue-400';
             case 'paid_to_site': return 'bg-violet-500/10 text-violet-400';
+            case 'pending_payment':
+            case 'payment_pending':
             case 'awaiting_admin_confirmation': return 'bg-amber-500/10 text-amber-400';
+            case 'payment_failed':
+            case 'void_no_payment':
+            case 'cancelled': return 'bg-rose-500/10 text-rose-400';
             default: return 'bg-zinc-500/10 text-zinc-400';
         }
     };
 
     const getStatusLabel = (status: string) => {
         switch (status) {
-            case 'awaiting_admin_confirmation': return 'Pending';
-            case 'paid_to_site': return 'Confirmed';
+            case 'pending_payment':
+            case 'payment_pending':
+            case 'awaiting_admin_confirmation': return 'Pending payment';
+            case 'void_no_payment': return 'Void - no payment';
+            case 'payment_failed': return 'Payment failed';
+            case 'paid_to_site': return 'Processing';
+            case 'awaiting_seller_fulfillment': return 'Processing';
             case 'shipped': return 'Shipped';
             case 'delivered': return 'Delivered';
             default: return status.replace(/_/g, ' ');
@@ -140,8 +152,8 @@ export default function OrdersPage() {
 
     const statusTabs = [
         { key: 'all', label: 'All' },
-        { key: 'awaiting_admin_confirmation', label: 'Pending' },
-        { key: 'paid_to_site', label: 'Confirmed' },
+        { key: 'pending_payment', label: 'Pending Pay' },
+        { key: 'paid_to_site', label: 'Processing' },
         { key: 'shipped', label: 'Shipped' },
         { key: 'delivered', label: 'Delivered' },
     ];
@@ -253,9 +265,9 @@ export default function OrdersPage() {
                                             </span>
                                         </td>
                                         <td className="py-4 px-5 text-right">
-                                            {order.status === 'awaiting_admin_confirmation' && (
+                                            {['pending_payment', 'payment_pending', 'awaiting_admin_confirmation'].includes(order.status) && (
                                                 <span className="text-xs text-amber-400 flex items-center justify-end gap-1.5">
-                                                    <Clock className="w-3.5 h-3.5" /> Verifying...
+                                                    <Clock className="w-3.5 h-3.5" /> Pending payment
                                                 </span>
                                             )}
                                             {order.status === 'paid_to_site' && !order.isPod && (
@@ -280,6 +292,11 @@ export default function OrdersPage() {
                                             {order.status === 'delivered' && (
                                                 <span className="text-xs text-emerald-400 flex items-center justify-end gap-1.5">
                                                     <PackageCheck className="w-3.5 h-3.5" /> Complete
+                                                </span>
+                                            )}
+                                            {['payment_failed', 'void_no_payment', 'cancelled'].includes(order.status) && (
+                                                <span className="text-xs text-rose-400 flex items-center justify-end gap-1.5">
+                                                    <AlertCircle className="w-3.5 h-3.5" /> Voided
                                                 </span>
                                             )}
                                         </td>

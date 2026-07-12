@@ -213,8 +213,9 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                 customerAddress: `${formData.address}, ${formData.city}, ${formData.zip}, ${formData.country}`,
                 deliveryService: "UPS",
                 paymentType: paymentMethod,
+                paymentStatus: paymentMethod === "pod" ? "pay_on_delivery" : "pending",
                 isPod: paymentMethod === "pod",
-                status: paymentMethod === "pod" ? "awaiting_seller_fulfillment" : paymentMethod === "card" ? "payment_pending" : "awaiting_admin_confirmation",
+                status: paymentMethod === "pod" ? "awaiting_seller_fulfillment" : paymentMethod === "card" ? "payment_pending" : "pending_payment",
                 ...(cardPayload ? {
                     cardPayment: {
                         brand: cardPayload.brand,
