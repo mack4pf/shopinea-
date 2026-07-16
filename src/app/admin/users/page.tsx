@@ -50,6 +50,7 @@ const ADMIN_PAYMENT_PLANS = SUBSCRIPTION_PLANS;
 
 const money = (value: number) => `$${Number(value || 0).toLocaleString()}`;
 const supplierCostFor = (user: any) => Math.max(0, Number(user?.totalSales || 0) - Number(user?.totalProfit || 0));
+const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
 
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
@@ -337,10 +338,18 @@ export default function UserMatrixPage() {
         try {
             const views = Number(storeBoostViews) || 0;
             const visits = Number(storeBoostVisits) || 0;
-            const updates: Record<string, any> = {
-                storeViews: increment(views),
-                storeVisits: increment(visits),
-            };
+            const dateKey = todayAnalyticsKey();
+            const updates: Record<string, any> = {};
+            if (views) {
+                updates.storeViews = increment(views);
+                updates.impressions = increment(views);
+                updates["stats.views"] = increment(views);
+                updates[`dailyStoreViews.${dateKey}`] = increment(views);
+            }
+            if (visits) {
+                updates.storeVisits = increment(visits);
+                updates[`dailyStoreVisits.${dateKey}`] = increment(visits);
+            }
             // Distribute views across all store products
             const prods: any[] = selectedUser.storeProducts || [];
             if (prods.length > 0 && views > 0) {

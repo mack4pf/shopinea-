@@ -19,6 +19,9 @@ import { useCurrency } from "@/hooks/useCurrency";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement, Filler);
 
+const numeric = (value: any) => Number(value || 0);
+const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
+
 function computeChartData(orders: any[], timeframe: string): { labels: string[]; data: number[] } {
     const now = new Date();
     const toDate = (v: any): Date | null => {
@@ -119,7 +122,7 @@ export default function AnalyticsPage() {
 
     const [stats, setStats] = useState({
         totalRevenue: 0, totalOrders: 0, totalImpressions: 0,
-        conversionRate: 0, avgOrderValue: 0,
+        totalVisits: 0, visitsToday: 0, conversionRate: 0, avgOrderValue: 0,
         topProducts: [] as any[],
         categoryDistribution: {} as Record<string, number>,
         recentOrders: [] as any[]
@@ -147,8 +150,11 @@ export default function AnalyticsPage() {
                     setRawOrders(orders);
 
                     const totalRev = orders.reduce((acc, curr) => acc + (curr.resellPrice || 0), 0);
-                    const impressions = uData?.impressions || uData?.stats?.views || 0;
-                    const convRate = impressions > 0 ? (orders.length / impressions) * 100 : 0;
+                    const impressions = numeric(uData?.storeViews || uData?.impressions || uData?.stats?.views);
+                    const visits = numeric(uData?.storeVisits || impressions);
+                    const visitsToday = numeric(uData?.dailyStoreVisits?.[todayAnalyticsKey()]) || visits;
+                    const convBase = visits || impressions;
+                    const convRate = convBase > 0 ? (orders.length / convBase) * 100 : 0;
                     const avgVal = orders.length > 0 ? totalRev / orders.length : 0;
 
                     const productMap: Record<string, { sales: number, revenue: number }> = {};
@@ -170,7 +176,7 @@ export default function AnalyticsPage() {
 
                     setStats({
                         totalRevenue: totalRev, totalOrders: orders.length,
-                        totalImpressions: impressions, conversionRate: convRate,
+                        totalImpressions: impressions, totalVisits: visits, visitsToday, conversionRate: convRate,
                         avgOrderValue: avgVal,
                         topProducts: topProds, categoryDistribution: catMap,
                         recentOrders: orders.slice(0, 5)
@@ -288,7 +294,7 @@ export default function AnalyticsPage() {
                             </div>
                             <div className="w-px h-8 bg-white/20" />
                             <div>
-                                <p className="text-xs text-blue-300">Impressions</p>
+                                <p className="text-xs text-blue-300">Views</p>
                                 <p className="text-lg font-bold text-white">{stats.totalImpressions.toLocaleString()}</p>
                             </div>
                         </div>
@@ -300,6 +306,7 @@ export default function AnalyticsPage() {
                     {[
                         { label: "Total Orders", value: stats.totalOrders.toLocaleString(), icon: Package, iconColor: "text-blue-400", iconBg: "bg-blue-500/10", change: "+0%" },
                         { label: "Store Views", value: stats.totalImpressions.toLocaleString(), icon: Eye, iconColor: "text-violet-400", iconBg: "bg-violet-500/10", change: "+0%" },
+                        { label: "Visits Today", value: stats.visitsToday.toLocaleString(), icon: Users, iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", change: "" },
                         { label: "Conversion Rate", value: `${stats.conversionRate.toFixed(1)}%`, icon: Target, iconColor: "text-amber-400", iconBg: "bg-amber-500/10", change: "" },
                         { label: "Avg. Order Value", value: currency.money(stats.avgOrderValue), icon: TrendingUp, iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", change: "" },
                     ].map((item, i) => (

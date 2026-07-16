@@ -13,6 +13,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/hooks/useCurrency";
 
+const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
+const numeric = (value: any) => Number(value || 0);
+
 export default function ResellerHome() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
@@ -32,13 +35,19 @@ export default function ResellerHome() {
 
                 if (data?.role === "buyer") { router.push("/buyer-orders"); return; }
 
+                const todayKey = todayAnalyticsKey();
+                const storeViews = numeric(data?.storeViews || data?.impressions || data?.stats?.views);
+                const storeVisits = numeric(data?.storeVisits);
+                const dailyVisits = numeric(data?.dailyStoreVisits?.[todayKey]);
+                const visitorsToday = dailyVisits || storeVisits || storeViews;
+
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const q = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid), where("createdAt", ">=", today));
                 const snap = await getDocs(q);
                 let rev = 0;
                 snap.docs.forEach(d => rev += d.data().resellPrice || 0);
-                setStats({ revenueToday: rev, ordersToday: snap.size, visitorsToday: data?.impressions || 0 });
+                setStats({ revenueToday: rev, ordersToday: snap.size, visitorsToday });
 
                 const recentQ = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid), orderBy("createdAt", "desc"), limit(5));
                 const recentSnap = await getDocs(recentQ);
@@ -103,7 +112,7 @@ export default function ResellerHome() {
                 {[
                     { label: "Revenue Today",  value: currency.money(stats.revenueToday), icon: TrendingUp,   color: "text-emerald-400", bg: "bg-emerald-500/10", trend: null },
                     { label: "Orders Today",   value: stats.ordersToday.toString(),                 icon: ShoppingCart, color: "text-blue-400",    bg: "bg-blue-500/10",    trend: null },
-                    { label: "Impressions",    value: stats.visitorsToday.toLocaleString(),          icon: Eye,          color: "text-violet-400",  bg: "bg-violet-500/10",  trend: null },
+                    { label: "Visits Today",   value: stats.visitorsToday.toLocaleString(),          icon: Eye,          color: "text-violet-400",  bg: "bg-violet-500/10",  trend: null },
                     { label: "Conversion",     value: conversion,                                    icon: Zap,          color: "text-amber-400",   bg: "bg-amber-500/10",   trend: null },
                 ].map((card, i) => (
                     <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3">

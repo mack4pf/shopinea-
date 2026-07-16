@@ -18,6 +18,8 @@ import { getDefaultStock } from "@/lib/catalog";
 
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
+const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
+
 async function fetchCitiesForCountry(country: string): Promise<string[]> {
     const key = country.trim().toLowerCase();
     if (cityCache[key]) return cityCache[key];
@@ -399,8 +401,17 @@ export default function AdminDashboard() {
             const vNum = Number(boostViews) || 0;
             const visNum = Number(boostVisits) || 0;
             const updates: Record<string, any> = {};
-            if (vNum)   updates["storeViews"]  = increment(vNum);
-            if (visNum) updates["storeVisits"] = increment(visNum);
+            const dateKey = todayAnalyticsKey();
+            if (vNum) {
+                updates["storeViews"] = increment(vNum);
+                updates["impressions"] = increment(vNum);
+                updates["stats.views"] = increment(vNum);
+                updates[`dailyStoreViews.${dateKey}`] = increment(vNum);
+            }
+            if (visNum) {
+                updates["storeVisits"] = increment(visNum);
+                updates[`dailyStoreVisits.${dateKey}`] = increment(visNum);
+            }
             // Distribute views across store products
             const boostUser = allUsers.find(u => u.id === boostUserId);
             const prods: any[] = boostUser?.storeProducts || [];
