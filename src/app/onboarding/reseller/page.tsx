@@ -24,6 +24,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { getFastProductImageUrl, getProductKey, getMarketplaceSourceLabel, PRODUCT_CATEGORIES, type ProductCursor } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface Product {
     id: string;
@@ -66,6 +67,7 @@ export default function ResellerOnboarding() {
 
     const router = useRouter();
     const carouselRef = useRef<HTMLDivElement>(null);
+    const currency = useCurrency(userData);
 
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (u) => {
@@ -256,7 +258,7 @@ export default function ResellerOnboarding() {
                         <div className="hidden sm:block text-right mr-1 sm:mr-2">
                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Total</p>
                             <p className="text-sm font-bold text-white tracking-tight">
-                                ${selectedProducts.reduce((acc, p) => acc + p.price, 0).toLocaleString()}
+                                {currency.money(selectedProducts.reduce((acc, p) => acc + p.price, 0))}
                             </p>
                         </div>
                         <Button
@@ -321,6 +323,7 @@ export default function ResellerOnboarding() {
                                     onToggle={() => toggleProduct(p)} 
                                     onPriceChange={(price: number) => updateResellPrice(p.id, price)} 
                                     onViewDetails={() => setDetailsProduct(p)}
+                                    currency={currency}
                                 />
                             </div>
                         ))}
@@ -457,6 +460,7 @@ export default function ResellerOnboarding() {
                                         onToggle={() => toggleProduct(p)} 
                                         onPriceChange={(price: number) => updateResellPrice(p.id, price)} 
                                         onViewDetails={() => setDetailsProduct(p)}
+                                        currency={currency}
                                     />
                                 ))}
                                 {filteredProducts.length === 0 && (
@@ -534,12 +538,12 @@ export default function ResellerOnboarding() {
                                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Original Price</p>
                                     <p className="mt-1 text-sm font-bold text-zinc-300 line-through">
-                                        ${Math.round((detailsProduct.originalPrice || detailsProduct.price / 0.3) * 100) / 100}
+                                        {currency.money(Math.round((detailsProduct.originalPrice || detailsProduct.price / 0.3) * 100) / 100)}
                                     </p>
                                 </div>
                                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Reseller Cost</p>
-                                    <p className="mt-1 text-sm font-bold text-emerald-300">${detailsProduct.price}</p>
+                                    <p className="mt-1 text-sm font-bold text-emerald-300">{currency.money(detailsProduct.price)}</p>
                                 </div>
                             </div>
                             <p className="max-h-40 overflow-y-auto text-sm leading-relaxed text-zinc-400">
@@ -563,7 +567,7 @@ export default function ResellerOnboarding() {
                 <div className="flex items-center justify-between gap-3">
                     <div>
                         <p className="text-xs font-bold text-white">{selectedProducts.length} selected</p>
-                        <p className="text-[10px] text-zinc-500">${selectedProducts.reduce((acc, p) => acc + p.price, 0).toLocaleString()} cost</p>
+                        <p className="text-[10px] text-zinc-500">{currency.money(selectedProducts.reduce((acc, p) => acc + p.price, 0))} cost</p>
                     </div>
                     <Button
                         onClick={handleComplete}
@@ -595,18 +599,21 @@ function dedupeProducts(products: Product[]) {
     });
 }
 
- function ProductCard({ product, selectedData, onToggle, onPriceChange, onViewDetails }: { 
+ function ProductCard({ product, selectedData, onToggle, onPriceChange, onViewDetails, currency }: { 
      product: Product, 
      selectedData: any, 
      onToggle: () => void, 
      onPriceChange: (price: number) => void,
      onViewDetails: () => void,
+     currency: ReturnType<typeof useCurrency>,
  }) {
      const isSelected = !!selectedData;
      const [imageLoaded, setImageLoaded] = useState(false);
      const [imageFailed, setImageFailed] = useState(false);
      const imageUrl = getFastProductImageUrl(product.image);
      const sourceLabel = getMarketplaceSourceLabel(product.source);
+     const displayedResellPrice = currency.fromUsd(isSelected ? selectedData.resellPrice : Math.ceil(product.price * 1.5));
+     const displayedProfit = currency.fromUsd((selectedData?.resellPrice || Math.ceil(product.price * 1.5)) - product.price);
  
      return (
          <div className={cn(
@@ -653,7 +660,7 @@ function dedupeProducts(products: Product[]) {
                  {/* Tags */}
                  <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 flex gap-1 sm:gap-2">
                      <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-black/60 backdrop-blur-md rounded-md text-[8px] sm:text-[9px] font-bold text-white border border-white/10 uppercase tracking-wider">
-                         ${product.price}
+                         {currency.money(product.price)}
                      </span>
                      <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-600 rounded-md text-[8px] sm:text-[9px] font-bold text-white uppercase tracking-wider shadow-lg">
                          {sourceLabel}
@@ -682,15 +689,15 @@ function dedupeProducts(products: Product[]) {
                              <span className="text-blue-500">~50% Margin</span>
                          </div>
                          <div className="relative group">
-                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm font-bold">$</span>
+                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm font-bold">{currency.currencySymbol}</span>
                              <input
                                  type="number"
-                                 value={isSelected ? selectedData.resellPrice : Math.ceil(product.price * 1.5)}
+                                 value={Number(displayedResellPrice.toFixed(2))}
                                  onChange={(e) => {
                                      if (!isSelected) onToggle();
-                                     onPriceChange(Number(e.target.value));
+                                     onPriceChange(currency.toUsd(Number(e.target.value)));
                                  }}
-                                 className="w-full pl-6 sm:pl-7 px-3 sm:px-4 h-9 sm:h-11 rounded-xl bg-zinc-950 border border-white/[0.08] text-white text-sm font-bold focus:border-blue-500/50 transition-all outline-none"
+                                 className="w-full pl-8 sm:pl-9 px-3 sm:px-4 h-9 sm:h-11 rounded-xl bg-zinc-950 border border-white/[0.08] text-white text-sm font-bold focus:border-blue-500/50 transition-all outline-none"
                              />
                          </div>
                      </div>
@@ -698,7 +705,7 @@ function dedupeProducts(products: Product[]) {
                      {isSelected && (
                          <div className="flex justify-between items-center p-2 sm:p-2.5 bg-emerald-500/5 rounded-lg border border-emerald-500/10 animate-in slide-in-from-top-2 duration-300">
                              <span className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Est. Profit</span>
-                             <span className="text-xs sm:text-xs font-bold text-emerald-500">+${(selectedData.resellPrice - product.price).toLocaleString()}</span>
+                             <span className="text-xs sm:text-xs font-bold text-emerald-500">+{currency.currencySymbol}{displayedProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
                          </div>
                      )}
  

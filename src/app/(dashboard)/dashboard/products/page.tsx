@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { getDefaultStock, STORE_LAYOUTS, STORE_TEMPLATES, STORE_THEME_COLORS } from "@/lib/catalog";
 import { Modal } from "@/components/ui/modal";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function ProductsPage() {
     const [user, setUser] = useState<any>(null);
@@ -43,6 +44,7 @@ export default function ProductsPage() {
     };
 
     const currencySymbol = getCurrencySymbol(userData?.currency);
+    const currency = useCurrency(userData);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -570,11 +572,11 @@ export default function ProductsPage() {
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-white/[0.04] rounded-lg px-3 py-2.5">
                                             <p className="text-[10px] text-zinc-600 mb-0.5">Cost</p>
-                                            <p className="text-sm font-semibold text-zinc-300">{currencySymbol}{product.price?.toLocaleString()}</p>
+                                            <p className="text-sm font-semibold text-zinc-300">{currency.money(product.price || 0)}</p>
                                         </div>
                                         <div className="bg-blue-500/8 border border-blue-500/10 rounded-lg px-3 py-2.5">
                                             <p className="text-[10px] text-blue-400 mb-0.5">Selling Price</p>
-                                            <p className="text-sm font-semibold text-white">{currencySymbol}{product.resellPrice?.toLocaleString()}</p>
+                                            <p className="text-sm font-semibold text-white">{currency.money(product.resellPrice || 0)}</p>
                                         </div>
                                     </div>
 
@@ -585,7 +587,7 @@ export default function ProductsPage() {
                                             <span className="text-xs text-zinc-500">Profit</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-sm font-semibold text-emerald-400">{currencySymbol}{profit.toLocaleString()}</span>
+                                            <span className="text-sm font-semibold text-emerald-400">{currency.money(profit)}</span>
                                             <span className="text-[10px] font-medium text-emerald-500/60 bg-emerald-500/10 px-1.5 py-0.5 rounded">{marginPct}%</span>
                                         </div>
                                     </div>

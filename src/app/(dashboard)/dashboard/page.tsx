@@ -21,7 +21,7 @@ export default function ResellerHome() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState({ revenueToday: 0, ordersToday: 0, visitorsToday: 0 });
+    const [stats, setStats] = useState({ revenueToday: 0, ordersToday: 0, visitorsToday: 0, totalOrders: 0, totalVisitors: 0 });
     const [recentOrders, setRecentOrders] = useState<any[]>([]);
     const currency = useCurrency(userData);
 
@@ -40,6 +40,7 @@ export default function ResellerHome() {
                 const storeVisits = numeric(data?.storeVisits);
                 const dailyVisits = numeric(data?.dailyStoreVisits?.[todayKey]);
                 const visitorsToday = dailyVisits || storeVisits || storeViews;
+                const totalVisitors = storeVisits || storeViews || visitorsToday;
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -47,7 +48,12 @@ export default function ResellerHome() {
                 const snap = await getDocs(q);
                 let rev = 0;
                 snap.docs.forEach(d => rev += d.data().resellPrice || 0);
-                setStats({ revenueToday: rev, ordersToday: snap.size, visitorsToday });
+
+                const allOrdersQ = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid));
+                const allOrdersSnap = await getDocs(allOrdersQ);
+                const totalOrders = numeric(data?.stats?.orders) || allOrdersSnap.size || snap.size;
+
+                setStats({ revenueToday: rev, ordersToday: snap.size, visitorsToday, totalOrders, totalVisitors });
 
                 const recentQ = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid), orderBy("createdAt", "desc"), limit(5));
                 const recentSnap = await getDocs(recentQ);
@@ -64,8 +70,10 @@ export default function ResellerHome() {
         </div>
     );
 
-    const conversion = stats.ordersToday > 0 && stats.visitorsToday > 0
-        ? `${((stats.ordersToday / stats.visitorsToday) * 100).toFixed(1)}%` : "0%";
+    const conversionBase = stats.totalVisitors || stats.visitorsToday;
+    const conversionOrders = stats.totalOrders || stats.ordersToday;
+    const conversion = conversionOrders > 0 && conversionBase > 0
+        ? `${((conversionOrders / conversionBase) * 100).toFixed(1)}%` : "0%";
 
     const setupSteps = [
         { icon: Package,    title: "Add your first product",  desc: "Browse and select products to sell.", done: (userData?.storeProducts?.length > 0), href: '/dashboard/products' },
