@@ -106,8 +106,8 @@ export default function OrdersPage() {
     };
 
     const filteredOrders = orders.filter(o => {
-        const matchesSearch = o.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            o.id.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (o.customerName || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (o.id || "").toString().toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'all' ||
             o.status === statusFilter ||
             (statusFilter === 'pending_payment' && ['pending_payment', 'payment_pending', 'awaiting_admin_confirmation'].includes(o.status));
@@ -140,7 +140,7 @@ export default function OrdersPage() {
             case 'awaiting_seller_fulfillment': return 'Processing';
             case 'shipped': return 'Shipped';
             case 'delivered': return 'Delivered';
-            default: return status.replace(/_/g, ' ');
+            default: return (status || "pending").replace(/_/g, ' ');
         }
     };
 
@@ -234,8 +234,11 @@ export default function OrdersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/[0.04]">
-                                {filteredOrders.map((order) => (
-                                    <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
+                                {filteredOrders.map((order, index) => {
+                                    const orderId = (order.id || `order-${index}`).toString();
+                                    const status = order.status || "pending";
+                                    return (
+                                    <tr key={orderId} className="hover:bg-white/[0.02] transition-colors">
                                         <td className="py-4 px-5">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
@@ -243,7 +246,7 @@ export default function OrdersPage() {
                                                         <CreditCard className="w-4 h-4 text-emerald-500" />}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-white">#{order.id.slice(0, 8)}</p>
+                                                    <p className="text-sm font-medium text-white">#{orderId.slice(0, 8)}</p>
                                                     <p className="text-xs text-zinc-600">{order.customerName || 'Customer'}</p>
                                                 </div>
                                             </div>
@@ -255,17 +258,17 @@ export default function OrdersPage() {
                                         <td className="py-4 px-4">
                                             <p className="text-sm font-medium text-emerald-400">{currencySymbol}{order.resellerProfit?.toLocaleString()}</p>
                                             <p className="text-[11px] text-zinc-600">
-                                                {order.status === 'delivered' ? 'Released' :
-                                                    order.status === 'shipped' ? 'Locked' : 'Pending'}
+                                                {status === 'delivered' ? 'Released' :
+                                                    status === 'shipped' ? 'Locked' : 'Pending'}
                                             </p>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium ${getStatusBadge(order.status)}`}>
-                                                {getStatusLabel(order.status)}
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium ${getStatusBadge(status)}`}>
+                                                {getStatusLabel(status)}
                                             </span>
                                         </td>
                                         <td className="py-4 px-5 text-right">
-                                            {['pending_payment', 'payment_pending', 'awaiting_admin_confirmation'].includes(order.status) && (
+                                            {['pending_payment', 'payment_pending', 'awaiting_admin_confirmation'].includes(status) && (
                                                 <span className="text-xs text-amber-400 flex items-center justify-end gap-1.5">
                                                     <Clock className="w-3.5 h-3.5" /> Pending payment
                                                 </span>
@@ -301,7 +304,7 @@ export default function OrdersPage() {
                                             )}
                                         </td>
                                     </tr>
-                                ))}
+                                )})}
                             </tbody>
                         </table>
                     </div>

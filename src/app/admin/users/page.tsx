@@ -48,6 +48,7 @@ import { SUBSCRIPTION_PLANS, getPlanExpiryDate, getSubscriptionPlan } from "@/li
 
 const ADMIN_PAYMENT_PLANS = SUBSCRIPTION_PLANS;
 
+const DEFAULT_WITHDRAWAL_MIN_LIMIT = 500;
 const money = (value: number) => `$${Number(value || 0).toLocaleString()}`;
 const supplierCostFor = (user: any) => Math.max(0, Number(user?.totalSales || 0) - Number(user?.totalProfit || 0));
 const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
@@ -97,6 +98,8 @@ export default function UserMatrixPage() {
     const [activatingPlan, setActivatingPlan] = useState(false);
     const [userCustomStoreRequests, setUserCustomStoreRequests] = useState<any[]>([]);
     const [lockSavingField, setLockSavingField] = useState<string | null>(null);
+    const [withdrawalMinInput, setWithdrawalMinInput] = useState("");
+    const [savingWithdrawalMin, setSavingWithdrawalMin] = useState(false);
 
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
@@ -153,6 +156,7 @@ export default function UserMatrixPage() {
     const fetchUserDetails = async (user: any) => {
         setLoadingDetails(true);
         setSelectedUser(user);
+        setWithdrawalMinInput(String(Number(user.withdrawalMinLimit ?? DEFAULT_WITHDRAWAL_MIN_LIMIT)));
         // Pre-select all store products for the simulator
         setSelectedSimProducts((user.storeProducts || []).map((p: any) => p.id));
         setSimLocations([{ country: "United States", count: "10" }]);
@@ -741,6 +745,31 @@ export default function UserMatrixPage() {
         }
     };
 
+    const saveWithdrawalMinLimit = async () => {
+        if (!selectedUser) return;
+        const nextLimit = Number(withdrawalMinInput);
+        if (!Number.isFinite(nextLimit) || nextLimit < 0) {
+            toast.error("Enter a valid withdrawal minimum.");
+            return;
+        }
+
+        setSavingWithdrawalMin(true);
+        try {
+            await updateDoc(doc(db, "users", selectedUser.id), {
+                withdrawalMinLimit: nextLimit,
+                updatedAt: serverTimestamp(),
+            });
+            setSelectedUser((prev: any) => prev ? { ...prev, withdrawalMinLimit: nextLimit } : prev);
+            setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, withdrawalMinLimit: nextLimit } : user));
+            toast.success(`Withdrawal minimum set to ${money(nextLimit)}.`);
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to update withdrawal minimum.");
+        } finally {
+            setSavingWithdrawalMin(false);
+        }
+    };
+
     const filtered = users.filter(u =>
         u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1079,6 +1108,37 @@ export default function UserMatrixPage() {
                                         )}
                                     </button>
                                 ))}
+                            </div>
+                            <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 space-y-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p className="text-xs font-semibold text-white">Withdrawal Minimum</p>
+                                        <p className="text-[10px] text-zinc-500">Set the minimum payout amount for this user only.</p>
+                                    </div>
+                                    <span className="text-xs font-bold text-emerald-300">{money(Number(selectedUser.withdrawalMinLimit ?? DEFAULT_WITHDRAWAL_MIN_LIMIT))}</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500">$</span>
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            value={withdrawalMinInput}
+                                            onChange={(event) => setWithdrawalMinInput(event.target.value)}
+                                            className="h-10 pl-7 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                            placeholder="500"
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={saveWithdrawalMinLimit}
+                                        disabled={savingWithdrawalMin}
+                                        className="h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold flex items-center justify-center gap-2"
+                                    >
+                                        {savingWithdrawalMin ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                        Save Limit
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

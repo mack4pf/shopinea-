@@ -48,9 +48,9 @@ export default function TransactionHistoryPage() {
     }, []);
 
     const filtered = history.filter(t => {
-        const matchesSearch = t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (t.id || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (t.type || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (t.description || "").toString().toLowerCase().includes(searchQuery.toLowerCase());
         if (activeTab === "all") return matchesSearch;
         return matchesSearch && t.displayType === activeTab;
     });
@@ -147,21 +147,24 @@ export default function TransactionHistoryPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filtered.map((t) => (
-                                    <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">
+                                filtered.map((t, index) => {
+                                    const recordId = (t.id || `record-${index}`).toString();
+                                    const recordType = (t.type || "record").toString();
+                                    return (
+                                    <tr key={recordId} className="hover:bg-white/[0.02] transition-colors">
                                         <td className="py-4 px-5">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getTypeBg(t.type)}`}>
-                                                    {getIcon(t.type)}
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getTypeBg(recordType)}`}>
+                                                    {getIcon(recordType)}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-zinc-200">#{t.id.slice(0, 8)}</p>
-                                                    <p className="text-xs text-zinc-600 truncate max-w-[200px]">{t.description || t.type?.replace('_', ' ')}</p>
+                                                    <p className="text-sm font-medium text-zinc-200">#{recordId.slice(0, 8)}</p>
+                                                    <p className="text-xs text-zinc-600 truncate max-w-[200px]">{t.description || recordType.replace('_', ' ')}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <span className="text-xs text-zinc-400 capitalize">{t.type?.replace(/_/g, ' ')}</span>
+                                            <span className="text-xs text-zinc-400 capitalize">{recordType.replace(/_/g, ' ')}</span>
                                         </td>
                                         <td className="py-4 px-4">
                                             <p className={cn("text-sm font-semibold",
@@ -181,7 +184,7 @@ export default function TransactionHistoryPage() {
                                             <p className="text-[10px] text-zinc-600">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</p>
                                         </td>
                                     </tr>
-                                ))
+                                )})
                             )}
                         </tbody>
                     </table>

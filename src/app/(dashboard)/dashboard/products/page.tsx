@@ -245,17 +245,18 @@ export default function ProductsPage() {
         </div>
     );
 
-    const products = userData?.storeProducts || [];
+    const products = Array.isArray(userData?.storeProducts) ? userData.storeProducts : [];
     const filteredProducts = products.filter((p: any) =>
-        p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        (p?.name || "").toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const FREE_PLAN_LIMIT = 20;
     const isFree = !userData?.plan || userData?.plan === "free";
     const atLimit = isFree && products.length >= FREE_PLAN_LIMIT;
 
-    const totalMargin = products.reduce((acc: number, p: any) => acc + ((p.resellPrice || 0) - (p.price || 0)), 0);
-    const avgMargin = products.length ? (totalMargin / products.reduce((acc: number, p: any) => acc + (p.price || 0), 0) * 100).toFixed(0) : "0";
+    const totalMargin = products.reduce((acc: number, p: any) => acc + (Number(p?.resellPrice || 0) - Number(p?.price || 0)), 0);
+    const totalCost = products.reduce((acc: number, p: any) => acc + Number(p?.price || 0), 0);
+    const avgMargin = products.length && totalCost > 0 ? ((totalMargin / totalCost) * 100).toFixed(0) : "0";
 
     const statCards = [
         { label: "Products", value: products.length },
@@ -516,10 +517,14 @@ export default function ProductsPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                     {filteredProducts.filter((p: any) => typeof p === 'object' && p !== null).map((product: any, idx: number) => {
-                        const profit = (product.resellPrice || 0) - (product.price || 0);
-                        const marginPct = product.price > 0 ? ((profit / product.price) * 100).toFixed(0) : "0";
-                        const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
-                        const productKey = product.id || `${product.name}-${idx}`;
+                        const productName = (product?.name || "Product").toString();
+                        const productId = product?.id?.toString() || "";
+                        const productCost = Number(product?.price || 0);
+                        const productResellPrice = Number(product?.resellPrice || productCost || 0);
+                        const profit = productResellPrice - productCost;
+                        const marginPct = productCost > 0 ? ((profit / productCost) * 100).toFixed(0) : "0";
+                        const stock = Number(product?.stock ?? getDefaultStock(productId || productName));
+                        const productKey = productId || `${productName}-${idx}`;
 
                         return (
                             <div key={product.id || idx} className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/[0.12] transition-all group">
@@ -528,7 +533,7 @@ export default function ProductsPage() {
                                     {product.image ? (
                                         <Image
                                             src={product.image}
-                                            alt={product.name}
+                                            alt={productName}
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                                         />
@@ -546,7 +551,7 @@ export default function ProductsPage() {
                                     </div>
                                     <div className="absolute top-3 right-3">
                                         <button
-                                            onClick={() => copyToClipboard(`${window.location.origin}/store/${userData?.storeSlug}/product/${product.id}`)}
+                                            onClick={() => copyToClipboard(`${window.location.origin}/store/${userData?.storeSlug}/product/${productId}`)}
                                             className="w-8 h-8 bg-black/40 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
                                         >
                                             <Copy className="w-3.5 h-3.5" />
@@ -564,19 +569,19 @@ export default function ProductsPage() {
                                 {/* Details */}
                                 <div className="p-5 space-y-4">
                                     <div>
-                                        <h3 className="text-sm font-semibold text-white truncate">{product.name || "Product"}</h3>
-                                        <p className="text-xs text-zinc-600 mt-0.5">SKU: {product.id?.toString().slice(-8).toUpperCase() || idx}</p>
+                                        <h3 className="text-sm font-semibold text-white truncate">{productName}</h3>
+                                        <p className="text-xs text-zinc-600 mt-0.5">SKU: {productId.slice(-8).toUpperCase() || idx}</p>
                                     </div>
 
                                     {/* Pricing */}
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-white/[0.04] rounded-lg px-3 py-2.5">
                                             <p className="text-[10px] text-zinc-600 mb-0.5">Cost</p>
-                                            <p className="text-sm font-semibold text-zinc-300">{currency.money(product.price || 0)}</p>
+                                            <p className="text-sm font-semibold text-zinc-300">{currency.money(productCost)}</p>
                                         </div>
                                         <div className="bg-blue-500/8 border border-blue-500/10 rounded-lg px-3 py-2.5">
                                             <p className="text-[10px] text-blue-400 mb-0.5">Selling Price</p>
-                                            <p className="text-sm font-semibold text-white">{currency.money(product.resellPrice || 0)}</p>
+                                            <p className="text-sm font-semibold text-white">{currency.money(productResellPrice)}</p>
                                         </div>
                                     </div>
 

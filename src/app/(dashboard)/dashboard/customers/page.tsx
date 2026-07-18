@@ -5,6 +5,12 @@ import { auth, db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { Users, Search, Mail, MapPin, BadgeCheck, TrendingUp, Loader2, Calendar, Globe } from "lucide-react";
+import { useCurrency } from "@/hooks/useCurrency";
+
+function toValidDate(value: any): Date | null {
+    const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+}
 
 export default function CustomersPage() {
     const [user, setUser] = useState<any>(null);
@@ -12,6 +18,7 @@ export default function CustomersPage() {
     const [customers, setCustomers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const currency = useCurrency(userData);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -32,7 +39,7 @@ export default function CustomersPage() {
                             .toString()
                             .trim()
                             .toLowerCase();
-                        const orderDate = o.createdAt?.toDate ? o.createdAt.toDate() : (o.createdAt ? new Date(o.createdAt) : null);
+                        const orderDate = toValidDate(o.createdAt);
 
                         if (!customerMap[key]) {
                             customerMap[key] = {
@@ -50,7 +57,7 @@ export default function CustomersPage() {
                         if (!customerMap[key].city && o.customerCity) customerMap[key].city = o.customerCity;
                         if (!customerMap[key].country && o.customerCountry) customerMap[key].country = o.customerCountry;
 
-                        const currentLastOrderDate = customerMap[key].lastOrder?.toDate ? customerMap[key].lastOrder.toDate() : (customerMap[key].lastOrder ? new Date(customerMap[key].lastOrder) : null);
+                        const currentLastOrderDate = toValidDate(customerMap[key].lastOrder);
                         if (orderDate && (!currentLastOrderDate || orderDate > currentLastOrderDate)) {
                             customerMap[key].lastOrder = o.createdAt;
                         }
@@ -69,8 +76,8 @@ export default function CustomersPage() {
     const currencySymbol = getCurrencySymbol(userData?.currency);
 
     const activeThisWeekCount = customers.filter(c => {
-        if (!c.lastOrder) return false;
-        const lastOrderDate = c.lastOrder?.toDate ? c.lastOrder.toDate() : new Date(c.lastOrder);
+        const lastOrderDate = toValidDate(c.lastOrder);
+        if (!lastOrderDate) return false;
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         return lastOrderDate > sevenDaysAgo;
     }).length;
@@ -80,7 +87,7 @@ export default function CustomersPage() {
     const repeatCustomers = customers.filter(c => c.orderCount > 1).length;
 
     const filteredCustomers = customers.filter(c =>
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.name || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.city || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.country || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.email || "").toLowerCase().includes(searchQuery.toLowerCase())
@@ -95,7 +102,7 @@ export default function CustomersPage() {
     const statCards = [
         { label: "Total Customers", value: customers.length, icon: Users, iconColor: "text-blue-500", iconBg: "bg-blue-500/10" },
         { label: "Repeat Buyers", value: repeatCustomers, icon: BadgeCheck, iconColor: "text-emerald-500", iconBg: "bg-emerald-500/10" },
-        { label: "Avg. Spend", value: `${currencySymbol}${avgLTV.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: TrendingUp, iconColor: "text-violet-500", iconBg: "bg-violet-500/10" },
+        { label: "Avg. Spend", value: currency.money(avgLTV, { maximumFractionDigits: 0 }), icon: TrendingUp, iconColor: "text-violet-500", iconBg: "bg-violet-500/10" },
         { label: "Active (7d)", value: activeThisWeekCount, icon: Calendar, iconColor: "text-amber-500", iconBg: "bg-amber-500/10" },
     ];
 
@@ -109,7 +116,7 @@ export default function CustomersPage() {
                 </div>
                 <div className="text-right">
                     <p className="text-xs text-zinc-500">Total Lifetime Value</p>
-                    <p className="text-xl font-bold text-white">{currencySymbol}{totalLTV.toLocaleString()}</p>
+                    <p className="text-xl font-bold text-white">{currency.money(totalLTV)}</p>
                 </div>
             </div>
 
@@ -167,7 +174,7 @@ export default function CustomersPage() {
                                         <td className="py-4 px-5">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-sm font-semibold text-blue-400">
-                                                    {c.name[0]}
+                                                    {(c.name || "G").toString()[0]}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-white">{c.name}</p>
@@ -199,14 +206,14 @@ export default function CustomersPage() {
                                             <span className="text-sm font-medium text-white">{c.orderCount}</span>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <p className="text-sm font-semibold text-white">{currencySymbol}{c.totalSpent.toLocaleString()}</p>
+                                            <p className="text-sm font-semibold text-white">{currency.money(c.totalSpent)}</p>
                                             {c.totalSpent > (avgLTV * 1.5) && (
                                                 <span className="text-[10px] text-blue-400 font-medium">High value</span>
                                             )}
                                         </td>
                                         <td className="py-4 px-5 text-right">
                                             <p className="text-sm text-zinc-300">
-                                                {c.lastOrder?.toDate ? c.lastOrder.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : (c.lastOrder ? new Date(c.lastOrder).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'N/A')}
+                                                {toValidDate(c.lastOrder)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || 'N/A'}
                                             </p>
                                         </td>
                                     </tr>

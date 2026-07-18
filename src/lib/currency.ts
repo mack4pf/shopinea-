@@ -2019,6 +2019,14 @@ export const FALLBACK_RATES: ExchangeRates = {
     "NGN": 1500,
     "GBP": 0.79,
     "EUR": 0.92,
+    "COP": 3900,
+    "ARS": 920,
+    "CLP": 930,
+    "PEN": 3.75,
+    "UYU": 40,
+    "BOB": 6.9,
+    "CRC": 520,
+    "DOP": 59,
     "CAD": 1.37,
     "GHS": 15,
     "KES": 129,
@@ -2031,6 +2039,11 @@ export const FALLBACK_RATES: ExchangeRates = {
     "MXN": 18,
     "JPY": 157
 };
+
+function safeNumber(value: unknown, fallback = 0) {
+    const next = Number(value);
+    return Number.isFinite(next) ? next : fallback;
+}
 
 export function getFlagEmoji(countryCode: string) {
     if (!countryCode || countryCode.length !== 2) return "🌐";
@@ -2065,14 +2078,14 @@ export function getCountryByName(name?: string) {
 
 export function convertFromUsd(amountUsd: number, currencyCode = DEFAULT_CURRENCY, rates: ExchangeRates = FALLBACK_RATES) {
     const safeCode = sanitizeCurrencyCode(currencyCode);
-    const rate = Number(rates?.[safeCode]) || 1;
-    return Number(amountUsd || 0) * rate;
+    const rate = safeNumber(rates?.[safeCode], 1) || 1;
+    return safeNumber(amountUsd) * rate;
 }
 
 export function convertToUsd(amount: number, currencyCode = DEFAULT_CURRENCY, rates: ExchangeRates = FALLBACK_RATES) {
     const safeCode = sanitizeCurrencyCode(currencyCode);
-    const rate = Number(rates?.[safeCode]) || 1;
-    return Number(amount || 0) / rate;
+    const rate = safeNumber(rates?.[safeCode], 1) || 1;
+    return safeNumber(amount) / rate;
 }
 
 export function formatCurrency(
@@ -2082,7 +2095,7 @@ export function formatCurrency(
     options: Intl.NumberFormatOptions = {}
 ) {
     const safeCode = sanitizeCurrencyCode(currencyCode);
-    const converted = convertFromUsd(amountUsd, safeCode, rates);
+    const converted = safeNumber(convertFromUsd(amountUsd, safeCode, rates));
     try {
         return new Intl.NumberFormat("en-US", {
             style: "currency",

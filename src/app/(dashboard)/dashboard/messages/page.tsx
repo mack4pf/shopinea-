@@ -103,8 +103,8 @@ export default function MessagesPage() {
     const selectChat = (chat: Chat) => { setActiveChat(chat); setView("detail"); };
 
     const filteredChats = chats.filter(c =>
-        c.otherPlayerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
+        (c.otherPlayerName || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.lastMessage || "").toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (loading) return (
@@ -163,14 +163,14 @@ export default function MessagesPage() {
                                         "w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0",
                                         activeChat?.id === chat.id ? "bg-blue-600 text-white" : "bg-white/[0.06] text-blue-400"
                                     )}>
-                                        {chat.otherPlayerName[0]}
+                                        {(chat.otherPlayerName || "U").toString()[0]}
                                         {chat.unread && (
                                             <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-blue-500 rounded-full" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-center mb-0.5">
-                                            <p className="text-sm font-medium text-white truncate">{chat.otherPlayerName}</p>
+                                            <p className="text-sm font-medium text-white truncate">{chat.otherPlayerName || "User"}</p>
                                             <span className="text-[10px] text-zinc-600 shrink-0">
                                                 {chat.updatedAt?.toDate()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -197,10 +197,10 @@ export default function MessagesPage() {
                                         <ChevronLeft className="w-5 h-5" />
                                     </button>
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                                        {activeChat.otherPlayerName[0]}
+                                        {(activeChat.otherPlayerName || "U").toString()[0]}
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-semibold text-white">{activeChat.otherPlayerName}</h3>
+                                        <h3 className="text-sm font-semibold text-white">{activeChat.otherPlayerName || "User"}</h3>
                                         <div className="flex items-center gap-1.5">
                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                             <p className="text-[10px] text-emerald-500 font-medium">Online</p>

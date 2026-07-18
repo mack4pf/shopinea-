@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import AdDepositModal from "@/components/modals/AdDepositModal";
 import { useCurrency } from "@/hooks/useCurrency";
 
+const DEFAULT_WITHDRAWAL_MIN_LIMIT = 500;
+
 interface WithdrawalModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -44,7 +46,10 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
     const lockedBalance = userData?.pendingPayout || 0;
     const adDebt = userData?.pendingAdDebt || 0;
     const withdrawalsLocked = !!(userData?.withdrawalsLocked || userData?.payoutLocked);
-    const minWithdrawal = 500; // Lowered for better accessibility
+    const customMinWithdrawal = Number(userData?.withdrawalMinLimit);
+    const minWithdrawal = Number.isFinite(customMinWithdrawal) && customMinWithdrawal >= 0
+        ? customMinWithdrawal
+        : DEFAULT_WITHDRAWAL_MIN_LIMIT;
 
     const payoutMethods = userData?.payoutMethods || [];
 
