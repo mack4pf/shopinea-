@@ -26,7 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [open, setOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-950 flex">
+        <div className="admin-shell min-h-screen bg-slate-50 text-slate-950 flex">
             {open && (
                 <button
                     aria-label="Close menu"

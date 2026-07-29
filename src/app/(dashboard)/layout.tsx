@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     if (userData?.role === "buyer" || pathname === "/buyer-orders") {
         return (
-            <div className="min-h-screen bg-slate-50 text-slate-950">
+            <div className="dashboard-shell min-h-screen bg-slate-50 text-slate-950">
                 <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                         <Link href="/marketplace" className="flex items-center gap-2.5">
@@ -186,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <div className="min-h-screen bg-[#0b0f1a] text-white flex">
+        <div className="dashboard-shell min-h-screen bg-[#0b0f1a] text-white flex">
             {/* Mobile Overlay */}
             {isSidebarOpen && (
                 <div
