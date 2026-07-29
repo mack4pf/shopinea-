@@ -80,7 +80,7 @@ export function Navbar() {
 
                     {/* Desktop Actions */}
                     <div className="hidden md:flex items-center gap-2">
-                        <ThemeToggle className={cn(
+                        <ThemeToggle showLabel className={cn(
                             scrolled ? "" : "border-white/15 bg-white/10 text-white hover:bg-white/20 dark:bg-white/10"
                         )} />
                         {!loading && (

@@ -97,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
 
                     <div className="ml-auto flex items-center gap-2">
-                        <ThemeToggle />
+                        <ThemeToggle showLabel />
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-lime-100 border border-lime-300">
                             <div className="w-1.5 h-1.5 rounded-full bg-lime-500 animate-pulse" />
                             <span className="text-[10px] font-bold text-slate-800">Live</span>

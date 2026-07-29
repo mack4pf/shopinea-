@@ -146,7 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </nav>
 
                         <div className="flex items-center gap-2">
-                            <ThemeToggle />
+                            <ThemeToggle showLabel />
                             <button className="hidden rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 sm:block">
                                 <Heart className="h-4 w-4" />
                             </button>
@@ -186,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     return (
-        <div className="dashboard-shell min-h-screen bg-[#0b0f1a] text-white flex">
+        <div className="dashboard-shell min-h-screen bg-slate-50 text-slate-950 dark:bg-[#0b0f1a] dark:text-white flex">
             {/* Mobile Overlay */}
             {isSidebarOpen && (
                 <div
@@ -198,23 +198,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed inset-y-0 left-0 z-50 w-72 bg-[#0f172a] border-r border-slate-800/80 flex flex-col",
+                    "fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl shadow-slate-900/5 dark:bg-[#0f172a] dark:border-slate-800/80 dark:shadow-none",
                     "transform transition-transform duration-300 lg:translate-x-0",
                     isSidebarOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >
                 {/* Logo */}
-                <div className="h-16 flex items-center px-5 border-b border-slate-800/80">
+                <div className="h-16 flex items-center px-5 border-b border-slate-200 bg-gradient-to-r from-lime-50 to-sky-50 dark:border-slate-800/80 dark:bg-none">
                     <Link href="/" className="flex items-center gap-3.5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src="/images/sholinealogo2.png" alt="shopinea" className="w-9 h-9 object-contain" />
-                        <span className="text-[16px] font-extrabold text-white tracking-tight">shopinea</span>
+                        <span className="text-[16px] font-extrabold text-slate-950 tracking-tight dark:text-white">shopinea</span>
                     </Link>
                 </div>
 
                 {/* Nav */}
                 <nav className="flex-1 overflow-y-auto py-4 px-3 no-scrollbar">
-                    <p className="px-3 py-2 text-[10px] tracking-[0.2em] font-bold text-slate-400 uppercase">Workspace</p>
+                    <p className="px-3 py-2 text-[10px] tracking-[0.2em] font-bold text-slate-500 uppercase dark:text-slate-400">Workspace</p>
                     <div className="space-y-1">
                         {getNavItems(userData?.role).map((item) => {
                             const isActive = pathname === item.href;
@@ -226,11 +226,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     className={cn(
                                         "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-colors",
                                         isActive
-                                            ? "bg-emerald-500/15 text-emerald-200"
-                                            : "text-slate-300 hover:text-white hover:bg-slate-800/70"
+                                            ? "bg-sky-600 text-white shadow-lg shadow-sky-600/15 dark:bg-emerald-500/15 dark:text-emerald-200 dark:shadow-none"
+                                            : "text-slate-600 hover:text-slate-950 hover:bg-lime-100/70 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/70"
                                     )}
                                 >
-                                    <item.icon className={cn("w-[18px] h-[18px]", isActive ? "text-emerald-300" : "text-slate-500")} />
+                                    <item.icon className={cn("w-[18px] h-[18px]", isActive ? "text-white dark:text-emerald-300" : "text-slate-500")} />
                                     {item.name}
                                 </Link>
                             );
@@ -239,10 +239,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </nav>
 
                 {/* Footer */}
-                <div className="p-3 border-t border-slate-800/80">
+                <div className="p-3 border-t border-slate-200 dark:border-slate-800/80">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-slate-400 hover:text-rose-200 hover:bg-rose-500/20 transition-colors"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors dark:text-slate-400 dark:hover:text-rose-200 dark:hover:bg-rose-500/20"
                     >
                         <LogOut className="w-[18px] h-[18px]" />
                         Log out
@@ -253,48 +253,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Main */}
             <div className="flex-1 flex flex-col lg:ml-72">
                 {/* Top Bar */}
-                <header className="h-16 bg-[#0b0f1a]/95 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-4 md:px-8 sticky top-0 z-30">
+                <header className="h-16 bg-white/90 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30 dark:bg-[#0b0f1a]/95 dark:border-white/[0.06]">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
+                            className="lg:hidden p-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors dark:text-white dark:hover:bg-white/[0.06]"
                         >
-                            {isSidebarOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
+                            {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
 
-                        <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/[0.04] rounded-xl border border-white/[0.08] w-80 group focus-within:border-blue-500/40 transition-colors">
-                            <Search className="w-4 h-4 text-zinc-500" />
+                        <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 w-80 group focus-within:border-sky-400 transition-colors dark:bg-white/[0.04] dark:border-white/[0.08] dark:focus-within:border-blue-500/40">
+                            <Search className="w-4 h-4 text-slate-400 dark:text-zinc-500" />
                             <input
                                 type="text"
                                 placeholder="Search orders, products, customers..."
-                                className="bg-transparent border-none outline-none text-sm text-zinc-200 placeholder:text-zinc-600 w-full"
+                                className="bg-transparent border-none outline-none text-sm text-slate-800 placeholder:text-slate-400 w-full dark:text-zinc-200 dark:placeholder:text-zinc-600"
                             />
                         </div>
 
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src="/images/sholinealogo2.png" alt="shopinea" className="md:hidden w-7 h-7 object-contain" />
-                        <span className="md:hidden text-sm font-extrabold text-white">shopinea</span>
+                        <span className="md:hidden text-sm font-extrabold text-slate-950 dark:text-white">shopinea</span>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <ThemeToggle className="border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/[0.12]" />
+                        <ThemeToggle showLabel />
                         {/* Balance chip - desktop only */}
-                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/[0.04] rounded-xl border border-white/[0.08]">
+                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-slate-200 shadow-sm dark:bg-white/[0.04] dark:border-white/[0.08] dark:shadow-none">
                             <Wallet className="w-4 h-4 text-emerald-400" />
-                            <span className="text-sm font-semibold text-white">{currencySymbol}{userData?.walletBalance?.toLocaleString() || "0"}</span>
+                            <span className="text-sm font-semibold text-slate-950 dark:text-white">{currencySymbol}{userData?.walletBalance?.toLocaleString() || "0"}</span>
                         </div>
 
-                        <button className="relative p-2 rounded-lg hover:bg-white/[0.06] transition-colors">
-                            <Bell className="w-5 h-5 text-zinc-400" />
+                        <button className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors dark:hover:bg-white/[0.06]">
+                            <Bell className="w-5 h-5 dark:text-zinc-400" />
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full" />
                         </button>
 
-                        <div className="flex items-center gap-3 pl-3 border-l border-white/[0.08]">
+                        <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-white/[0.08]">
                             <div className="hidden xl:block text-right">
-                                <p className="text-sm font-semibold text-white leading-none">{userData?.displayName || "User"}</p>
-                                <p className="text-xs text-zinc-500 mt-0.5">{userData?.storeName || "My Store"}</p>
+                                <p className="text-sm font-semibold text-slate-950 leading-none dark:text-white">{userData?.displayName || "User"}</p>
+                                <p className="text-xs text-slate-500 mt-0.5 dark:text-zinc-500">{userData?.storeName || "My Store"}</p>
                             </div>
-                            <div className="w-9 h-9 rounded-full bg-white/[0.1] border border-white/[0.12] flex items-center justify-center text-sm font-semibold text-white">
+                            <div className="w-9 h-9 rounded-full bg-sky-600 border border-sky-500 flex items-center justify-center text-sm font-semibold text-white dark:bg-white/[0.1] dark:border-white/[0.12]">
                                 {userData?.displayName?.[0] || <UserIcon className="w-4 h-4" />}
                             </div>
                         </div>
@@ -303,7 +303,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 {/* Content */}
                 <main className="flex-1 overflow-y-auto no-scrollbar">
-                    <div className="p-4 md:p-8 max-w-[1400px] mx-auto">
+                    <div className="dashboard-content p-4 md:p-8 max-w-[1400px] mx-auto">
                         {children}
                     </div>
                 </main>
