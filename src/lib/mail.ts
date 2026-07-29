@@ -1,12 +1,17 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder_123');
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@shoplinea.shop';
+const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'support@shoplinea.shop';
+const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Shopinea Support';
+const defaultFrom = `${DEFAULT_FROM_NAME} <${DEFAULT_FROM_EMAIL}>`;
+const resend = new Resend(RESEND_API_KEY);
 
 export async function sendEmail({
     to,
     subject,
     html,
-    from = 'Shoplinea <support@shoplinea.shop>',
+    from = defaultFrom,
 }: {
     to: string;
     subject: string;
@@ -14,12 +19,19 @@ export async function sendEmail({
     from?: string;
 }) {
     try {
+        if (!RESEND_API_KEY) {
+            return { error: new Error('RESEND_API_KEY is not configured.') };
+        }
+        if (!to || !subject || !html) {
+            return { error: new Error('Email requires to, subject, and html.') };
+        }
+
         const { data, error } = await resend.emails.send({
             from,
             to,
             subject,
             html,
-            replyTo: 'support@shoplinea.shop',
+            replyTo: SUPPORT_EMAIL,
         });
 
         if (error) {
@@ -43,7 +55,7 @@ const baseTemplate = (content: string) => `
 <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 40px 0; }
     .container { max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-    .header { background-color: #050505; padding: 32px 40px; text-align: left; }
+    .header { background: linear-gradient(135deg, #0284c7 0%, #65a30d 100%); padding: 32px 40px; text-align: left; }
     .header h1 { margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
     .header p { margin: 4px 0 0 0; color: #a1a1aa; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
     .content { padding: 40px; }
@@ -67,7 +79,7 @@ const baseTemplate = (content: string) => `
         </div>
         <div class="footer">
             <p><strong>Shoplinea</strong><br/>
-            This email was sent automatically by Shoplinea Support.<br/>
+            This email was sent automatically by Shopinea Support. Reply to ${SUPPORT_EMAIL}.<br/>
             &copy; 2026 Shoplinea.shop. All rights reserved.</p>
         </div>
     </div>

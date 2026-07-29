@@ -44,9 +44,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeScript = `
+    try {
+      const saved = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", saved ? saved === "dark" : prefersDark);
+      document.documentElement.dataset.theme = saved || (prefersDark ? "dark" : "light");
+    } catch (_) {}
+  `;
+
   return (
-    <html lang="en">
-      <head />
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className={plusJakartaSans.className}>
         <AuthProvider>{children}</AuthProvider>
       </body>

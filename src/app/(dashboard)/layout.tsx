@@ -8,14 +8,14 @@ import {
     HelpCircle, LogOut, Menu, X, User as UserIcon, Search,
     ChevronRight, History, MessageSquare, Zap, Crown, AlertTriangle, Home, Heart, Headphones
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { UpgradeModal } from "@/components/modals/UpgradeModal";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/currency";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const getNavItems = (role?: string) => {
     if (role === "buyer") {
@@ -48,10 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
-    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const router = useRouter();
-    const pathnameRef = useRef(pathname);
-    useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -62,26 +59,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     if (userDoc.exists()) {
                         const data = userDoc.data();
                         setUserData(data);
-
-                        let sessionDismissed = false;
-                        try {
-                            sessionDismissed = sessionStorage.getItem("upgrade_modal_viewed") === "true";
-                        } catch {
-                            sessionDismissed = true;
-                        }
-
-                        if (!data.plan && !sessionDismissed && pathname === "/dashboard") {
-                            const timer = setTimeout(() => {
-                                // Only show if user is still on /dashboard when timer fires
-                                if (pathnameRef.current === "/dashboard") {
-                                    setShowUpgradeModal(true);
-                                    try {
-                                        sessionStorage.setItem("upgrade_modal_viewed", "true");
-                                    } catch {}
-                                }
-                            }, 2000);
-                            return () => clearTimeout(timer);
-                        }
 
                         if (firebaseUser.email === "mackiyeritufu@gmail.com" && !data.isAdmin) {
                             const { updateDoc, doc } = await import("firebase/firestore");
@@ -169,6 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </nav>
 
                         <div className="flex items-center gap-2">
+                            <ThemeToggle />
                             <button className="hidden rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 sm:block">
                                 <Heart className="h-4 w-4" />
                             </button>
@@ -299,6 +277,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <ThemeToggle className="border-white/10 bg-white/[0.06] text-zinc-200 hover:bg-white/[0.12]" />
                         {/* Balance chip - desktop only */}
                         <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/[0.04] rounded-xl border border-white/[0.08]">
                             <Wallet className="w-4 h-4 text-emerald-400" />
@@ -329,11 +308,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </main>
             </div>
-
-            <UpgradeModal
-                isOpen={showUpgradeModal}
-                onClose={() => setShowUpgradeModal(false)}
-            />
         </div>
     );
 }

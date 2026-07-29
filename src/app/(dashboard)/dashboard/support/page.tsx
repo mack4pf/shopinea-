@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { MessageSquare, Book, FileText, Mail, Zap, ChevronRight, Loader2, Send } from "lucide-react";
+import { MessageSquare, Book, FileText, Mail, Zap, ChevronRight, Loader2, Send, KeyRound, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 function TargetIcon(props: any) {
@@ -65,7 +65,7 @@ export default function SupportPage() {
             <div className="flex justify-between items-start shrink-0">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Support</h1>
-                    <p className="text-sm text-zinc-500 mt-1">Get help from our team or browse resources.</p>
+                    <p className="text-sm text-zinc-500 mt-1">Chat with our team for payout, account, and order help.</p>
                 </div>
                 <button onClick={() => setIsChatActive(!isChatActive)}
                     className={`px-4 py-2.5 text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${isChatActive ? 'bg-white/[0.06] border border-white/[0.08] text-zinc-300' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
@@ -78,9 +78,9 @@ export default function SupportPage() {
                 <div className="flex-1 flex flex-col min-h-0 bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden">
                     {/* Chat header */}
                     <div className="p-4 border-b border-white/[0.06] flex items-center gap-3 shrink-0">
-                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">A</div>
+                        <div className="w-9 h-9 rounded-full bg-lime-400 flex items-center justify-center text-slate-950 text-sm font-black">S</div>
                         <div>
-                            <h3 className="text-sm font-semibold text-white">Support Team</h3>
+                            <h3 className="text-sm font-semibold text-white">Shopinea Support</h3>
                             <div className="flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 <p className="text-[10px] text-emerald-500 font-medium">Online</p>
@@ -149,7 +149,24 @@ export default function SupportPage() {
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <button
+                            onClick={() => setIsChatActive(true)}
+                            className="bg-lime-400 text-slate-950 rounded-xl p-5 space-y-3 text-left hover:bg-lime-300 transition-colors shadow-lg shadow-lime-500/10"
+                        >
+                            <div className="flex items-center gap-2">
+                                <KeyRound className="w-5 h-5" />
+                                <h3 className="text-sm font-black">Withdrawal Code</h3>
+                            </div>
+                            <p className="text-xs font-semibold leading-relaxed">
+                                Need a withdrawal verification code? Start a support chat and our team will review your payout destination.
+                            </p>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Security review
+                            </span>
+                        </button>
+
                         {/* Contact */}
                         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-3">
                             <h3 className="text-sm font-semibold text-zinc-300">Contact Us</h3>

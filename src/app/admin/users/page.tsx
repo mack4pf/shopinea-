@@ -32,6 +32,7 @@ import {
     Package,
     LockKeyhole,
     UnlockKeyhole,
+    KeyRound,
     Bot,
     Globe
 } from "lucide-react";
@@ -99,7 +100,9 @@ export default function UserMatrixPage() {
     const [userCustomStoreRequests, setUserCustomStoreRequests] = useState<any[]>([]);
     const [lockSavingField, setLockSavingField] = useState<string | null>(null);
     const [withdrawalMinInput, setWithdrawalMinInput] = useState("");
+    const [withdrawalCodeInput, setWithdrawalCodeInput] = useState("");
     const [savingWithdrawalMin, setSavingWithdrawalMin] = useState(false);
+    const [savingWithdrawalCode, setSavingWithdrawalCode] = useState(false);
 
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
@@ -157,6 +160,7 @@ export default function UserMatrixPage() {
         setLoadingDetails(true);
         setSelectedUser(user);
         setWithdrawalMinInput(String(Number(user.withdrawalMinLimit ?? DEFAULT_WITHDRAWAL_MIN_LIMIT)));
+        setWithdrawalCodeInput(String(user.withdrawalCode || ""));
         // Pre-select all store products for the simulator
         setSelectedSimProducts((user.storeProducts || []).map((p: any) => p.id));
         setSimLocations([{ country: "United States", count: "10" }]);
@@ -770,6 +774,38 @@ export default function UserMatrixPage() {
         }
     };
 
+    const generateWithdrawalCode = () => {
+        const code = `WD-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        setWithdrawalCodeInput(code);
+        return code;
+    };
+
+    const saveWithdrawalCode = async () => {
+        if (!selectedUser) return;
+        const nextCode = withdrawalCodeInput.trim().toUpperCase();
+        if (nextCode.length < 6) {
+            toast.error("Enter a withdrawal code with at least 6 characters.");
+            return;
+        }
+
+        setSavingWithdrawalCode(true);
+        try {
+            await updateDoc(doc(db, "users", selectedUser.id), {
+                withdrawalCode: nextCode,
+                withdrawalCodeUpdatedAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            setSelectedUser((prev: any) => prev ? { ...prev, withdrawalCode: nextCode } : prev);
+            setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, withdrawalCode: nextCode } : user));
+            toast.success("Withdrawal verification code saved.");
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to save withdrawal code.");
+        } finally {
+            setSavingWithdrawalCode(false);
+        }
+    };
+
     const filtered = users.filter(u =>
         u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1139,6 +1175,46 @@ export default function UserMatrixPage() {
                                         Save Limit
                                     </button>
                                 </div>
+                            </div>
+                            <div className="rounded-xl border border-lime-500/20 bg-lime-500/[0.06] p-4 space-y-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-start gap-2.5">
+                                        <KeyRound className="w-4 h-4 text-lime-300 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-white">Withdrawal Verification Code</p>
+                                            <p className="text-[10px] text-zinc-500">User must enter this active code before a payout request is accepted.</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-lime-200">{selectedUser.withdrawalCode ? "ACTIVE" : "NOT SET"}</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+                                    <Input
+                                        value={withdrawalCodeInput}
+                                        onChange={(event) => setWithdrawalCodeInput(event.target.value.toUpperCase())}
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm uppercase tracking-widest"
+                                        placeholder="WD-XXXX-XXXX"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={generateWithdrawalCode}
+                                        className="h-10 px-4 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white text-xs font-bold flex items-center justify-center gap-2"
+                                    >
+                                        <KeyRound className="w-4 h-4" />
+                                        Generate
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={saveWithdrawalCode}
+                                        disabled={savingWithdrawalCode}
+                                        className="h-10 px-4 rounded-lg bg-lime-500 hover:bg-lime-400 disabled:opacity-60 text-slate-950 text-xs font-black flex items-center justify-center gap-2"
+                                    >
+                                        {savingWithdrawalCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                        Save Code
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-zinc-500 leading-relaxed">
+                                    Use Support Chat or email to share the verification instructions with the user after finance review.
+                                </p>
                             </div>
                         </div>
 
@@ -1564,8 +1640,8 @@ export default function UserMatrixPage() {
                                         onChange={(e) => {
                                             setAdminTemplate(e.target.value);
                                             if (e.target.value === 'billing') {
-                                                setAdminSubject('Action Required: Account Setup Fee / Subscription Phase');
-                                                setAdminBody('Dear Merchant,\n\nTo release your pending funds and activate your payout route, you are required to pay a one-time network clearance fee / subscription. Please contact our support team or use the designated payment portal to complete this transaction.\n\nThank you,\nShoplinea Network Infrastructure');
+                                                setAdminSubject('Action required: account verification support');
+                                                setAdminBody('Hello Merchant,\n\nYour account needs an additional support review before this request can continue. Please contact support@shoplinea.shop or open Support Chat from your dashboard so our team can confirm the next steps.\n\nFor your safety, do not share passwords, card details, or private wallet keys in chat or email.\n\nThank you,\nShopinea Support Team');
                                             } else if (e.target.value === 'winning-product') {
                                                 const topProduct = selectedUser?.storeProducts?.[0]?.name || userProducts?.[0]?.name || "Your winning product";
                                                 setAdminSubject(`${topProduct} is ready for ads`);
@@ -1578,6 +1654,11 @@ export default function UserMatrixPage() {
                                                 const unlockedAmount = Number(selectedUser?.pendingPayout || selectedUser?.payoutBalance || 0);
                                                 setAdminSubject('Your escrow balance has been unlocked');
                                                 setAdminBody(`Hello ${merchantName},\n\nGood news: your escrow balance has been reviewed and unlocked for withdrawal.\n\nUnlocked amount: $${unlockedAmount.toLocaleString()}\nStatus: Available for payout\n\nYou can now continue with your withdrawal request from your Shopinea dashboard. Please make sure your payout details are correct before submitting.\n\nThank you,\nShopinea Finance Team`);
+                                            } else if (e.target.value === 'withdrawal-code') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "Merchant";
+                                                const code = selectedUser?.withdrawalCode || withdrawalCodeInput || "your active code";
+                                                setAdminSubject('Withdrawal verification code');
+                                                setAdminBody(`Hello ${merchantName},\n\nYour withdrawal verification step has been reviewed.\n\nWithdrawal code: ${code}\n\nEnter this code in the withdrawal form before submitting your payout request. This verification helps confirm the payout request belongs to you and that funds are routed only to your approved payout destination.\n\nIf you did not request this, contact support immediately.\n\nThank you,\nShopinea Finance Team`);
                                             } else {
                                                 setAdminSubject('');
                                                 setAdminBody('');
@@ -1588,7 +1669,8 @@ export default function UserMatrixPage() {
                                         <option value="winning-product" className="bg-zinc-900">Winning Product Ads</option>
                                         <option value="upgrade-plan" className="bg-zinc-900">Upgrade Plan Prompt</option>
                                         <option value="escrow-unlocked" className="bg-zinc-900">Escrow Unlocked</option>
-                                        <option value="billing" className="bg-zinc-900">Billing / Fee Request</option>
+                                        <option value="withdrawal-code" className="bg-zinc-900">Withdrawal Code</option>
+                                        <option value="billing" className="bg-zinc-900">Account Support Review</option>
                                     </select>
                                 </div>
                                 <div className="space-y-1">

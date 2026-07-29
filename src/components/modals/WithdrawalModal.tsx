@@ -16,7 +16,9 @@ import {
     Building2,
     Bitcoin,
     ArrowLeft,
-    HandIcon
+    HandIcon,
+    KeyRound,
+    MessageCircle
 } from "lucide-react";
 import { addDoc, collection, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -25,6 +27,7 @@ import AdDepositModal from "@/components/modals/AdDepositModal";
 import { useCurrency } from "@/hooks/useCurrency";
 
 const DEFAULT_WITHDRAWAL_MIN_LIMIT = 500;
+const SUPPORT_EMAIL = "support@shoplinea.shop";
 
 interface WithdrawalModalProps {
     isOpen: boolean;
@@ -40,12 +43,14 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
     const [step, setStep] = useState(1); // 1: Amount & Method Selection, 2: Details, 3: Success
     const [selectedMethod, setSelectedMethod] = useState<any>(null);
     const [showAdDeposit, setShowAdDeposit] = useState(false);
+    const [withdrawalCode, setWithdrawalCode] = useState("");
     const currency = useCurrency(userData);
 
     const availableBalance = userData?.payoutBalance || 0;
     const lockedBalance = userData?.pendingPayout || 0;
     const adDebt = userData?.pendingAdDebt || 0;
     const withdrawalsLocked = !!(userData?.withdrawalsLocked || userData?.payoutLocked);
+    const expectedWithdrawalCode = String(userData?.withdrawalCode || "").trim().toUpperCase();
     const customMinWithdrawal = Number(userData?.withdrawalMinLimit);
     const minWithdrawal = Number.isFinite(customMinWithdrawal) && customMinWithdrawal >= 0
         ? customMinWithdrawal
@@ -74,6 +79,14 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
             toast.error("Please select a payout method.");
             return;
         }
+        if (!expectedWithdrawalCode) {
+            toast.error(`Contact support at ${SUPPORT_EMAIL} to activate your withdrawal verification code.`);
+            return;
+        }
+        if (withdrawalCode.trim().toUpperCase() !== expectedWithdrawalCode) {
+            toast.error("Invalid withdrawal verification code.");
+            return;
+        }
 
         setLoading(true);
         try {
@@ -88,6 +101,8 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 method: selectedMethod.type,
                 methodLabel: selectedMethod.label,
                 methodDetails: selectedMethod,
+                withdrawalCertificateVerified: true,
+                withdrawalCertificateLast4: expectedWithdrawalCode.slice(-4),
                 createdAt: serverTimestamp()
             });
 
@@ -99,6 +114,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 amount: numAmount,
                 status: "pending",
                 description: `Withdrawal request to ${selectedMethod.label}`,
+                withdrawalCertificateVerified: true,
                 createdAt: serverTimestamp()
             });
 
@@ -123,7 +139,8 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                             html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
                                 <h2 style="color: #111827; margin-bottom: 16px;">Withdrawal Request Received</h2>
                                 <p style="color: #4b5563; line-height: 1.6;">Your withdrawal request for <strong>${currency.currencySymbol}${localAmount.toLocaleString()} ${currency.currencyCode}</strong> has been successfully received.</p>
-                                <p style="color: #4b5563; line-height: 1.6;">Your funds are on their way to your selected payout destination (${selectedMethod.label}). Expected settlement is within 24-48 business hours.</p>
+                                <p style="color: #4b5563; line-height: 1.6;">Your payout is pending review for the selected destination (${selectedMethod.label}). Your withdrawal verification code was accepted for this request.</p>
+                                <p style="color: #4b5563; line-height: 1.6;">Expected settlement is within 24-48 business hours after finance review.</p>
                             </div>`
                         }
                     })
@@ -150,7 +167,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                     <div className="space-y-3">
                         <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Transmission Sent</h3>
                         <p className="text-[11px] font-bold text-zinc-500 max-w-[280px] mx-auto leading-relaxed uppercase tracking-widest italic">
-                            Your withdrawal request has been broadcasted to our compliance nodes. Expected settlement within 24-48 business hours.
+                            Your withdrawal request passed verification and is queued for finance review. Expected settlement within 24-48 business hours.
                         </p>
                     </div>
                     <Button onClick={onClose} className="w-full bg-white text-black font-black h-16 rounded-2xl shadow-2xl active:scale-95 transition-all text-[11px] uppercase tracking-widest italic border-b-4 border-zinc-300 active:border-b-0">
@@ -282,10 +299,39 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                             )}
                         </div>
 
+                        <div className="rounded-[1.5rem] border border-lime-400/25 bg-lime-400/10 p-5 space-y-4">
+                            <div className="flex items-start gap-3">
+                                <div className="w-11 h-11 rounded-2xl bg-lime-400 text-slate-950 flex items-center justify-center shrink-0">
+                                    <KeyRound className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Withdrawal Verification Code</h3>
+                                    <p className="text-[11px] font-bold text-zinc-500 leading-relaxed mt-1">
+                                        Enter your active withdrawal code before submitting. This extra review step helps confirm that the payout request belongs to you and protects funds from being routed to an unapproved destination.
+                                    </p>
+                                </div>
+                            </div>
+                            {!expectedWithdrawalCode && (
+                                <div className="flex items-start gap-2 rounded-xl border border-sky-500/20 bg-sky-500/10 p-3">
+                                    <MessageCircle className="w-4 h-4 text-sky-300 shrink-0 mt-0.5" />
+                                    <p className="text-[11px] text-sky-100 leading-relaxed">
+                                        Contact support at <span className="font-black">{SUPPORT_EMAIL}</span> or open Support Chat to activate your withdrawal verification code.
+                                    </p>
+                                </div>
+                            )}
+                            <Input
+                                value={withdrawalCode}
+                                onChange={(e) => setWithdrawalCode(e.target.value.toUpperCase())}
+                                placeholder="Enter withdrawal code"
+                                className="h-14 bg-white text-slate-950 border-lime-300 rounded-2xl font-black tracking-[0.25em] uppercase placeholder:tracking-normal placeholder:text-slate-400 focus:ring-lime-400"
+                                autoComplete="one-time-code"
+                            />
+                        </div>
+
                         <div className="pt-4">
                             <Button
                                 onClick={handleWithdraw}
-                                disabled={loading || withdrawalsLocked || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || !selectedMethod || currency.toUsd(parseFloat(amount) || 0) > availableBalance || currency.toUsd(parseFloat(amount) || 0) < minWithdrawal}
+                                disabled={loading || withdrawalsLocked || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || !selectedMethod || !withdrawalCode.trim() || currency.toUsd(parseFloat(amount) || 0) > availableBalance || currency.toUsd(parseFloat(amount) || 0) < minWithdrawal}
                                 className="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-500/30 active:scale-95 transition-all text-[11px] uppercase tracking-[0.3em] italic gap-4 flex border-b-4 border-blue-800 active:border-b-0"
                             >
                                 {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (

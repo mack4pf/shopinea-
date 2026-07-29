@@ -65,13 +65,13 @@ export function ReviewsSection() {
         <section className="py-24 bg-[#07060f] overflow-hidden">
             <div className="container px-4 md:px-6 mb-14 text-center">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-[11px] font-bold uppercase tracking-widest mb-6">
-                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> Real Reviews
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" /> July 2026 Reseller Spotlight
                 </div>
                 <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-                    Loved by <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">32,000+</span> merchants
+                    Over <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-300 to-cyan-400">1,000 new resellers</span> joined this month
                 </h2>
-                <p className="text-zinc-500 text-lg font-medium">
-                    Don&apos;t take our word for it. See what our community is saying.
+                <p className="text-zinc-500 text-lg font-medium max-w-3xl mx-auto">
+                    In July 2026, active resellers reported more than <span className="text-white font-bold">$600K</span> in platform earnings and sales activity. Read the reviews at an easy pace.
                 </p>
             </div>
 
@@ -81,7 +81,7 @@ export function ReviewsSection() {
                 {/* Right fade */}
                 <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#07060f] to-transparent z-10 pointer-events-none" />
 
-                <div className="flex animate-scroll gap-5 w-[max-content]">
+                <div className="flex animate-scroll hover:pause gap-5 w-[max-content]">
                     {[...reviews, ...reviews].map((review, i) => (
                         <div
                             key={i}
@@ -120,7 +120,7 @@ export function ReviewsSection() {
                     100% { transform: translateX(-50%); }
                 }
                 .animate-scroll {
-                    animation: scroll 120s linear infinite;
+                    animation: scroll 240s linear infinite;
                 }
                 .hover\\:pause:hover {
                     animation-play-state: paused;

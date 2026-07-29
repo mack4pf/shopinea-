@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { User, Menu, X, ChevronRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShopineaLogo } from "@/components/shared/ShopineaLogo";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export function Navbar() {
     const { user, loading } = useAuth();
@@ -79,6 +80,9 @@ export function Navbar() {
 
                     {/* Desktop Actions */}
                     <div className="hidden md:flex items-center gap-2">
+                        <ThemeToggle className={cn(
+                            scrolled ? "" : "border-white/15 bg-white/10 text-white hover:bg-white/20 dark:bg-white/10"
+                        )} />
                         {!loading && (
                             user ? (
                                 <Link href="/dashboard">
@@ -147,12 +151,15 @@ export function Navbar() {
                         <ShopineaLogo size={28} />
                         <span className="font-extrabold text-base text-zinc-900">shopinea</span>
                     </Link>
-                    <button
-                        onClick={close}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <ThemeToggle className="h-9 w-9" />
+                        <button
+                            onClick={close}
+                            className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Nav links */}
