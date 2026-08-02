@@ -47,7 +47,8 @@ export default function RootLayout({
   const themeScript = `
     try {
       const saved = localStorage.getItem("theme");
-      const theme = saved || "light";
+      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const theme = saved || (systemDark ? "dark" : "light");
       document.documentElement.classList.toggle("dark", theme === "dark");
       document.documentElement.dataset.theme = theme;
     } catch (_) {}

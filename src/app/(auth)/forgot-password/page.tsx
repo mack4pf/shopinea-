@@ -15,6 +15,7 @@ import {
     ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
@@ -61,76 +62,79 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#09090b] flex text-white">
-            <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 bg-white/[0.02] border-r border-white/[0.05] p-10">
+        <div className="min-h-screen bg-white dark:bg-[#09090b] flex text-slate-950 dark:text-white">
+            <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 bg-gradient-to-br from-lime-50 via-white to-sky-50 dark:bg-white/[0.02] dark:bg-none border-r border-slate-200 dark:border-white/[0.05] p-10">
                 <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/images/sholinealogo2.png" alt="shopinea" className="w-9 h-9 object-contain" />
-                    <span className="text-sm font-bold text-white tracking-tight">shopinea</span>
+                    <span className="text-sm font-bold text-slate-950 dark:text-white tracking-tight">shopinea</span>
                 </div>
                 <div className="space-y-6">
                     <div className="space-y-2">
-                        <h2 className="text-3xl font-bold leading-tight">Recover access to your merchant account.</h2>
-                        <p className="text-zinc-500 text-sm leading-relaxed">We will send a secure reset link to the email address on your account.</p>
+                        <h2 className="text-3xl font-bold leading-tight text-slate-950 dark:text-white">Recover access to your merchant account.</h2>
+                        <p className="text-slate-600 dark:text-zinc-500 text-sm leading-relaxed">We will send a secure reset link to the email address on your account.</p>
                     </div>
                     <div className="space-y-3">
                         {["Secure Firebase reset link", "Works for reseller and supplier accounts", "Return to your dashboard after reset"].map((item) => (
                             <div key={item} className="flex items-center gap-3">
-                                <div className="w-5 h-5 rounded-full bg-blue-500/15 border border-blue-500/25 flex items-center justify-center shrink-0">
-                                    <CheckCircle2 className="w-3 h-3 text-blue-400" />
+                                <div className="w-5 h-5 rounded-full bg-sky-500/15 border border-sky-500/25 flex items-center justify-center shrink-0">
+                                    <CheckCircle2 className="w-3 h-3 text-sky-600 dark:text-blue-400" />
                                 </div>
-                                <span className="text-sm text-zinc-400">{item}</span>
+                                <span className="text-sm text-slate-600 dark:text-zinc-400">{item}</span>
                             </div>
                         ))}
                     </div>
                 </div>
-                <p className="text-xs text-zinc-700">(c) 2026 Shopinea. All rights reserved.</p>
+                <p className="text-xs text-slate-400 dark:text-zinc-700">(c) 2026 Shopinea. All rights reserved.</p>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative">
+                <div className="absolute top-5 right-5">
+                    <ThemeToggle />
+                </div>
                 <div className="flex items-center gap-2 mb-8 lg:hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/images/sholinealogo2.png" alt="shopinea" className="w-8 h-8 object-contain" />
-                    <span className="text-sm font-bold text-white">shopinea</span>
+                    <span className="text-sm font-bold text-slate-950 dark:text-white">shopinea</span>
                 </div>
 
                 <div className="w-full max-w-[400px]">
-                    <Link href="/login" className="inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors mb-6">
+                    <Link href="/login" className="inline-flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-500 hover:text-slate-800 dark:hover:text-zinc-300 transition-colors mb-6">
                         <ArrowLeft className="w-3.5 h-3.5" />
                         Back to sign in
                     </Link>
 
                     <div className="mb-8">
-                        <h1 className="text-2xl font-bold text-white">Forgot password?</h1>
-                        <p className="text-sm text-zinc-500 mt-1.5">Enter your email and we will send a password reset link.</p>
+                        <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Forgot password?</h1>
+                        <p className="text-sm text-slate-500 dark:text-zinc-500 mt-1.5">Enter your email and we will send a password reset link.</p>
                     </div>
 
                     {error && (
-                        <div className="mb-5 bg-red-500/[0.08] border border-red-500/20 px-4 py-3 rounded-xl flex items-start gap-3">
-                            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                            <p className="text-xs font-medium text-red-400 leading-relaxed">{error}</p>
+                        <div className="mb-5 bg-red-50 dark:bg-red-500/[0.08] border border-red-200 dark:border-red-500/20 px-4 py-3 rounded-xl flex items-start gap-3">
+                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                            <p className="text-xs font-medium text-red-700 dark:text-red-400 leading-relaxed">{error}</p>
                         </div>
                     )}
 
                     {sent && (
-                        <div className="mb-5 bg-emerald-500/[0.08] border border-emerald-500/20 px-4 py-3 rounded-xl flex items-start gap-3">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                            <p className="text-xs font-medium text-emerald-300 leading-relaxed">Check your email for the reset link. It can take a minute to arrive.</p>
+                        <div className="mb-5 bg-emerald-50 dark:bg-emerald-500/[0.08] border border-emerald-200 dark:border-emerald-500/20 px-4 py-3 rounded-xl flex items-start gap-3">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300 leading-relaxed">Check your email for the reset link. It can take a minute to arrive.</p>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-zinc-400">Email address</label>
+                            <label className="text-xs font-medium text-slate-500 dark:text-zinc-400">Email address</label>
                             <div className="relative">
-                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+                                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-600" />
                                 <Input
                                     type="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="name@email.com"
-                                    className="h-11 pl-11 bg-white/[0.04] border-white/[0.08] rounded-xl text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
+                                    className="h-11 pl-11 bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.08] rounded-xl text-sm text-slate-950 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-0 transition-all"
                                 />
                             </div>
                         </div>
@@ -145,8 +149,8 @@ export default function ForgotPasswordPage() {
                     </form>
 
                     <div className="mt-8 flex items-center gap-2 justify-center">
-                        <ShieldCheck className="w-3.5 h-3.5 text-zinc-700" />
-                        <p className="text-[11px] text-zinc-700">Encrypted - Secure - Firebase Auth</p>
+                        <ShieldCheck className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-700" />
+                        <p className="text-[11px] text-slate-400 dark:text-zinc-700">Encrypted - Secure - Firebase Auth</p>
                     </div>
                 </div>
             </div>

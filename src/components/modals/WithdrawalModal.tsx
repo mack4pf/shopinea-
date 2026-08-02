@@ -5,17 +5,15 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-    AlertCircle, 
-    Wallet, 
-    CheckCircle2, 
-    Loader2, 
-    Coins, 
-    ArrowRight, 
+import {
+    AlertCircle,
+    Wallet,
+    CheckCircle2,
+    Loader2,
+    ArrowRight,
     ShieldCheck,
     Building2,
     Bitcoin,
-    ArrowLeft,
     HandIcon,
     KeyRound,
     MessageCircle
@@ -40,7 +38,7 @@ interface WithdrawalModalProps {
 export default function WithdrawalModal({ isOpen, onClose, userData, currencySymbol, onSuccess }: WithdrawalModalProps) {
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
-    const [step, setStep] = useState(1); // 1: Amount & Method Selection, 2: Details, 3: Success
+    const [step, setStep] = useState(1); // 1: form, 3: success
     const [selectedMethod, setSelectedMethod] = useState<any>(null);
     const [showAdDeposit, setShowAdDeposit] = useState(false);
     const [withdrawalCode, setWithdrawalCode] = useState("");
@@ -80,11 +78,11 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
             return;
         }
         if (!expectedWithdrawalCode) {
-            toast.error(`Contact support at ${SUPPORT_EMAIL} to activate your withdrawal verification code.`);
+            toast.error(`Contact support at ${SUPPORT_EMAIL} to get your withdrawal verification code.`);
             return;
         }
         if (withdrawalCode.trim().toUpperCase() !== expectedWithdrawalCode) {
-            toast.error("Invalid withdrawal verification code.");
+            toast.error("Incorrect withdrawal verification code.");
             return;
         }
 
@@ -101,8 +99,8 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 method: selectedMethod.type,
                 methodLabel: selectedMethod.label,
                 methodDetails: selectedMethod,
-                withdrawalCertificateVerified: true,
-                withdrawalCertificateLast4: expectedWithdrawalCode.slice(-4),
+                withdrawalCodeVerified: true,
+                withdrawalCodeLast4: expectedWithdrawalCode.slice(-4),
                 createdAt: serverTimestamp()
             });
 
@@ -114,7 +112,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 amount: numAmount,
                 status: "pending",
                 description: `Withdrawal request to ${selectedMethod.label}`,
-                withdrawalCertificateVerified: true,
+                withdrawalCodeVerified: true,
                 createdAt: serverTimestamp()
             });
 
@@ -122,7 +120,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
             await updateDoc(doc(db, "users", userData.uid), {
                 payoutBalance: increment(-totalNeeded),
                 totalWithdrawn: increment(numAmount),
-                pendingAdDebt: 0 
+                pendingAdDebt: 0
             });
 
             // 4. Send Confirmation Email
@@ -140,7 +138,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                                 <h2 style="color: #111827; margin-bottom: 16px;">Withdrawal Request Received</h2>
                                 <p style="color: #4b5563; line-height: 1.6;">Your withdrawal request for <strong>${currency.currencySymbol}${localAmount.toLocaleString()} ${currency.currencyCode}</strong> has been successfully received.</p>
                                 <p style="color: #4b5563; line-height: 1.6;">Your payout is pending review for the selected destination (${selectedMethod.label}). Your withdrawal verification code was accepted for this request.</p>
-                                <p style="color: #4b5563; line-height: 1.6;">Expected settlement is within 24-48 business hours after finance review.</p>
+                                <p style="color: #4b5563; line-height: 1.6;">Expected settlement is within 24-48 business hours after review.</p>
                             </div>`
                         }
                     })
@@ -159,19 +157,19 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
 
     if (step === 3) {
         return (
-            <Modal isOpen={isOpen} onClose={onClose} title="Request Processed">
-                <div className="flex flex-col items-center justify-center py-10 text-center space-y-8 animate-in zoom-in duration-500">
-                    <div className="w-24 h-24 bg-emerald-500/10 rounded-[2.5rem] flex items-center justify-center text-emerald-500 shadow-2xl shadow-emerald-500/20 border border-emerald-500/20">
-                        <CheckCircle2 className="w-12 h-12" />
+            <Modal isOpen={isOpen} onClose={onClose} title="Request submitted">
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-6 animate-in zoom-in duration-500">
+                    <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 rounded-3xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                        <CheckCircle2 className="w-10 h-10" />
                     </div>
-                    <div className="space-y-3">
-                        <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase leading-none">Transmission Sent</h3>
-                        <p className="text-[11px] font-bold text-zinc-500 max-w-[280px] mx-auto leading-relaxed uppercase tracking-widest italic">
-                            Your withdrawal request passed verification and is queued for finance review. Expected settlement within 24-48 business hours.
+                    <div className="space-y-2">
+                        <h3 className="text-xl font-bold text-slate-950 dark:text-white">Your withdrawal is on its way</h3>
+                        <p className="text-sm text-slate-500 dark:text-zinc-500 max-w-[280px] mx-auto leading-relaxed">
+                            We&apos;ve received your request and it&apos;s being reviewed by our finance team. Expect it within 24–48 business hours.
                         </p>
                     </div>
-                    <Button onClick={onClose} className="w-full bg-white text-black font-black h-16 rounded-2xl shadow-2xl active:scale-95 transition-all text-[11px] uppercase tracking-widest italic border-b-4 border-zinc-300 active:border-b-0">
-                        ACKNOWLEDGE & CLOSE
+                    <Button onClick={onClose} className="w-full bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-semibold h-12 rounded-xl">
+                        Done
                     </Button>
                 </div>
             </Modal>
@@ -182,73 +180,71 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Capital Withdrawal"
+            title="Withdraw funds"
+            description="Move your available earnings to a linked payout method."
         >
-            <div className="space-y-8 py-4">
+            <div className="space-y-6 py-2">
                 {/* Balance Cards */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
-                        <p className="text-[9px] font-black uppercase text-emerald-500 mb-2 leading-none tracking-[0.2em] relative z-10">Liquid Assets</p>
-                        <p className="text-2xl font-black text-white tracking-tighter italic relative z-10">{currency.money(availableBalance)}</p>
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl">
+                        <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5 uppercase tracking-wide">Available</p>
+                        <p className="text-xl font-bold text-slate-950 dark:text-white">{currency.money(availableBalance)}</p>
                     </div>
-                    <div className="p-6 bg-zinc-950 border border-zinc-800 rounded-[2rem] shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-zinc-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
-                        <p className="text-[9px] font-black uppercase text-zinc-600 mb-2 leading-none tracking-[0.2em] relative z-10">Escrow Locked</p>
-                        <p className="text-2xl font-black text-zinc-500 tracking-tighter italic relative z-10">{currency.money(lockedBalance)}</p>
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl">
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-zinc-500 mb-1.5 uppercase tracking-wide">Pending</p>
+                        <p className="text-xl font-bold text-slate-500 dark:text-zinc-400">{currency.money(lockedBalance)}</p>
                     </div>
                 </div>
 
                 {/* Amount Input */}
-                <div className="space-y-4">
-                    <Label className="text-zinc-500 font-black text-[10px] uppercase tracking-[0.3em] pl-1">Amount to De-route</Label>
-                    <div className="relative group">
-                        <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-zinc-600 text-xl group-focus-within:text-blue-500 transition-colors">{currencySymbol}</span>
+                <div className="space-y-2">
+                    <Label className="text-slate-600 dark:text-zinc-400 font-semibold text-xs">Amount</Label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 dark:text-zinc-600 text-lg">{currencySymbol}</span>
                         <Input
                             type="number"
                             placeholder="0.00"
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            className="h-20 pl-14 bg-zinc-950 border-zinc-800 rounded-[1.8rem] font-black text-3xl text-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 shadow-inner transition-all italic placeholder:text-zinc-800"
+                            className="h-14 pl-9 bg-slate-50 dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 rounded-2xl font-bold text-2xl text-slate-950 dark:text-white focus-visible:ring-blue-500/20 focus-visible:border-blue-500"
                         />
                     </div>
-                    <div className="flex justify-between px-2">
-                        <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Min Limit: {currency.money(minWithdrawal)}</p>
-                        {currency.toUsd(parseFloat(amount) || 0) > availableBalance && <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest animate-pulse">Insufficient Liquidity</p>}
+                    <div className="flex justify-between px-1">
+                        <p className="text-xs text-slate-500 dark:text-zinc-600">Minimum: {currency.money(minWithdrawal)}</p>
+                        {currency.toUsd(parseFloat(amount) || 0) > availableBalance && <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">Insufficient balance</p>}
                     </div>
                 </div>
 
-                {/* Ad Debt Alert / Block */}
                 {withdrawalsLocked ? (
-                    <div className="space-y-5 text-center py-10">
-                        <AlertCircle className="w-14 h-14 text-rose-500 mx-auto" />
+                    <div className="space-y-3 text-center py-8">
+                        <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
                         <div>
-                            <h3 className="text-2xl font-black text-rose-500 tracking-tighter italic uppercase">Withdrawals Locked</h3>
-                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mt-2 max-w-xs mx-auto">
-                                This account cannot submit withdrawal requests right now.
+                            <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">Withdrawals are locked</h3>
+                            <p className="text-slate-500 dark:text-zinc-500 text-sm mt-1 max-w-xs mx-auto">
+                                This account can&apos;t submit withdrawal requests right now. Contact support for details.
                             </p>
                         </div>
                     </div>
                 ) : adDebt > 0 ? (
-                    <div className="space-y-6 text-center py-10 animate-in slide-in-from-top-4 duration-500">
-                        <AlertCircle className="w-16 h-16 text-rose-500 mx-auto" />
+                    <div className="space-y-4 text-center py-8 animate-in slide-in-from-top-4 duration-500">
+                        <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
                         <div>
-                            <h3 className="text-3xl font-black text-rose-500 tracking-tighter italic uppercase">Outstanding Ad Debt</h3>
-                            <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mt-2 max-w-xs mx-auto">
-                                You currently owe {currency.money(adDebt)} for postpaid ad campaigns. You must clear this balance before initiating any withdrawals.
+                            <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">Outstanding ad balance</h3>
+                            <p className="text-slate-500 dark:text-zinc-500 text-sm mt-1 max-w-xs mx-auto">
+                                You owe {currency.money(adDebt)} for postpaid ad campaigns. Clear this balance before withdrawing.
                             </p>
                         </div>
-                        <Button 
-                            onClick={() => setShowAdDeposit(true)} 
-                            className="h-16 px-10 rounded-[1.5rem] bg-rose-600 hover:bg-rose-700 text-white font-black uppercase text-[11px] tracking-widest shadow-2xl shadow-rose-500/20 active:scale-95 transition-all mt-6"
+                        <Button
+                            onClick={() => setShowAdDeposit(true)}
+                            className="h-11 px-6 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold"
                         >
-                            CLEAR AD DEBT NOW
+                            Clear ad balance
                         </Button>
-                        <AdDepositModal 
-                            isOpen={showAdDeposit} 
-                            onClose={() => { setShowAdDeposit(false); onClose(); }} 
-                            userId={userData?.uid} 
-                            requiredDebtAmount={adDebt} 
+                        <AdDepositModal
+                            isOpen={showAdDeposit}
+                            onClose={() => { setShowAdDeposit(false); onClose(); }}
+                            userId={userData?.uid}
+                            requiredDebtAmount={adDebt}
                             currencySymbol={currency.currencySymbol}
                             currencyCode={currency.currencyCode}
                             exchangeRate={currency.rates[currency.currencyCode] || 1}
@@ -257,93 +253,93 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 ) : (
                     <>
                         {/* Method Selection */}
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center px-1">
-                                <Label className="text-zinc-500 font-black text-[10px] uppercase tracking-[0.3em]">Payout Destination</Label>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center px-0.5">
+                                <Label className="text-slate-600 dark:text-zinc-400 font-semibold text-xs">Payout method</Label>
                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
                             </div>
-                            
+
                             {payoutMethods.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-3">
+                                <div className="grid grid-cols-1 gap-2">
                                     {payoutMethods.map((m: any, idx: number) => (
                                         <button
                                             key={m.id || `method-${idx}`}
                                             onClick={() => setSelectedMethod(m)}
-                                            className={`w-full p-6 rounded-[1.5rem] border-2 transition-all flex items-center justify-between text-left group shadow-sm ${selectedMethod?.id === m.id ? 'border-blue-600 bg-blue-600/10 shadow-2xl shadow-blue-600/10' : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'}`}
+                                            className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between text-left ${selectedMethod?.id === m.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-600/10' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-slate-300 dark:hover:border-zinc-700'}`}
                                         >
-                                            <div className="flex items-center gap-5">
-                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xl ${m.type === 'crypto' ? 'bg-orange-500' : 'bg-blue-600'}`}>
-                                                    {m.type === 'crypto' ? <Bitcoin className="w-6 h-6" /> : <Building2 className="w-6 h-6" />}
+                                            <div className="flex items-center gap-3.5">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 ${m.type === 'crypto' ? 'bg-orange-500' : 'bg-blue-600'}`}>
+                                                    {m.type === 'crypto' ? <Bitcoin className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-black text-white leading-none mb-1.5 group-hover:translate-x-1 transition-transform uppercase italic tracking-tight">{m.label}</p>
-                                                    <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em]">{m.type === 'crypto' ? m.network : m.bankName} • SECURED</p>
+                                                    <p className="text-sm font-semibold text-slate-950 dark:text-white leading-none mb-1">{m.label}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-zinc-600">{m.type === 'crypto' ? m.network : m.bankName}</p>
                                                 </div>
                                             </div>
-                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedMethod?.id === m.id ? 'border-blue-600 bg-blue-600 text-white' : 'border-zinc-700'}`}>
-                                                {selectedMethod?.id === m.id && <CheckCircle2 className="w-4 h-4" />}
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedMethod?.id === m.id ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 dark:border-zinc-700'}`}>
+                                                {selectedMethod?.id === m.id && <CheckCircle2 className="w-3.5 h-3.5" />}
                                             </div>
                                         </button>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="p-10 bg-zinc-950 border-2 border-dashed border-zinc-800 rounded-[2rem] text-center space-y-4">
-                                     <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto">
-                                        <HandIcon className="w-8 h-8 text-zinc-600" />
-                                     </div>
-                                     <div className="space-y-1">
-                                        <h4 className="text-[11px] font-black text-white uppercase tracking-widest italic">No Destination Configured</h4>
-                                        <p className="text-[10px] font-bold text-zinc-600 max-w-[220px] mx-auto leading-relaxed uppercase italic">Please navigate to Registry Settings to authorize a payout node.</p>
-                                     </div>
+                                <div className="p-8 bg-slate-50 dark:bg-zinc-950 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl text-center space-y-3">
+                                    <div className="w-12 h-12 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto">
+                                        <HandIcon className="w-6 h-6 text-slate-400 dark:text-zinc-600" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-sm font-semibold text-slate-950 dark:text-white">No payout method yet</h4>
+                                        <p className="text-xs text-slate-500 dark:text-zinc-600 max-w-[220px] mx-auto leading-relaxed">Add one from Settings before withdrawing.</p>
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="rounded-[1.5rem] border border-lime-400/25 bg-lime-400/10 p-5 space-y-4">
+                        <div className="rounded-2xl border border-lime-300 dark:border-lime-400/25 bg-lime-50 dark:bg-lime-400/10 p-4 space-y-3">
                             <div className="flex items-start gap-3">
-                                <div className="w-11 h-11 rounded-2xl bg-lime-400 text-slate-950 flex items-center justify-center shrink-0">
-                                    <KeyRound className="w-5 h-5" />
+                                <div className="w-10 h-10 rounded-xl bg-lime-500 text-slate-950 flex items-center justify-center shrink-0">
+                                    <KeyRound className="w-4.5 h-4.5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Withdrawal Verification Code</h3>
-                                    <p className="text-[11px] font-bold text-zinc-500 leading-relaxed mt-1">
-                                        Enter your active withdrawal code before submitting. This extra review step helps confirm that the payout request belongs to you and protects funds from being routed to an unapproved destination.
+                                    <h3 className="text-sm font-semibold text-slate-950 dark:text-white">Withdrawal verification code</h3>
+                                    <p className="text-xs text-slate-600 dark:text-zinc-500 leading-relaxed mt-1">
+                                        This one-time code confirms the withdrawal request is really coming from you, so your payout can only go to your own approved destination.
                                     </p>
                                 </div>
                             </div>
                             {!expectedWithdrawalCode && (
-                                <div className="flex items-start gap-2 rounded-xl border border-sky-500/20 bg-sky-500/10 p-3">
-                                    <MessageCircle className="w-4 h-4 text-sky-300 shrink-0 mt-0.5" />
-                                    <p className="text-[11px] text-sky-100 leading-relaxed">
-                                        Contact support at <span className="font-black">{SUPPORT_EMAIL}</span> or open Support Chat to activate your withdrawal verification code.
+                                <div className="flex items-start gap-2 rounded-xl border border-sky-200 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 p-3">
+                                    <MessageCircle className="w-4 h-4 text-sky-600 dark:text-sky-300 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-sky-800 dark:text-sky-100 leading-relaxed">
+                                        You don&apos;t have a code yet. Contact support at <span className="font-semibold">{SUPPORT_EMAIL}</span> or open Support Chat to get one — it&apos;s free.
                                     </p>
                                 </div>
                             )}
                             <Input
                                 value={withdrawalCode}
                                 onChange={(e) => setWithdrawalCode(e.target.value.toUpperCase())}
-                                placeholder="Enter withdrawal code"
-                                className="h-14 bg-white text-slate-950 border-lime-300 rounded-2xl font-black tracking-[0.25em] uppercase placeholder:tracking-normal placeholder:text-slate-400 focus:ring-lime-400"
+                                placeholder="Enter your code"
+                                className="h-12 bg-white dark:bg-white text-slate-950 dark:text-slate-950 border-lime-300 rounded-xl font-semibold tracking-widest uppercase placeholder:tracking-normal placeholder:text-slate-400 placeholder:font-normal focus-visible:ring-lime-400"
                                 autoComplete="one-time-code"
                             />
                         </div>
 
-                        <div className="pt-4">
+                        <div className="pt-1">
                             <Button
                                 onClick={handleWithdraw}
                                 disabled={loading || withdrawalsLocked || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || !selectedMethod || !withdrawalCode.trim() || currency.toUsd(parseFloat(amount) || 0) > availableBalance || currency.toUsd(parseFloat(amount) || 0) < minWithdrawal}
-                                className="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-500/30 active:scale-95 transition-all text-[11px] uppercase tracking-[0.3em] italic gap-4 flex border-b-4 border-blue-800 active:border-b-0"
+                                className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl gap-2 flex items-center justify-center"
                             >
-                                {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                                     <>
-                                        INITIALIZE TRANSFER
-                                        <ArrowRight className="w-5 h-5" />
+                                        Request withdrawal
+                                        <ArrowRight className="w-4 h-4" />
                                     </>
                                 )}
                             </Button>
-                            <p className="text-center mt-6 text-[9px] font-black text-zinc-700 uppercase tracking-widest italic flex items-center justify-center gap-2">
-                                <ShieldCheck className="w-3 h-3" />
-                                End-to-End Encrypted Payout Protocol
+                            <p className="text-center mt-4 text-xs text-slate-400 dark:text-zinc-600 flex items-center justify-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Reviewed by our finance team before payout
                             </p>
                         </div>
                     </>

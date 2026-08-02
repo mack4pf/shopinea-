@@ -9,6 +9,17 @@ export function ThemeToggle({ className = "", showLabel = false }: { className?:
 
     useEffect(() => {
         setIsDark(document.documentElement.classList.contains("dark"));
+
+        // Follow the OS theme live until the user picks one explicitly.
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+        const handleSystemChange = (e: MediaQueryListEvent) => {
+            if (localStorage.getItem("theme")) return;
+            document.documentElement.classList.toggle("dark", e.matches);
+            document.documentElement.dataset.theme = e.matches ? "dark" : "light";
+            setIsDark(e.matches);
+        };
+        media.addEventListener("change", handleSystemChange);
+        return () => media.removeEventListener("change", handleSystemChange);
     }, []);
 
     const toggleTheme = () => {

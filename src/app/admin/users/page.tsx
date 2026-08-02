@@ -1642,13 +1642,36 @@ export default function UserMatrixPage() {
                                             if (e.target.value === 'billing') {
                                                 setAdminSubject('Action required: account verification support');
                                                 setAdminBody('Hello Merchant,\n\nYour account needs an additional support review before this request can continue. Please contact support@shoplinea.shop or open Support Chat from your dashboard so our team can confirm the next steps.\n\nFor your safety, do not share passwords, card details, or private wallet keys in chat or email.\n\nThank you,\nShopinea Support Team');
+                                            } else if (e.target.value === 'welcome') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
+                                                setAdminSubject('Welcome to Shopinea');
+                                                setAdminBody(`Hi ${merchantName},\n\nWelcome to Shopinea! Your account is set up and ready to go.\n\nHere's a quick way to get started:\n1. Add your first product from the Products tab\n2. Customize your store name and branding in Settings\n3. Fund your ads wallet to start reaching buyers\n4. Complete identity verification to unlock payouts\n\nIf you run into anything, open Support Chat from your dashboard and our team will help.\n\nThank you,\nShopinea Team`);
+                                            } else if (e.target.value === 'kyc-approved') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
+                                                setAdminSubject('Your identity verification is approved');
+                                                setAdminBody(`Hi ${merchantName},\n\nGood news — your identity verification has been reviewed and approved.\n\nYour account now has full access to payouts and withdrawals. You can request a withdrawal anytime from Wallet in your dashboard.\n\nThank you,\nShopinea Team`);
+                                            } else if (e.target.value === 'kyc-rejected') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
+                                                setAdminSubject('Action needed: identity verification');
+                                                setAdminBody(`Hi ${merchantName},\n\nWe reviewed your identity verification submission and need a bit more information before we can approve it. This is usually because a document was blurry, expired, or didn't match your account details.\n\nPlease resubmit your verification from Settings, or open Support Chat if you have questions.\n\nThank you,\nShopinea Team`);
+                                            } else if (e.target.value === 'subscription-reminder') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
+                                                const planName = selectedUser?.planName || "your current plan";
+                                                setAdminSubject('Your subscription renews soon');
+                                                setAdminBody(`Hi ${merchantName},\n\nJust a heads up that ${planName} is coming up for renewal soon. To keep your store, listings, and tools running without interruption, make sure your payment method is up to date.\n\nYou can review or change your plan anytime under Dashboard > Plans.\n\nThank you,\nShopinea Team`);
+                                            } else if (e.target.value === 'announcement') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
+                                                setAdminSubject("What's new on Shopinea");
+                                                setAdminBody(`Hi ${merchantName},\n\nWe've been shipping improvements to the platform and wanted to keep you in the loop. Check your dashboard for the latest updates to tools, analytics, and store features.\n\nAs always, if you have feedback or run into an issue, open Support Chat and we'll take a look.\n\nThank you,\nShopinea Team`);
                                             } else if (e.target.value === 'winning-product') {
-                                                const topProduct = selectedUser?.storeProducts?.[0]?.name || userProducts?.[0]?.name || "Your winning product";
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
+                                                const topProduct = selectedUser?.storeProducts?.[0]?.name || userProducts?.[0]?.name || "one of your products";
                                                 setAdminSubject(`${topProduct} is ready for ads`);
-                                                setAdminBody(`Sharp AI template: tells the merchant this product has had strong sales signals over the last 2 months and they should run ads now.`);
+                                                setAdminBody(`Hi ${merchantName},\n\nWe've noticed ${topProduct} has had strong sales momentum over the last couple of months — this is a good sign it could perform even better with some paid reach behind it.\n\nRunning ads on a proven seller is one of the fastest ways to scale revenue, since you already know buyers want it. You can fund your ads wallet and launch a campaign anytime from your dashboard.\n\nLet us know if you'd like a hand setting it up.\n\nThank you,\nShopinea Team`);
                                             } else if (e.target.value === 'upgrade-plan') {
+                                                const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
                                                 setAdminSubject('Your Shopinea account is ready to upgrade');
-                                                setAdminBody('Sharp AI template: tells the merchant to upgrade for more products, advanced analytics, and AI growth tools.');
+                                                setAdminBody(`Hi ${merchantName},\n\nBased on your activity, you're a good fit for a higher plan. Upgrading unlocks more product listings, advanced analytics, and our AI growth tools to help you find winning products faster.\n\nYou can compare plans and upgrade anytime from Dashboard > Plans.\n\nQuestions before you switch? Just reply to this email or open Support Chat.\n\nThank you,\nShopinea Team`);
                                             } else if (e.target.value === 'escrow-unlocked') {
                                                 const merchantName = selectedUser?.displayName || selectedUser?.fullName || "Merchant";
                                                 const unlockedAmount = Number(selectedUser?.pendingPayout || selectedUser?.payoutBalance || 0);
@@ -1666,11 +1689,16 @@ export default function UserMatrixPage() {
                                         }}
                                     >
                                         <option value="custom" className="bg-zinc-900">Custom Message</option>
-                                        <option value="winning-product" className="bg-zinc-900">Winning Product Ads</option>
-                                        <option value="upgrade-plan" className="bg-zinc-900">Upgrade Plan Prompt</option>
+                                        <option value="welcome" className="bg-zinc-900">Welcome / Getting Started</option>
+                                        <option value="kyc-approved" className="bg-zinc-900">Identity Verification Approved</option>
+                                        <option value="kyc-rejected" className="bg-zinc-900">Identity Verification Needs Action</option>
                                         <option value="escrow-unlocked" className="bg-zinc-900">Escrow Unlocked</option>
                                         <option value="withdrawal-code" className="bg-zinc-900">Withdrawal Code</option>
                                         <option value="billing" className="bg-zinc-900">Account Support Review</option>
+                                        <option value="subscription-reminder" className="bg-zinc-900">Subscription Renewal Reminder</option>
+                                        <option value="winning-product" className="bg-zinc-900">Winning Product Ads</option>
+                                        <option value="upgrade-plan" className="bg-zinc-900">Upgrade Plan Prompt</option>
+                                        <option value="announcement" className="bg-zinc-900">Platform Announcement</option>
                                     </select>
                                 </div>
                                 <div className="space-y-1">
