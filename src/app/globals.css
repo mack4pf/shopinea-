@@ -141,13 +141,13 @@
   /* Content areas were designed dark-first (raw zinc/black utility classes with
      no dark: prefix). Rather than rewrite every page, retarget those raw classes
      onto the light surface tokens above whenever the light theme is active. */
-  html:not(.dark) :where(.dashboard-content, .admin-shell main) :where([class*="bg-white/["], .bg-zinc-950, .bg-zinc-900, .bg-zinc-800, [class*="bg-zinc-950/"], [class*="bg-zinc-900/"], [class*="bg-zinc-800/"], [class*="bg-[#0b0f1a]"], [class*="bg-[#0f172a]"], [class*="bg-black/"]) {
+  html:not(.dark) :where(.dashboard-content, .admin-shell main) :where([class*="bg-white/["], .bg-zinc-950, .bg-zinc-900, .bg-zinc-800, [class*="bg-zinc-950/"], [class*="bg-zinc-900/"], [class*="bg-zinc-800/"], [class*="bg-[#0"], [class*="bg-black/"]) {
     background: var(--app-surface) !important;
     border-color: var(--app-border) !important;
     box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
   }
 
-  html:not(.dark) :where(.dashboard-content, .admin-shell main) :where([class*="bg-white/["], .bg-zinc-950, .bg-zinc-900, .bg-zinc-800, [class*="bg-zinc-950/"], [class*="bg-zinc-900/"], [class*="bg-zinc-800/"]) :where(.text-white, .text-zinc-100, .text-zinc-200, .text-zinc-300) {
+  html:not(.dark) :where(.dashboard-content, .admin-shell main) :where([class*="bg-white/["], .bg-zinc-950, .bg-zinc-900, .bg-zinc-800, [class*="bg-zinc-950/"], [class*="bg-zinc-900/"], [class*="bg-zinc-800/"], [class*="bg-[#0"]) :where(.text-white, .text-zinc-100, .text-zinc-200, .text-zinc-300) {
     color: var(--app-text) !important;
   }
 

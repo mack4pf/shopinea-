@@ -25,6 +25,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
 
+    if (pathname === "/admin/login") {
+        return <>{children}</>;
+    }
+
     return (
         <div className="admin-shell min-h-screen bg-slate-50 text-slate-950 flex">
             {open && (
