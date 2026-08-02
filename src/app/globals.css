@@ -1,6 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* Tailwind v4 defaults `dark:` to the OS prefers-color-scheme media query and
+   ignores the legacy `darkMode: "class"` option in tailwind.config.js. This
+   repo toggles a `.dark` class on <html> (see layout.tsx + ThemeToggle), so
+   every `dark:` utility must key off that class instead — otherwise the
+   in-app theme toggle has no effect and the site just follows the OS theme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --background: 210 40% 98%;
