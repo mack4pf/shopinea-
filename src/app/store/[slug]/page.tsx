@@ -127,10 +127,18 @@ export default function StorePage() {
                         : { uid: uDoc.id, ...ownerData } as any;
                     setStoreUser(uData);
 
-                    // Increment store view
-                    await updateDoc(doc(db, "users", uDoc.id), {
-                        "stats.views": increment(1)
-                    });
+                    // Record a real visit — once per browser session per store, so
+                    // navigating between product pages doesn't inflate the count.
+                    const visitedKey = `storeVisit:${uDoc.id}`;
+                    const alreadyCounted = typeof window !== "undefined" && sessionStorage.getItem(visitedKey);
+                    const todayKey = new Date().toISOString().slice(0, 10);
+                    const visitUpdates: Record<string, any> = { "stats.views": increment(1) };
+                    if (!alreadyCounted) {
+                        visitUpdates.storeVisits = increment(1);
+                        visitUpdates[`dailyStoreVisits.${todayKey}`] = increment(1);
+                        if (typeof window !== "undefined") sessionStorage.setItem(visitedKey, "1");
+                    }
+                    await updateDoc(doc(db, "users", uDoc.id), visitUpdates);
 
                     // Fetch order counts per product
                     const ordersSnap = await getDocs(query(collection(db, "orders"), where("resellerId", "==", uDoc.id)));

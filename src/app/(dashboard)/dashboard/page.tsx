@@ -38,9 +38,10 @@ export default function ResellerHome() {
                 const todayKey = todayAnalyticsKey();
                 const storeViews = numeric(data?.storeViews || data?.impressions || data?.stats?.views);
                 const storeVisits = numeric(data?.storeVisits);
-                const dailyVisits = numeric(data?.dailyStoreVisits?.[todayKey]);
-                const visitorsToday = dailyVisits || storeVisits || storeViews;
-                const totalVisitors = storeVisits || storeViews || visitorsToday;
+                // "Today" must only count today's tracked visits — no falling back to
+                // all-time totals, otherwise this card silently shows the all-time number.
+                const visitorsToday = numeric(data?.dailyStoreVisits?.[todayKey]);
+                const totalVisitors = storeVisits || storeViews;
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -70,10 +71,10 @@ export default function ResellerHome() {
         </div>
     );
 
-    const conversionBase = stats.totalVisitors || stats.visitorsToday;
-    const conversionOrders = stats.totalOrders || stats.ordersToday;
-    const conversion = conversionOrders > 0 && conversionBase > 0
-        ? `${((conversionOrders / conversionBase) * 100).toFixed(1)}%` : "0%";
+    // All-time conversion rate — keep this on one consistent time window
+    // (total orders over total visits) rather than mixing "today" with "all-time".
+    const conversion = stats.totalOrders > 0 && stats.totalVisitors > 0
+        ? `${((stats.totalOrders / stats.totalVisitors) * 100).toFixed(1)}%` : "0%";
 
     const setupSteps = [
         { icon: Package,    title: "Add your first product",  desc: "Browse and select products to sell.", done: (userData?.storeProducts?.length > 0), href: '/dashboard/products' },
@@ -116,11 +117,12 @@ export default function ResellerHome() {
             </div>
 
             {/* ── KPI Row ── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                 {[
                     { label: "Revenue Today",  value: currency.money(stats.revenueToday), icon: TrendingUp,   color: "text-emerald-400", bg: "bg-emerald-500/10", trend: null },
                     { label: "Orders Today",   value: stats.ordersToday.toString(),                 icon: ShoppingCart, color: "text-blue-400",    bg: "bg-blue-500/10",    trend: null },
                     { label: "Visits Today",   value: stats.visitorsToday.toLocaleString(),          icon: Eye,          color: "text-violet-400",  bg: "bg-violet-500/10",  trend: null },
+                    { label: "Total Visits",   value: stats.totalVisitors.toLocaleString(),          icon: Eye,          color: "text-sky-400",     bg: "bg-sky-500/10",     trend: null },
                     { label: "Conversion",     value: conversion,                                    icon: Zap,          color: "text-amber-400",   bg: "bg-amber-500/10",   trend: null },
                 ].map((card, i) => (
                     <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3">

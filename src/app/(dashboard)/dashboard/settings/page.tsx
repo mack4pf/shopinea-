@@ -33,7 +33,7 @@ export default function SettingsPage() {
 
     const [formData, setFormData] = useState({
         displayName: "", phone: "", country: "United States", countryCode: "US", currency: "USD", currencySymbol: "$",
-        storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981"
+        storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid"
     });
     const [host, setHost] = useState("");
 
@@ -57,7 +57,9 @@ export default function SettingsPage() {
                         storeName: data.storeName || "",
                         storeSlug: data.storeSlug || "",
                         storeTagline: data.storeTagline || "",
-                        themeColor: data.themeColor || "#10b981"
+                        themeColor: data.themeColor || "#10b981",
+                        storeTemplate: data.storeTemplate || "classic",
+                        storeLayout: data.storeLayout || "grid"
                     });
                     setKycData(data.identification || {
                         fullName: "", idType: "Government ID",
@@ -86,6 +88,8 @@ export default function SettingsPage() {
                 storeSlug: formData.storeSlug,
                 storeTagline: formData.storeTagline,
                 themeColor: formData.themeColor,
+                storeTemplate: formData.storeTemplate,
+                storeLayout: formData.storeLayout,
             });
             toast.success("Settings saved successfully.");
         } catch (error) {
@@ -292,6 +296,62 @@ export default function SettingsPage() {
                                                 <Input value={formData.themeColor} onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
                                                     className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 flex-1" placeholder="#10b981" />
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label className="text-xs font-medium text-zinc-400">Store Template</Label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                            {[
+                                                { id: "classic", name: "Classic", swatchFrom: "#f4f7fb", swatchTo: "#064e3b" },
+                                                { id: "spotlight", name: "Spotlight", swatchFrom: "#0f172a", swatchTo: "#1e293b" },
+                                                { id: "minimal", name: "Minimal", swatchFrom: "#ffffff", swatchTo: "#f1f5f9" },
+                                                { id: "boutique", name: "Boutique", swatchFrom: "#fff1f2", swatchTo: "#3f1d2e" },
+                                                { id: "bold", name: "Bold", swatchFrom: "#09090b", swatchTo: "#7c2d12" },
+                                            ].map((t) => (
+                                                <button
+                                                    key={t.id}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, storeTemplate: t.id })}
+                                                    className={cn(
+                                                        "rounded-xl border p-2 text-left transition-all",
+                                                        formData.storeTemplate === t.id
+                                                            ? "border-blue-500 ring-2 ring-blue-500/30"
+                                                            : "border-white/[0.08] hover:border-white/[0.16]"
+                                                    )}
+                                                >
+                                                    <div
+                                                        className="h-12 w-full rounded-lg mb-2 border border-white/[0.06]"
+                                                        style={{ background: `linear-gradient(135deg, ${t.swatchFrom}, ${t.swatchTo})` }}
+                                                    />
+                                                    <span className="text-xs font-medium text-zinc-300">{t.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label className="text-xs font-medium text-zinc-400">Product Layout</Label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                            {[
+                                                { id: "grid", name: "Grid", desc: "Balanced grid" },
+                                                { id: "featured", name: "Featured", desc: "Larger cards" },
+                                                { id: "compact", name: "Compact", desc: "More per row" },
+                                                { id: "editorial", name: "Editorial", desc: "Two columns" },
+                                            ].map((l) => (
+                                                <button
+                                                    key={l.id}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, storeLayout: l.id })}
+                                                    className={cn(
+                                                        "rounded-xl border p-3 text-left transition-all",
+                                                        formData.storeLayout === l.id
+                                                            ? "border-blue-500 ring-2 ring-blue-500/30 bg-blue-500/5"
+                                                            : "border-white/[0.08] hover:border-white/[0.16]"
+                                                    )}
+                                                >
+                                                    <span className="text-xs font-semibold text-white block">{l.name}</span>
+                                                    <span className="text-[11px] text-zinc-500">{l.desc}</span>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                     <div className="space-y-2">

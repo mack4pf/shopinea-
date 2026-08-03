@@ -152,7 +152,8 @@ export default function AnalyticsPage() {
                     const totalRev = orders.reduce((acc, curr) => acc + (curr.resellPrice || 0), 0);
                     const impressions = numeric(uData?.storeViews || uData?.impressions || uData?.stats?.views);
                     const visits = numeric(uData?.storeVisits || impressions);
-                    const visitsToday = numeric(uData?.dailyStoreVisits?.[todayAnalyticsKey()]) || visits;
+                    // Today's count only — don't fall back to the all-time total.
+                    const visitsToday = numeric(uData?.dailyStoreVisits?.[todayAnalyticsKey()]);
                     const convBase = visits || impressions;
                     const convRate = convBase > 0 ? (orders.length / convBase) * 100 : 0;
                     const avgVal = orders.length > 0 ? totalRev / orders.length : 0;
