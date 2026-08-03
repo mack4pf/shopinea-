@@ -1084,6 +1084,30 @@ export default function UserMatrixPage() {
                             </div>
                         </div>
 
+                        {/* Account Details */}
+                        <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl space-y-4">
+                            <h3 className="text-sm font-semibold text-white">Account Details</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {[
+                                    { label: "Phone", value: selectedUser.phoneNumber || "—" },
+                                    { label: "Country", value: selectedUser.country || "—" },
+                                    { label: "Currency", value: selectedUser.currency ? `${selectedUser.currencySymbol || ""} ${selectedUser.currency}` : "—" },
+                                    { label: "Role", value: selectedUser.role ? selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1) : "—" },
+                                    { label: "Store Name", value: selectedUser.storeName || "—" },
+                                    { label: "Store URL", value: selectedUser.storeSlug ? `/store/${selectedUser.storeSlug}` : "—" },
+                                    { label: "KYC Status", value: selectedUser.kycStatus ? selectedUser.kycStatus.charAt(0).toUpperCase() + selectedUser.kycStatus.slice(1) : "Unverified" },
+                                    { label: "Referral Code", value: selectedUser.referralCode || "—" },
+                                    { label: "Referred By", value: selectedUser.referredBy || "—" },
+                                    { label: "Joined", value: selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : "—" },
+                                ].map((field) => (
+                                    <div key={field.label}>
+                                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">{field.label}</p>
+                                        <p className="text-sm font-medium text-zinc-200 truncate">{field.value}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                             <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
                                 <p className="text-xs text-zinc-500">Total Sales</p>

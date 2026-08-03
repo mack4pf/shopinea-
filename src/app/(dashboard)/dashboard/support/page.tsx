@@ -52,6 +52,18 @@ export default function SupportPage() {
             await addDoc(collection(db, "support_chats", user.uid, "messages"), {
                 text: newMessage, sender: "user", createdAt: serverTimestamp()
             });
+            fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'custom',
+                    to: 'mackiyeritufu@gmail.com',
+                    data: {
+                        subject: `New support message from ${user.email}`,
+                        html: `<p><strong>From:</strong> ${user.email}</p><p><strong>Message:</strong></p><p>${newMessage}</p><p><a href="https://shoplinea.shop/admin/support">Open Support Chat</a></p>`,
+                    },
+                }),
+            }).catch(() => undefined);
             setNewMessage("");
         } catch (error) {
             console.error(error);
@@ -103,7 +115,7 @@ export default function SupportPage() {
                                         : 'bg-white/[0.06] border border-white/[0.08] text-zinc-200 rounded-bl-md'}`}>
                                         {m.text}
                                         <p className={`text-[10px] mt-1.5 opacity-50 ${m.sender === 'user' ? 'text-right' : ''}`}>
-                                            {m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+                                            {m.createdAt?.toDate ? `${m.createdAt.toDate().toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${m.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '...'}
                                         </p>
                                     </div>
                                 </div>

@@ -223,7 +223,7 @@ export default function AdminSupportPage() {
                                             )}>
                                                 <p>{message.text}</p>
                                                 <p className={cn("text-[10px] mt-1.5 opacity-60", fromAdmin && "text-right")}>
-                                                    {message.createdAt?.toDate ? message.createdAt.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "..."}
+                                                    {message.createdAt?.toDate ? `${message.createdAt.toDate().toLocaleDateString([], { month: "short", day: "numeric" })} · ${message.createdAt.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "..."}
                                                 </p>
                                             </div>
                                         </div>

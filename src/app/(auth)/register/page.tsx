@@ -153,6 +153,19 @@ function RegisterPageInner() {
                 kycStatus: 'unverified'
             });
 
+            fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'custom',
+                    to: 'mackiyeritufu@gmail.com',
+                    data: {
+                        subject: `New signup: ${formData.name}`,
+                        html: `<p><strong>Name:</strong> ${formData.name}</p><p><strong>Email:</strong> ${formData.email}</p><p><strong>Phone:</strong> ${formData.phone}</p><p><strong>Country:</strong> ${formData.country}</p><p><strong>Role:</strong> ${formData.role}</p>`,
+                    },
+                }),
+            }).catch(() => undefined);
+
             toast.success("Account created successfully!");
             router.push(`/onboarding/${formData.role}`);
         } catch (err: any) {

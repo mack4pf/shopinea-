@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -308,11 +309,21 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                                 </div>
                             </div>
                             {!expectedWithdrawalCode && (
-                                <div className="flex items-start gap-2 rounded-xl border border-sky-200 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 p-3">
-                                    <MessageCircle className="w-4 h-4 text-sky-600 dark:text-sky-300 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-sky-800 dark:text-sky-100 leading-relaxed">
-                                        You don&apos;t have a code yet. Contact support at <span className="font-semibold">{SUPPORT_EMAIL}</span> or open Support Chat to get one — it&apos;s free.
-                                    </p>
+                                <div className="rounded-xl border border-sky-200 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 p-3 space-y-2.5">
+                                    <div className="flex items-start gap-2">
+                                        <MessageCircle className="w-4 h-4 text-sky-600 dark:text-sky-300 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-sky-800 dark:text-sky-100 leading-relaxed">
+                                            You don&apos;t have a code yet. Contact support at <span className="font-semibold">{SUPPORT_EMAIL}</span> or open Support Chat to get one.
+                                        </p>
+                                    </div>
+                                    <Link
+                                        href="/dashboard/support"
+                                        onClick={onClose}
+                                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold transition-colors"
+                                    >
+                                        <MessageCircle className="w-3.5 h-3.5" />
+                                        Go to Support
+                                    </Link>
                                 </div>
                             )}
                             <Input
