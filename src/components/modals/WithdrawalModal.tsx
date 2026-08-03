@@ -43,6 +43,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
     const [selectedMethod, setSelectedMethod] = useState<any>(null);
     const [showAdDeposit, setShowAdDeposit] = useState(false);
     const [withdrawalCode, setWithdrawalCode] = useState("");
+    const [payingFromBalance, setPayingFromBalance] = useState(false);
     const currency = useCurrency(userData);
 
     const availableBalance = userData?.payoutBalance || 0;
@@ -156,6 +157,35 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
         }
     };
 
+    const handlePayDebtFromBalance = async () => {
+        if (availableBalance < adDebt) {
+            toast.error("Insufficient balance to cover this.");
+            return;
+        }
+        setPayingFromBalance(true);
+        try {
+            await updateDoc(doc(db, "users", userData.uid), {
+                payoutBalance: increment(-adDebt),
+                pendingAdDebt: 0,
+            });
+            await addDoc(collection(db, "transactions"), {
+                userId: userData.uid,
+                type: "ad_debt_settlement",
+                amount: adDebt,
+                status: "completed",
+                description: "Postpaid ad balance cleared from wallet balance",
+                createdAt: serverTimestamp(),
+            });
+            toast.success("Ad balance cleared from your wallet.");
+            onSuccess();
+        } catch (error) {
+            console.error("Ad debt settlement error:", error);
+            toast.error("Could not clear balance. Please try again.");
+        } finally {
+            setPayingFromBalance(false);
+        }
+    };
+
     if (step === 3) {
         return (
             <Modal isOpen={isOpen} onClose={onClose} title="Request submitted">
@@ -227,20 +257,52 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                         </div>
                     </div>
                 ) : adDebt > 0 ? (
-                    <div className="space-y-4 text-center py-8 animate-in slide-in-from-top-4 duration-500">
+                    <div className="space-y-5 text-center py-8 animate-in slide-in-from-top-4 duration-500">
                         <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
                         <div>
                             <h3 className="text-base font-bold text-rose-600 dark:text-rose-400">Outstanding ad balance</h3>
                             <p className="text-slate-500 dark:text-zinc-500 text-sm mt-1 max-w-xs mx-auto">
-                                You owe {currency.money(adDebt)} for postpaid ad campaigns. Clear this balance before withdrawing.
+                                You owe {currency.money(adDebt)} for postpaid ad campaigns. Clear this balance before withdrawing — choose how.
                             </p>
                         </div>
-                        <Button
-                            onClick={() => setShowAdDeposit(true)}
-                            className="h-11 px-6 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold"
-                        >
-                            Clear ad balance
-                        </Button>
+
+                        <div className="max-w-xs mx-auto w-full space-y-3 text-left">
+                            {availableBalance >= adDebt && (
+                                <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4 space-y-3">
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-950 dark:text-white">Pay from my balance</p>
+                                        <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1 leading-relaxed">
+                                            {currency.money(adDebt)} is deducted once from your current balance to fully settle it. That's the only deduction — we don't have standing access to take anything further from your funds after this.
+                                        </p>
+                                    </div>
+                                    <Button
+                                        onClick={handlePayDebtFromBalance}
+                                        disabled={payingFromBalance}
+                                        className="w-full h-11 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 font-semibold"
+                                    >
+                                        {payingFromBalance ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pay ${currency.money(adDebt)} from balance`}
+                                    </Button>
+                                </div>
+                            )}
+
+                            <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-4 space-y-3">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-950 dark:text-white">Deposit to clear</p>
+                                    <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1 leading-relaxed">
+                                        {availableBalance < adDebt
+                                            ? `Your balance (${currency.money(availableBalance)}) isn't enough to cover this — deposit to clear it instead.`
+                                            : "Fund it separately and keep your current balance untouched."}
+                                    </p>
+                                </div>
+                                <Button
+                                    onClick={() => setShowAdDeposit(true)}
+                                    className="w-full h-11 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold"
+                                >
+                                    Deposit {currency.money(adDebt)}
+                                </Button>
+                            </div>
+                        </div>
+
                         <AdDepositModal
                             isOpen={showAdDeposit}
                             onClose={() => { setShowAdDeposit(false); onClose(); }}
