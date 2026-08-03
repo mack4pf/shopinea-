@@ -66,6 +66,41 @@ const TEMPLATE_STYLES: Record<string, { page: string; hero: string; card: string
         section: "Hot Inventory",
         label: "Bold Storefront",
     },
+    luxury: {
+        page: "bg-[#f7f3ea] text-stone-900",
+        hero: "bg-gradient-to-r from-stone-950 via-neutral-900 to-amber-950",
+        card: "rounded-none",
+        section: "Signature Collection",
+        label: "The Atelier",
+    },
+    noir: {
+        page: "bg-black text-white",
+        hero: "bg-gradient-to-r from-neutral-950 via-black to-neutral-900",
+        card: "rounded-lg",
+        section: "The Noir Edit",
+        label: "Exclusive Access",
+    },
+    pastel: {
+        page: "bg-gradient-to-b from-violet-50 via-pink-50 to-sky-50 text-slate-900",
+        hero: "bg-gradient-to-r from-violet-900 via-fuchsia-900 to-pink-900",
+        card: "rounded-[2rem]",
+        section: "New Arrivals",
+        label: "Soft Studio",
+    },
+    monochrome: {
+        page: "bg-white text-black",
+        hero: "bg-black",
+        card: "rounded-none",
+        section: "The Lookbook",
+        label: "Monochrome",
+    },
+    tech: {
+        page: "bg-[#060c1a] text-white",
+        hero: "bg-gradient-to-r from-blue-950 via-indigo-950 to-cyan-950",
+        card: "rounded-2xl",
+        section: "Explore the Range",
+        label: "Next-Gen Store",
+    },
 };
 
 const STORE_PRODUCT_GRID: Record<string, string> = {

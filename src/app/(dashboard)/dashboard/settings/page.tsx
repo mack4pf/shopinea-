@@ -307,6 +307,11 @@ export default function SettingsPage() {
                                                 { id: "minimal", name: "Minimal", swatchFrom: "#ffffff", swatchTo: "#f1f5f9" },
                                                 { id: "boutique", name: "Boutique", swatchFrom: "#fff1f2", swatchTo: "#3f1d2e" },
                                                 { id: "bold", name: "Bold", swatchFrom: "#09090b", swatchTo: "#7c2d12" },
+                                                { id: "luxury", name: "Luxury", swatchFrom: "#f7f3ea", swatchTo: "#451a03" },
+                                                { id: "noir", name: "Noir", swatchFrom: "#000000", swatchTo: "#262626" },
+                                                { id: "pastel", name: "Pastel", swatchFrom: "#ede9fe", swatchTo: "#fce7f3" },
+                                                { id: "monochrome", name: "Monochrome", swatchFrom: "#ffffff", swatchTo: "#000000" },
+                                                { id: "tech", name: "Tech", swatchFrom: "#060c1a", swatchTo: "#083344" },
                                             ].map((t) => (
                                                 <button
                                                     key={t.id}
