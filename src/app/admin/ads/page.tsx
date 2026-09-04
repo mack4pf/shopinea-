@@ -21,7 +21,8 @@ import {
     UserCircle,
     Calendar,
     Wallet,
-    Trash2
+    Trash2,
+    Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -30,14 +31,27 @@ import { onAuthStateChanged } from "firebase/auth";
 export default function AdCommandPage() {
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [adDeposits, setAdDeposits] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
+
+    const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
+    const numberValue = (value: unknown) => {
+        const next = Number(value || 0);
+        return Number.isFinite(next) ? next : 0;
+    };
+    const todayStoreVisitsFor = (user: any) => numberValue(user?.dailyStoreVisits?.[todayAnalyticsKey()]);
+    const totalStoreVisitsFor = (user: any) => numberValue(user?.storeVisits || user?.storeViews || user?.impressions || user?.stats?.views);
+    const userForCampaign = (campaign: any) => users.find(user => user.id === campaign.sellerId || user.id === campaign.userId);
 
     const fetchData = async () => {
         try {
             // Fetch All Ad Campaigns
             const campSnap = await getDocs(query(collection(db, "campaigns"), orderBy("createdAt", "desc")));
             setCampaigns(campSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+            const usersSnap = await getDocs(collection(db, "users"));
+            setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
             // Fetch Pending Ad Deposits
             const adDepQuery = query(
@@ -325,6 +339,9 @@ export default function AdCommandPage() {
                                 const todayStr = new Date().toISOString().split('T')[0];
                                 const isExpired = c.endDate && c.endDate < todayStr;
                                 const dStatus = isExpired ? 'completed' : c.status;
+                                const seller = userForCampaign(c);
+                                const sellerVisitsToday = todayStoreVisitsFor(seller);
+                                const sellerTotalVisits = totalStoreVisitsFor(seller);
                                 return (
                                 <div key={c.id} className="bg-white/[0.02] border border-white/[0.04] p-4 rounded-lg group hover:border-indigo-500/30 transition-colors">
                                     <div className="flex justify-between items-start mb-3">
@@ -334,6 +351,9 @@ export default function AdCommandPage() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-white">{c.productName || 'Campaign'}</p>
+                                                <p className="text-[10px] text-violet-300 mt-1">
+                                                    Store visits: {sellerVisitsToday.toLocaleString()} today / {sellerTotalVisits.toLocaleString()} total
+                                                </p>
                                                 <p className="text-xs text-zinc-500">{c.platform || 'General'} • {c.totalBudget ? `$${c.totalBudget.toLocaleString()}` : 'Custom'}</p>
                                             </div>
                                         </div>
@@ -528,7 +548,7 @@ export default function AdCommandPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
                     <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center shrink-0">
                         <BarChart3 className="w-5 h-5 text-indigo-400" />
@@ -554,6 +574,16 @@ export default function AdCommandPage() {
                     <div>
                         <p className="text-xs text-zinc-500">Active Campaigns</p>
                         <p className="text-xl font-bold text-white">{campaigns.filter(c => c.status === 'active').length}</p>
+                    </div>
+                </div>
+                <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center gap-4">
+                    <div className="w-10 h-10 bg-violet-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <Eye className="w-5 h-5 text-violet-400" />
+                    </div>
+                    <div>
+                        <p className="text-xs text-zinc-500">Store Visits Today</p>
+                        <p className="text-xl font-bold text-white">{users.reduce((sum, user) => sum + todayStoreVisitsFor(user), 0).toLocaleString()}</p>
+                        <p className="text-[10px] text-zinc-600">{users.reduce((sum, user) => sum + totalStoreVisitsFor(user), 0).toLocaleString()} current total</p>
                     </div>
                 </div>
             </div>

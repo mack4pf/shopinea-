@@ -53,6 +53,12 @@ const DEFAULT_WITHDRAWAL_MIN_LIMIT = 500;
 const money = (value: number) => `$${Number(value || 0).toLocaleString()}`;
 const supplierCostFor = (user: any) => Math.max(0, Number(user?.totalSales || 0) - Number(user?.totalProfit || 0));
 const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
+const numberValue = (value: unknown) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+const todayStoreVisitsFor = (user: any) => numberValue(user?.dailyStoreVisits?.[todayAnalyticsKey()]);
+const totalStoreVisitsFor = (user: any) => numberValue(user?.storeVisits || user?.storeViews || user?.impressions || user?.stats?.views);
 
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
@@ -891,6 +897,11 @@ export default function UserMatrixPage() {
                                     <p className="text-xs font-semibold text-white">{money(u.walletBalance || 0)}</p>
                                     <p className="text-xs font-semibold text-blue-400">{money(u.adWalletBalance || 0)}</p>
                                 </div>
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Store Visits</p>
+                                    <p className="text-xs font-semibold text-violet-300">Today {todayStoreVisitsFor(u).toLocaleString()}</p>
+                                    <p className="text-xs font-semibold text-sky-300">Total {totalStoreVisitsFor(u).toLocaleString()}</p>
+                                </div>
                             </div>
                             <div className="flex gap-2">
                                 <button onClick={() => fetchUserDetails(u)} className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">View</button>
@@ -907,6 +918,7 @@ export default function UserMatrixPage() {
                                 <th className="px-5 py-4">User</th>
                                 <th className="px-4 py-4">Status</th>
                                 <th className="px-4 py-4">Sales</th>
+                                <th className="px-4 py-4">Store Visits</th>
                                 <th className="px-4 py-4">Balances</th>
                                 <th className="px-4 py-4">Plan</th>
                                 <th className="px-5 py-4 text-right">Actions</th>
@@ -915,7 +927,7 @@ export default function UserMatrixPage() {
                         <tbody className="divide-y divide-white/[0.04]">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-5 py-16 text-center">
+                                    <td colSpan={7} className="px-5 py-16 text-center">
                                         <p className="text-sm text-zinc-600">No users found</p>
                                     </td>
                                 </tr>
@@ -967,6 +979,15 @@ export default function UserMatrixPage() {
                                                 <p className="text-[10px] text-blue-400">Sales funds: {money(u.totalProfit || 0)}</p>
                                                 <p className="text-[10px] text-zinc-500">Supplier cost: {money(supplierCostFor(u))}</p>
                                                 <p className="text-[10px] text-zinc-500">{(u.totalOrders || 0).toLocaleString()} orders</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Eye className="w-3 h-3 text-violet-400" />
+                                                    <p className="text-xs text-violet-300">Today {todayStoreVisitsFor(u).toLocaleString()}</p>
+                                                </div>
+                                                <p className="text-[10px] text-sky-300">Total {totalStoreVisitsFor(u).toLocaleString()}</p>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
@@ -1129,6 +1150,11 @@ export default function UserMatrixPage() {
                                 <p className="text-xs text-zinc-500">Locked Funds</p>
                                 <p className="text-xl font-bold text-amber-400">{money(selectedUser.pendingPayout || 0)}</p>
                                 <p className="text-[10px] text-zinc-600">{(selectedUser.totalOrders || 0).toLocaleString()} orders</p>
+                            </div>
+                            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                <p className="text-xs text-zinc-500">Visits Today</p>
+                                <p className="text-xl font-bold text-violet-300">{todayStoreVisitsFor(selectedUser).toLocaleString()}</p>
+                                <p className="text-[10px] text-zinc-600">{totalStoreVisitsFor(selectedUser).toLocaleString()} total visits</p>
                             </div>
                         </div>
 

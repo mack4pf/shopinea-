@@ -19,6 +19,12 @@ import { getDefaultStock } from "@/lib/catalog";
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
 const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
+const numberValue = (value: unknown) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+const todayStoreVisitsFor = (user: any) => numberValue(user?.dailyStoreVisits?.[todayAnalyticsKey()]);
+const totalStoreVisitsFor = (user: any) => numberValue(user?.storeVisits || user?.storeViews || user?.impressions || user?.stats?.views);
 
 async function fetchCitiesForCountry(country: string): Promise<string[]> {
     const key = country.trim().toLowerCase();
@@ -442,8 +448,15 @@ export default function AdminDashboard() {
 
     const totalRevenue   = orders.reduce((acc, o) => acc + (o.resellPrice || 0), 0);
     const totalWallets   = allUsers.reduce((acc, u) => acc + (u.walletBalance || 0), 0);
+    const visitsToday    = allUsers.reduce((acc, u) => acc + todayStoreVisitsFor(u), 0);
+    const totalVisits    = allUsers.reduce((acc, u) => acc + totalStoreVisitsFor(u), 0);
     const pendingOrders  = orders.filter(o => ["pending", "pending_payment", "payment_pending", "awaiting_seller_fulfillment", "awaiting_admin_confirmation"].includes(o.status)).length;
     const deliveredOrders = orders.filter(o => o.status === "delivered").length;
+    const topStoreTraffic = [...allUsers]
+        .map(u => ({ ...u, visitsToday: todayStoreVisitsFor(u), totalVisits: totalStoreVisitsFor(u) }))
+        .filter(u => u.visitsToday > 0 || u.totalVisits > 0)
+        .sort((a, b) => b.visitsToday - a.visitsToday || b.totalVisits - a.totalVisits)
+        .slice(0, 6);
     const filteredOrders = orderSearch
         ? orders.filter(o =>
             (o.productName || "").toLowerCase().includes(orderSearch.toLowerCase()) ||
@@ -480,11 +493,12 @@ export default function AdminDashboard() {
             </div>
 
             {/* ── KPI strip ── */}
-            <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 xl:grid-cols-6 gap-3">
                 <KpiCard label="Total Users"    value={allUsers.length}                         icon={Users}       accent="blue"    sub="Registered accounts" />
                 <KpiCard label="Total Revenue"  value={`$${totalRevenue.toLocaleString()}`}     icon={DollarSign}  accent="emerald" sub="All-time order volume" />
                 <KpiCard label="Pending Orders" value={pendingOrders}                           icon={ShoppingBag} accent="amber"   sub="Need action" badge={pendingOrders > 0 ? "Action" : undefined} />
                 <KpiCard label="KYC Queue"      value={kycRequests.length}                      icon={ShieldCheck} accent={kycRequests.length > 0 ? "amber" : "purple"} sub="Awaiting review" />
+                <KpiCard label="Visits Today"   value={visitsToday.toLocaleString()}             icon={Eye}         accent="purple"  sub="Store traffic today" />
                 <KpiCard label="Products"       value={allProducts.length}                      icon={Package}     accent="purple"  sub="In catalogue" />
             </div>
 
@@ -590,6 +604,39 @@ export default function AdminDashboard() {
                                     <span className={cn("text-sm font-bold", row.color)}>{row.value}</span>
                                 </div>
                             ))}
+                        </div>
+
+                        <div className="bg-[#0d0d11] border border-white/[0.07] rounded-2xl p-5 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm font-bold text-white">Store Traffic</p>
+                                <span className="text-[10px] text-violet-300 font-bold">{visitsToday.toLocaleString()} today</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="rounded-xl bg-white/[0.03] border border-white/[0.05] p-3">
+                                    <p className="text-[10px] text-zinc-600">Today</p>
+                                    <p className="text-lg font-bold text-violet-300">{visitsToday.toLocaleString()}</p>
+                                </div>
+                                <div className="rounded-xl bg-white/[0.03] border border-white/[0.05] p-3">
+                                    <p className="text-[10px] text-zinc-600">Current Total</p>
+                                    <p className="text-lg font-bold text-sky-300">{totalVisits.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                {topStoreTraffic.length === 0 ? (
+                                    <p className="py-3 text-xs text-center text-zinc-600 border border-dashed border-white/[0.06] rounded-xl">No store visit data yet</p>
+                                ) : topStoreTraffic.map(u => (
+                                    <div key={u.id} className="flex items-center justify-between gap-3 py-2 border-b border-white/[0.04] last:border-0">
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-semibold text-white truncate">{u.storeName || u.displayName || u.email || "Store"}</p>
+                                            <p className="text-[10px] text-zinc-600 truncate">{u.email || u.id}</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-xs font-bold text-violet-300">{u.visitsToday.toLocaleString()} today</p>
+                                            <p className="text-[10px] text-sky-300">{u.totalVisits.toLocaleString()} total</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {kycRequests.length > 0 && (
