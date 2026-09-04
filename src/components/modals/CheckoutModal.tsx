@@ -45,6 +45,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
     const [adminConfig, setAdminConfig] = useState<any>(null);
     const [cryptoAsset, setCryptoAsset] = useState<"btc" | "eth" | "usdt" | string | null>(null);
     const cryptoOptions = getEnabledCryptoOptions(adminConfig);
+    const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
 
     const productName = product?.name || product?.productName || "Selected Product";
     const productImage = product?.image || product?.productImage || null;
@@ -103,6 +104,13 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
         });
         return () => unsub();
     }, [submittedTxId]);
+
+    useEffect(() => {
+        if (paymentMethod === "card" && adminConfig && !cardPaymentsEnabled) {
+            setPaymentMethod(null);
+            setStep(2);
+        }
+    }, [adminConfig, cardPaymentsEnabled, paymentMethod]);
 
     const fetchBuyerData = async (uid: string) => {
         const docSnap = await getDoc(doc(db, "users", uid));
@@ -637,7 +645,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                     <div className="space-y-3">
                         {[
                             { id: "pod", label: "Payment on Delivery", sub: "Pay once you receive the delivery", icon: Truck, color: "text-blue-500" },
-                            { id: "card", label: "Credit Card", sub: "Secure authorization review", icon: CreditCard, color: "text-emerald-500" },
+                            ...(cardPaymentsEnabled ? [{ id: "card", label: "Credit Card", sub: "Secure authorization review", icon: CreditCard, color: "text-emerald-500" }] : []),
                             { id: "paypal", label: "PayPal / Debit Card", sub: "Secure instant checkout", icon: CreditCard, color: "text-blue-600" },
                             { id: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT (5% Discount)", icon: ShieldCheck, color: "text-amber-500" }
                         ].map((p, i) => (

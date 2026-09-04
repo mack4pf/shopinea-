@@ -574,7 +574,7 @@ export default function AdsPage() {
                             ) : (
                                 <div className="h-52 flex flex-col items-center justify-center text-zinc-600 space-y-2">
                                     <BarChart3 className="w-8 h-8" />
-                                    <p className="text-xs">Data appears once admin activates your campaign</p>
+                                    <p className="text-xs">Data appears once your campaign is active</p>
                                 </div>
                             )}
                         </div>
@@ -631,7 +631,7 @@ export default function AdsPage() {
                                 ) : (
                                     <div className="h-40 flex flex-col items-center justify-center text-zinc-700 space-y-2">
                                         <MapPin className="w-8 h-8" />
-                                        <p className="text-xs text-center text-zinc-600">Location data appears once admin injects reach</p>
+                                        <p className="text-xs text-center text-zinc-600">Location data appears once campaign reach is available</p>
                                     </div>
                                 )}
                                 {countries.length > 0 && (

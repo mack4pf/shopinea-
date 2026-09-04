@@ -90,7 +90,7 @@ export default function UserMatrixPage() {
     const [transactionProcessingId, setTransactionProcessingId] = useState<string | null>(null);
     const [manualPaymentType, setManualPaymentType] = useState("deposit");
     const [manualPaymentAmount, setManualPaymentAmount] = useState("");
-    const [manualPaymentMethod, setManualPaymentMethod] = useState("Admin credit");
+    const [manualPaymentMethod, setManualPaymentMethod] = useState("Account credit");
     const [manualPaymentReference, setManualPaymentReference] = useState("");
     const [manualPaymentNote, setManualPaymentNote] = useState("");
     const [manualPaymentPlanId, setManualPaymentPlanId] = useState(ADMIN_PAYMENT_PLANS[0].id);
@@ -447,7 +447,7 @@ export default function UserMatrixPage() {
         setManualPaymentAmount("");
         setManualPaymentReference("");
         setManualPaymentNote("");
-        setManualPaymentMethod("Admin credit");
+        setManualPaymentMethod("Account credit");
         setManualPaymentType("deposit");
         setManualPaymentPlanId(ADMIN_PAYMENT_PLANS[0].id);
     };
@@ -494,7 +494,7 @@ export default function UserMatrixPage() {
                 type,
                 amount,
                 status: "completed",
-                method: manualPaymentMethod.trim() || "Admin credit",
+                method: manualPaymentMethod.trim() || "Account credit",
                 reference: manualPaymentReference.trim() || `ADMIN-${Date.now()}`,
                 description,
                 note: manualPaymentNote.trim(),
@@ -574,9 +574,9 @@ export default function UserMatrixPage() {
                 type: "subscription_activation",
                 amount: selectedPlan.price,
                 status: "completed",
-                method: "Admin activation",
+                method: "Account activation",
                 reference: `ADMIN-ACTIVATE-${Date.now()}`,
-                description: `${selectedPlan.name} subscription activated by admin`,
+                description: `${selectedPlan.name} subscription activated`,
                 source: "admin_subscription_activation",
                 createdBy: auth.currentUser?.uid || "admin",
                 planId: selectedPlan.id,

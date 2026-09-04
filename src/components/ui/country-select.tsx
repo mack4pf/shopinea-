@@ -39,7 +39,18 @@ export function CountrySelect({
         fetch("/api/countries")
             .then(res => res.ok ? res.json() : null)
             .then(data => {
-                if (alive && Array.isArray(data?.countries)) setCountries(data.countries);
+                if (!alive || !Array.isArray(data?.countries)) return;
+                const seen = new Set<string>();
+                const safeCountries = [...data.countries, ...FALLBACK_COUNTRIES]
+                    .filter((country: Partial<CountryCurrency>) => {
+                        const name = typeof country.name === "string" ? country.name.trim() : "";
+                        const code = typeof country.code === "string" ? country.code.trim().toUpperCase() : "";
+                        const currencyCode = typeof country.currencyCode === "string" ? country.currencyCode.trim().toUpperCase() : "";
+                        if (!name || !/^[A-Z]{2}$/.test(code) || !/^[A-Z]{3}$/.test(currencyCode) || seen.has(name)) return false;
+                        seen.add(name);
+                        return true;
+                    }) as CountryCurrency[];
+                if (safeCountries.length > 0) setCountries(safeCountries);
             })
             .catch(() => {});
         return () => { alive = false; };

@@ -267,13 +267,17 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
 
     const cryptoAddress = getCryptoAddress(adminConfig, cryptoAsset);
     const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
-    const customDepositMethods = configuredMethods.filter((m: any) => m?.enabled && (m.flow === "deposit" || m.flow === "both"));
+    const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
+    const customDepositMethods = configuredMethods.filter((m: any) => {
+        const type = (m?.type || m?.id || "").toLowerCase();
+        return m?.enabled && (m.flow === "deposit" || m.flow === "both") && (cardPaymentsEnabled || type !== "card");
+    });
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", destination: "" };
     const depositMethods = customDepositMethods.length > 0 ? [
-        ...(customDepositMethods.some((m: any) => m?.type === "card" || m?.id === "card") ? [] : [cardMethod]),
+        ...(cardPaymentsEnabled && !customDepositMethods.some((m: any) => m?.type === "card" || m?.id === "card") ? [cardMethod] : []),
         ...customDepositMethods,
     ] : [
-        cardMethod,
+        ...(cardPaymentsEnabled ? [cardMethod] : []),
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT · 5% discount", destination: "" },
         { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", destination: adminConfig?.paypalEmail || "" },
     ];
@@ -609,7 +613,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                                 <p className="text-sm font-semibold text-white mb-0.5">Send your payment</p>
                                 <p className="text-xs text-zinc-500">
                                     {selectedMethodConfig?.type === "card"
-                                        ? <>Authorize exactly <span className="text-white font-medium">{currencySymbol}{numAmountLocal.toFixed(2)}</span>. The payment will stay pending while admin processes it.</>
+                                        ? <>Authorize exactly <span className="text-white font-medium">{currencySymbol}{numAmountLocal.toFixed(2)}</span>. The payment will stay pending while it is being processed.</>
                                         : method === "crypto"
                                         ? <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{(amountToPay * (exchangeRate || 1)).toFixed(2)}</span> <span className="text-emerald-400">(5% crypto discount applied)</span> to the details below, then upload your receipt.</>
                                         : <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{numAmountLocal.toFixed(2)}</span> to the details below, then upload your receipt.</>

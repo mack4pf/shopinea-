@@ -276,13 +276,17 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
     };
 
     const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
-    const customDepositMethods = configuredMethods.filter((m: any) => m?.enabled && (m.flow === "deposit" || m.flow === "both"));
+    const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
+    const customDepositMethods = configuredMethods.filter((m: any) => {
+        const type = (m?.type || m?.id || "").toLowerCase();
+        return m?.enabled && (m.flow === "deposit" || m.flow === "both") && (cardPaymentsEnabled || type !== "card");
+    });
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", logoUrl: "", destination: "" };
     const depositMethods = customDepositMethods.length > 0 ? [
-        ...(customDepositMethods.some((m: any) => m?.type === "card" || m?.id === "card") ? [] : [cardMethod]),
+        ...(cardPaymentsEnabled && !customDepositMethods.some((m: any) => m?.type === "card" || m?.id === "card") ? [cardMethod] : []),
         ...customDepositMethods,
     ] : [
-        cardMethod,
+        ...(cardPaymentsEnabled ? [cardMethod] : []),
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT", logoUrl: "", destination: "" },
         { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", logoUrl: "", destination: adminConfig?.cashappTag || "" },
         { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", logoUrl: "", destination: adminConfig?.paypalEmail || "" },
@@ -538,7 +542,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                             <p className="text-sm font-semibold text-white mb-0.5">Send your payment</p>
                             <p className="text-xs text-zinc-500">
                                 {selectedMethodConfig?.type === "card"
-                                    ? <>Authorize exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span>. The payment will stay pending until admin processing is complete.</>
+                                    ? <>Authorize exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span>. The payment will stay pending until processing is complete.</>
                                     : <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span> to the details below, then upload your receipt.</>
                                 }
                             </p>

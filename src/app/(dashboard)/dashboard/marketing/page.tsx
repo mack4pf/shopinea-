@@ -118,7 +118,7 @@ export default function MarketingPage() {
         }
 
         if (userData?.marketingAccess === false) {
-            toast.error("Your marketing access is currently restricted. Please wait for admin approval.");
+            toast.error("Your marketing access is currently restricted. Please wait for access approval.");
             return;
         }
 

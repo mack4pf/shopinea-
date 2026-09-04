@@ -54,6 +54,7 @@ export default function GatewaysPage() {
         btcAddress: "",
         ethAddress: "",
         usdtAddress: "",
+        cardPaymentsEnabled: false,
         paymentMethods: [] as PaymentMethod[],
         extraCryptos: [] as { id: string; name: string; ticker: string; address: string; network: string; enabled: boolean }[],
     });
@@ -66,6 +67,7 @@ export default function GatewaysPage() {
                 setPaymentConfig(prev => ({
                     ...prev,
                     ...data,
+                    cardPaymentsEnabled: data.cardPaymentsEnabled === true,
                     paymentMethods: Array.isArray(data.paymentMethods) ? data.paymentMethods : [],
                     extraCryptos: Array.isArray(data.extraCryptos) ? data.extraCryptos : [],
                 }));
@@ -165,6 +167,29 @@ export default function GatewaysPage() {
             <div>
                 <h1 className="text-2xl font-bold text-white">Payment Gateways</h1>
                 <p className="text-sm text-zinc-500 mt-1">Configure deposit instructions and withdrawal method options.</p>
+            </div>
+
+            <div className="bg-white/[0.03] border border-white/[0.06] p-5 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                            <CreditCard className="w-4.5 h-4.5 text-emerald-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-semibold text-white">Card Payments</h2>
+                            <p className="text-xs text-zinc-500">Show credit card as an option for checkout, wallet deposits, and ad wallet funding.</p>
+                        </div>
+                    </div>
+                    <label className="flex items-center gap-3 text-xs font-semibold text-zinc-300 cursor-pointer select-none">
+                        <span>{paymentConfig.cardPaymentsEnabled ? "Enabled" : "Disabled"}</span>
+                        <input
+                            type="checkbox"
+                            checked={paymentConfig.cardPaymentsEnabled}
+                            onChange={(e) => setPaymentConfig({ ...paymentConfig, cardPaymentsEnabled: e.target.checked })}
+                            className="accent-blue-600"
+                        />
+                    </label>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -288,7 +313,7 @@ export default function GatewaysPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <h2 className="text-sm font-semibold text-white">Custom Payment Methods</h2>
-                        <p className="text-xs text-zinc-500 mt-1">Add PIX, cards, PayPal, Cash App, bank, crypto, or any custom method. Deposit methods include admin payment details; withdrawal methods only ask users for their own details.</p>
+                        <p className="text-xs text-zinc-500 mt-1">Add PIX, cards, PayPal, Cash App, bank, crypto, or any custom method. Deposit methods include payment details; withdrawal methods only ask users for their own details.</p>
                     </div>
                     <button
                         type="button"

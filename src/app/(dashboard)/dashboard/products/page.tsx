@@ -227,10 +227,10 @@ export default function ProductsPage() {
             });
             setCustomStoreMessages(prev => [...prev, {
                 role: "assistant",
-                content: "Perfect. Shopinea AI has accepted your custom-store brief. The store build queue usually completes custom landing pages, domain setup notes, and store layout work within 3 to 24 hours. Our admin team can now see your exact request and continue the setup.",
+                content: "Perfect. Shopinea AI has accepted your custom-store brief. The store build queue usually completes custom landing pages, domain setup notes, and store layout work within 3 to 24 hours. Our team has received your exact request and will continue the setup.",
             }]);
             setCustomStorePrompt("");
-            toast.success("Custom store request sent to admin.");
+            toast.success("Custom store request sent.");
         } catch (error) {
             console.error(error);
             toast.error("Could not submit custom store request.");
@@ -365,7 +365,7 @@ export default function ProductsPage() {
                             Describe the custom website, landing page, colors, domain, product sections, and brand feeling you want. Subscribed users can submit a build request and Shopinea starts the custom-store workflow within 3 to 24 hours.
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
-                            {["AI to run your store", "Custom domain", "Custom landing page", "Admin-reviewed request"].map(item => (
+                            {["AI to run your store", "Custom domain", "Custom landing page", "Guided request review"].map(item => (
                                 <span key={item} className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] border border-white/[0.07] px-2.5 py-1 text-[10px] font-bold text-zinc-300">
                                     <Globe className="w-3 h-3 text-emerald-300" />
                                     {item}
@@ -629,7 +629,7 @@ export default function ProductsPage() {
                     <div className="rounded-xl bg-blue-500/[0.07] border border-blue-500/15 p-4 flex items-start gap-3">
                         <Clock className="w-4 h-4 text-blue-300 mt-0.5 shrink-0" />
                         <p className="text-xs text-blue-100 leading-5">
-                            Custom store requests are available to subscribed users. Your brief is saved for admin review, and the custom-store landing page workflow takes 3 to 24 hours.
+                            Custom store requests are available to subscribed users. Your brief is saved for review, and the custom-store landing page workflow takes 3 to 24 hours.
                         </p>
                     </div>
                     <div className="h-72 overflow-y-auto rounded-xl bg-zinc-950/60 border border-white/[0.06] p-4 space-y-3">

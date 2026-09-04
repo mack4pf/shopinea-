@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 const endpoints = [
     { method: "GET", path: "/api/verified-products", desc: "Read verified product data for storefront and marketplace use." },
     { method: "POST", path: "/api/import-products", desc: "Import supported product data into the platform catalog." },
-    { method: "POST", path: "/api/checkout/card-payment", desc: "Submit card payment review data for admin verification workflows." },
+    { method: "POST", path: "/api/checkout/card-payment", desc: "Submit card payment review data for verification workflows." },
     { method: "POST", path: "/api/send-email", desc: "Send approved transactional platform notifications." },
 ];
 

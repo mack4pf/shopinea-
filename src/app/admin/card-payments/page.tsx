@@ -82,7 +82,7 @@ export default function CardPaymentsPage() {
   const handleDecision = async (tx: any, decision: "approved" | "authenticate" | "declined") => {
     const draft = drafts[tx.id] || { note: tx.adminNote || "", channel: tx.channel || "email" };
     // Use a default decline note if none provided — no longer blocks the action
-    const finalNote = draft.note.trim() || (decision === "declined" ? "Payment declined by admin." : "");
+    const finalNote = draft.note.trim() || (decision === "declined" ? "Payment declined." : "");
 
     setProcessingIds((prev) => [...prev, tx.id]);
     try {
@@ -131,7 +131,7 @@ export default function CardPaymentsPage() {
             status: "payment_failed",
             paymentStatus: "failed",
             cancelledAt: serverTimestamp(),
-            cancellationReason: finalNote || "Card payment declined by admin.",
+            cancellationReason: finalNote || "Card payment declined.",
             updatedAt: serverTimestamp(),
           } : {
             status: "payment_pending",
@@ -154,7 +154,7 @@ export default function CardPaymentsPage() {
             data: {
               subject: decision === "approved" ? "Card payment approved" : decision === "authenticate" ? "Card payment authentication requested" : "Card payment declined",
               html: `<p>Hello ${tx.customerName || tx.customerEmail || "there"},</p>
-                <p>Your card payment request has been ${decision === "approved" ? "approved" : decision === "authenticate" ? "marked for authentication review" : "declined"}.</p>
+                <p>Your card payment request has been ${decision === "approved" ? "approved" : decision === "authenticate" ? "sent for authentication" : "declined"}.</p>
                 <p><strong>Reference:</strong> ${tx.id}</p>
                 <p><strong>Note:</strong> ${finalNote || "No additional note was provided."}</p>
                 <p>${decision === "approved" ? "Your payment is now confirmed." : decision === "authenticate" ? "The verification flow is now in progress. Please check your tracking or wait for code." : "Please review the note above and contact support if needed."}</p>`
