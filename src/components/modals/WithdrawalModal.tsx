@@ -27,6 +27,14 @@ import { useCurrency } from "@/hooks/useCurrency";
 
 const DEFAULT_WITHDRAWAL_MIN_LIMIT = 500;
 const SUPPORT_EMAIL = "support@shoplinea.shop";
+const safeText = (value: unknown, fallback = "") => {
+    const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+    return text || fallback;
+};
+const safeNumber = (value: unknown) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
 
 interface WithdrawalModalProps {
     isOpen: boolean;
@@ -46,9 +54,9 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
     const [payingFromBalance, setPayingFromBalance] = useState(false);
     const currency = useCurrency(userData);
 
-    const availableBalance = userData?.payoutBalance || 0;
-    const lockedBalance = userData?.pendingPayout || 0;
-    const adDebt = userData?.pendingAdDebt || 0;
+    const availableBalance = safeNumber(userData?.payoutBalance);
+    const lockedBalance = safeNumber(userData?.pendingPayout);
+    const adDebt = safeNumber(userData?.pendingAdDebt);
     const withdrawalsLocked = !!(userData?.withdrawalsLocked || userData?.payoutLocked);
     const expectedWithdrawalCode = String(userData?.withdrawalCode || "").trim().toUpperCase();
     const customMinWithdrawal = Number(userData?.withdrawalMinLimit);
@@ -56,7 +64,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
         ? customMinWithdrawal
         : DEFAULT_WITHDRAWAL_MIN_LIMIT;
 
-    const payoutMethods = userData?.payoutMethods || [];
+    const payoutMethods = Array.isArray(userData?.payoutMethods) ? userData.payoutMethods : [];
 
     const handleWithdraw = async () => {
         const localAmount = parseFloat(amount);
@@ -93,13 +101,13 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
             // 1. Create Payout Request
             const payoutDocRef = await addDoc(collection(db, "payouts"), {
                 userId: userData.uid,
-                userName: userData.displayName || userData.fullName || "Merchant",
+                userName: safeText(userData.displayName || userData.fullName, "Merchant"),
                 amount: numAmount,
                 amountLocal: localAmount,
                 currencyCode: currency.currencyCode,
                 status: "pending",
-                method: selectedMethod.type,
-                methodLabel: selectedMethod.label,
+                method: safeText(selectedMethod.type, "payout"),
+                methodLabel: safeText(selectedMethod.label, "Payout method"),
                 methodDetails: selectedMethod,
                 withdrawalCodeVerified: true,
                 withdrawalCodeLast4: expectedWithdrawalCode.slice(-4),
@@ -113,7 +121,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                 type: "withdrawal",
                 amount: numAmount,
                 status: "pending",
-                description: `Withdrawal request to ${selectedMethod.label}`,
+                description: `Withdrawal request to ${safeText(selectedMethod.label, "Payout method")}`,
                 withdrawalCodeVerified: true,
                 createdAt: serverTimestamp()
             });
@@ -139,7 +147,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                             html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
                                 <h2 style="color: #111827; margin-bottom: 16px;">Withdrawal Request Received</h2>
                                 <p style="color: #4b5563; line-height: 1.6;">Your withdrawal request for <strong>${currency.currencySymbol}${localAmount.toLocaleString()} ${currency.currencyCode}</strong> has been successfully received.</p>
-                                <p style="color: #4b5563; line-height: 1.6;">Your payout is pending review for the selected destination (${selectedMethod.label}). Your withdrawal verification code was accepted for this request.</p>
+                                <p style="color: #4b5563; line-height: 1.6;">Your payout is pending review for the selected destination (${safeText(selectedMethod.label, "Payout method")}). Your withdrawal verification code was accepted for this request.</p>
                                 <p style="color: #4b5563; line-height: 1.6;">Expected settlement is within 24-48 business hours after review.</p>
                             </div>`
                         }
@@ -324,26 +332,29 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
 
                             {payoutMethods.length > 0 ? (
                                 <div className="grid grid-cols-1 gap-2">
-                                    {payoutMethods.map((m: any, idx: number) => (
+                                    {payoutMethods.map((m: any, idx: number) => {
+                                        const methodType = safeText(m.type);
+                                        const methodId = safeText(m.id, `method-${idx}`);
+                                        return (
                                         <button
-                                            key={m.id || `method-${idx}`}
+                                            key={methodId}
                                             onClick={() => setSelectedMethod(m)}
-                                            className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between text-left ${selectedMethod?.id === m.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-600/10' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-slate-300 dark:hover:border-zinc-700'}`}
+                                            className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between text-left ${safeText(selectedMethod?.id) === methodId ? 'border-blue-500 bg-blue-50 dark:bg-blue-600/10' : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-slate-300 dark:hover:border-zinc-700'}`}
                                         >
                                             <div className="flex items-center gap-3.5">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 ${m.type === 'crypto' ? 'bg-orange-500' : 'bg-blue-600'}`}>
-                                                    {m.type === 'crypto' ? <Bitcoin className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 ${methodType === 'crypto' ? 'bg-orange-500' : 'bg-blue-600'}`}>
+                                                    {methodType === 'crypto' ? <Bitcoin className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-slate-950 dark:text-white leading-none mb-1">{m.label}</p>
-                                                    <p className="text-xs text-slate-500 dark:text-zinc-600">{m.type === 'crypto' ? m.network : m.bankName}</p>
+                                                    <p className="text-sm font-semibold text-slate-950 dark:text-white leading-none mb-1">{safeText(m.label, "Payout method")}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-zinc-600">{methodType === 'crypto' ? safeText(m.network) : safeText(m.bankName)}</p>
                                                 </div>
                                             </div>
-                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedMethod?.id === m.id ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 dark:border-zinc-700'}`}>
-                                                {selectedMethod?.id === m.id && <CheckCircle2 className="w-3.5 h-3.5" />}
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${safeText(selectedMethod?.id) === methodId ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 dark:border-zinc-700'}`}>
+                                                {safeText(selectedMethod?.id) === methodId && <CheckCircle2 className="w-3.5 h-3.5" />}
                                             </div>
                                         </button>
-                                    ))}
+                                    )})}
                                 </div>
                             ) : (
                                 <div className="p-8 bg-slate-50 dark:bg-zinc-950 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl text-center space-y-3">

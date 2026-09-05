@@ -7,6 +7,19 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Users, Copy, DollarSign, Zap, UserPlus, Loader2, Target, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const safeText = (value: unknown, fallback = "") => {
+    const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+    return text || fallback;
+};
+const safeNumber = (value: unknown) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+const toValidDate = (value: any): Date | null => {
+    const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+};
+
 export default function ReferralsPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
@@ -79,7 +92,7 @@ export default function ReferralsPage() {
                 {[
                     { label: "Total Referrals", value: referrals.length, icon: Users, iconColor: "text-blue-500", iconBg: "bg-blue-500/10" },
                     { label: "Active Sellers", value: referrals.filter(r => r.role === 'reseller').length, icon: Zap, iconColor: "text-emerald-500", iconBg: "bg-emerald-500/10" },
-                    { label: "Earnings", value: `${currencySymbol}${(userData?.referralEarnings || 0).toLocaleString()}`, icon: DollarSign, iconColor: "text-violet-500", iconBg: "bg-violet-500/10" },
+                    { label: "Earnings", value: `${currencySymbol}${safeNumber(userData?.referralEarnings).toLocaleString()}`, icon: DollarSign, iconColor: "text-violet-500", iconBg: "bg-violet-500/10" },
                 ].map((card, i) => (
                     <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
                         <div className="flex items-center justify-between mb-3">
@@ -118,30 +131,34 @@ export default function ReferralsPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    referrals.map((r) => (
-                                        <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
+                                    referrals.map((r, index) => {
+                                        const referralId = safeText(r.id, `referral-${index}`);
+                                        const displayName = safeText(r.displayName, "User");
+                                        const joinedDate = toValidDate(r.createdAt);
+                                        return (
+                                        <tr key={referralId} className="hover:bg-white/[0.02] transition-colors">
                                             <td className="py-4 px-5">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-sm font-semibold text-blue-400">
-                                                        {r.displayName?.[0] || 'U'}
+                                                        {displayName[0] || 'U'}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-white">{r.displayName || 'User'}</p>
-                                                        <p className="text-xs text-zinc-600">@{r.storeSlug || 'no-store'}</p>
+                                                        <p className="text-sm font-medium text-white">{displayName}</p>
+                                                        <p className="text-xs text-zinc-600">@{safeText(r.storeSlug, 'no-store')}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <p className="text-xs text-zinc-400">{r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : 'N/A'}</p>
+                                                <p className="text-xs text-zinc-400">{joinedDate ? joinedDate.toLocaleDateString() : 'N/A'}</p>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <p className="text-sm font-medium text-white">{r.stats?.totalOrders || 0}</p>
+                                                <p className="text-sm font-medium text-white">{safeNumber(r.stats?.totalOrders)}</p>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <p className="text-sm font-semibold text-emerald-400">{currencySymbol}{(r.stats?.resellerEarnings || 0).toLocaleString()}</p>
+                                                <p className="text-sm font-semibold text-emerald-400">{currencySymbol}{safeNumber(r.stats?.resellerEarnings).toLocaleString()}</p>
                                             </td>
                                         </tr>
-                                    ))
+                                    )})
                                 )}
                             </tbody>
                         </table>

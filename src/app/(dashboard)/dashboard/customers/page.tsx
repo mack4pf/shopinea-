@@ -11,6 +11,10 @@ function toValidDate(value: any): Date | null {
     const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
     return date && !Number.isNaN(date.getTime()) ? date : null;
 }
+const safeText = (value: unknown, fallback = "") => {
+    const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+    return text || fallback;
+};
 
 export default function CustomersPage() {
     const [user, setUser] = useState<any>(null);
@@ -86,11 +90,11 @@ export default function CustomersPage() {
     const avgLTV = customers.length > 0 ? totalLTV / customers.length : 0;
     const repeatCustomers = customers.filter(c => c.orderCount > 1).length;
 
-    const filteredCustomers = customers.filter(c =>
+const filteredCustomers = customers.filter(c =>
         (c.name || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.city || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.country || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.email || "").toLowerCase().includes(searchQuery.toLowerCase())
+        (c.city || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.country || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.email || "").toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     if (loading) return (
@@ -177,7 +181,7 @@ export default function CustomersPage() {
                                                     {(c.name || "G").toString()[0]}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-white">{c.name}</p>
+                                                    <p className="text-sm font-medium text-white">{safeText(c.name, "Guest")}</p>
                                                     {c.isVerified && (
                                                         <span className="text-[10px] text-emerald-400 font-medium">Verified buyer</span>
                                                     )}
@@ -189,14 +193,14 @@ export default function CustomersPage() {
                                                 <div className="flex items-center gap-1.5">
                                                     <MapPin className="w-3 h-3 text-zinc-600 shrink-0" />
                                                     <div>
-                                                        {c.city && <p className="text-xs text-zinc-300">{c.city}</p>}
-                                                        {c.country && <p className="text-[10px] text-zinc-500">{c.country}</p>}
+                                                        {c.city && <p className="text-xs text-zinc-300">{safeText(c.city)}</p>}
+                                                        {c.country && <p className="text-[10px] text-zinc-500">{safeText(c.country)}</p>}
                                                     </div>
                                                 </div>
                                             ) : c.email ? (
                                                 <div className="flex items-center gap-1.5">
                                                     <Mail className="w-3 h-3 text-zinc-600" />
-                                                    <span className="text-xs text-zinc-400">{c.email}</span>
+                                                    <span className="text-xs text-zinc-400">{safeText(c.email)}</span>
                                                 </div>
                                             ) : (
                                                 <span className="text-xs text-zinc-700">—</span>

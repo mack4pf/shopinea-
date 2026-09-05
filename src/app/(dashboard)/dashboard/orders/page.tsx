@@ -9,6 +9,12 @@ import {
     CreditCard, ShieldCheck, PackageCheck, Truck, Lock, AlertCircle
 } from "lucide-react";
 
+const safeText = (value: unknown) => String(value || "");
+const safeAmount = (value: unknown) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+
 export default function OrdersPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
@@ -57,8 +63,11 @@ export default function OrdersPage() {
     }, []);
 
     const handlePaySupplierForPod = async (order: any) => {
-        if (!userData || (userData.walletBalance || 0) < order.initialPrice) {
-            alert(`Insufficient balance. You need at least ${currencySymbol}${order.initialPrice} to process this order.`);
+        const initialPrice = safeAmount(order.initialPrice);
+        const resellerProfit = safeAmount(order.resellerProfit);
+        const orderId = safeText(order.id);
+        if (!userData || safeAmount(userData.walletBalance) < initialPrice) {
+            alert(`Insufficient balance. You need at least ${currencySymbol}${initialPrice} to process this order.`);
             return;
         }
 
@@ -68,8 +77,8 @@ export default function OrdersPage() {
             const orderRef = doc(db, "orders", order.id);
 
             await updateDoc(userRef, {
-                walletBalance: increment(-order.initialPrice),
-                pendingPayout: increment(order.resellerProfit)
+                walletBalance: increment(-initialPrice),
+                pendingPayout: increment(resellerProfit)
             });
 
             await updateDoc(orderRef, {
@@ -78,20 +87,20 @@ export default function OrdersPage() {
             });
 
             await addDoc(collection(db, "transactions"), {
-                userId: user.uid, type: "purchase", amount: order.initialPrice,
-                referenceId: order.id, description: `Supplier cost for Order #${order.id.slice(0, 8)}`,
+                userId: user.uid, type: "purchase", amount: initialPrice,
+                referenceId: order.id, description: `Supplier cost for Order #${orderId.slice(0, 8)}`,
                 status: "completed", createdAt: serverTimestamp()
             });
 
             await addDoc(collection(db, "transactions"), {
-                userId: user.uid, type: "earning", amount: order.resellerProfit,
-                referenceId: order.id, description: `Profit locked for Order #${order.id.slice(0, 8)} — awaiting delivery`,
+                userId: user.uid, type: "earning", amount: resellerProfit,
+                referenceId: order.id, description: `Profit locked for Order #${orderId.slice(0, 8)} — awaiting delivery`,
                 status: "pending", createdAt: serverTimestamp()
             });
 
             await addDoc(collection(db, "notifications"), {
                 userId: user.uid, type: "order_shipped", title: "Order Shipped",
-                message: `Profit of ${currencySymbol}${order.resellerProfit} for order #${order.id.slice(0, 8)} is locked until delivery is confirmed.`,
+                message: `Profit of ${currencySymbol}${resellerProfit} for order #${orderId.slice(0, 8)} is locked until delivery is confirmed.`,
                 createdAt: serverTimestamp()
             });
 
@@ -236,7 +245,7 @@ export default function OrdersPage() {
                             <tbody className="divide-y divide-white/[0.04]">
                                 {filteredOrders.map((order, index) => {
                                     const orderId = (order.id || `order-${index}`).toString();
-                                    const status = order.status || "pending";
+                                    const status = safeText(order.status || "pending");
                                     return (
                                     <tr key={orderId} className="hover:bg-white/[0.02] transition-colors">
                                         <td className="py-4 px-5">
@@ -247,16 +256,16 @@ export default function OrdersPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-white">#{orderId.slice(0, 8)}</p>
-                                                    <p className="text-xs text-zinc-600">{order.customerName || 'Customer'}</p>
+                                                    <p className="text-xs text-zinc-600">{safeText(order.customerName || 'Customer')}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <p className="text-sm font-medium text-white">{currencySymbol}{order.resellPrice?.toLocaleString()}</p>
+                                            <p className="text-sm font-medium text-white">{currencySymbol}{safeAmount(order.resellPrice).toLocaleString()}</p>
                                             <p className="text-[11px] text-zinc-600">{order.isPod ? 'Pay on delivery' : 'Paid'}</p>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <p className="text-sm font-medium text-emerald-400">{currencySymbol}{order.resellerProfit?.toLocaleString()}</p>
+                                            <p className="text-sm font-medium text-emerald-400">{currencySymbol}{safeAmount(order.resellerProfit).toLocaleString()}</p>
                                             <p className="text-[11px] text-zinc-600">
                                                 {status === 'delivered' ? 'Released' :
                                                     status === 'shipped' ? 'Locked' : 'Pending'}

@@ -38,6 +38,11 @@ const statusMap: Record<string, { label: string; tone: string; step: number; pay
 };
 
 const steps = ["Placed", "Processing", "Shipped", "Delivered"];
+const safeText = (value: unknown) => String(value || "");
+const toValidDate = (value: any): Date | null => {
+    const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+};
 
 export default function BuyerOrdersPage() {
     const [user, setUser] = useState<any>(null);
@@ -99,9 +104,9 @@ export default function BuyerOrdersPage() {
         const clean = searchQuery.trim().toLowerCase();
         if (!clean) return orders;
         return orders.filter(order =>
-            (order.productName || "").toLowerCase().includes(clean) ||
-            (order.storeName || "").toLowerCase().includes(clean) ||
-            order.id.toLowerCase().includes(clean)
+            safeText(order.productName).toLowerCase().includes(clean) ||
+            safeText(order.storeName).toLowerCase().includes(clean) ||
+            safeText(order.id).toLowerCase().includes(clean)
         );
     }, [orders, searchQuery]);
 
@@ -205,28 +210,32 @@ export default function BuyerOrdersPage() {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {filteredOrders.map(order => {
-                        const status = statusMap[order.status] || { label: "Pending", tone: "bg-slate-50 text-slate-600 border-slate-200", step: 1, paymentLabel: "Pending" };
-                        const createdAt = order.createdAt?.toDate ? order.createdAt.toDate() : (order.createdAt ? new Date(order.createdAt) : null);
+                    {filteredOrders.map((order, index) => {
+                        const orderId = safeText(order.id || `order-${index}`);
+                        const orderStatus = safeText(order.status || "pending");
+                        const status = statusMap[orderStatus] || { label: "Pending", tone: "bg-slate-50 text-slate-600 border-slate-200", step: 1, paymentLabel: "Pending" };
+                        const createdAt = toValidDate(order.createdAt);
                         const sellerStore = sellerStores[order.resellerId] || {};
-                        const storeSlug = order.storeSlug || sellerStore.storeSlug;
-                        const storeHref = order.storeUrl || (storeSlug ? `/store/${storeSlug}` : "/marketplace");
-                        const storeName = order.storeName || sellerStore.storeName || "Seller store";
+                        const storeSlug = safeText(order.storeSlug || sellerStore.storeSlug);
+                        const storeUrl = safeText(order.storeUrl);
+                        const storeHref = storeUrl || (storeSlug ? `/store/${storeSlug}` : "/marketplace");
+                        const storeName = safeText(order.storeName || sellerStore.storeName || "Seller store");
+                        const productName = safeText(order.productName || "Product");
 
                         return (
-                            <article key={order.id} className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+                            <article key={orderId} className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
                                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-center gap-4">
                                         <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
-                                            {order.productImage ? (
-                                                <Image src={order.productImage} alt={order.productName || "Product"} fill className="object-cover" />
+                                            {typeof order.productImage === "string" && order.productImage ? (
+                                                <Image src={order.productImage} alt={productName} fill className="object-cover" />
                                             ) : (
                                                 <Package className="h-8 w-8 text-slate-300" />
                                             )}
                                         </div>
                                         <div>
-                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">#{order.id.slice(-8).toUpperCase()}</p>
-                                            <h2 className="mt-1 text-base font-black text-slate-950">{order.productName || "Product"}</h2>
+                                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">#{orderId.slice(-8).toUpperCase()}</p>
+                                            <h2 className="mt-1 text-base font-black text-slate-950">{productName}</h2>
                                             <Link href={storeHref} className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-950">
                                                 {storeName}
                                                 <ExternalLink className="h-3.5 w-3.5" />
@@ -248,7 +257,7 @@ export default function BuyerOrdersPage() {
                                     <div className="space-y-5">
                                         <div className="grid grid-cols-4 gap-2">
                                             {steps.map((step, index) => {
-                                                const failed = ["payment_failed", "void_no_payment", "cancelled"].includes(order.status);
+                                                const failed = ["payment_failed", "void_no_payment", "cancelled"].includes(orderStatus);
                                                 const done = !failed && index + 1 <= status.step;
                                                 return (
                                                     <div key={step} className="space-y-2">
@@ -298,10 +307,10 @@ export default function BuyerOrdersPage() {
                                             <ExternalLink className="h-4 w-4" />
                                         </Link>
                                         <button
-                                            disabled={["pending_payment", "payment_pending", "payment_failed", "void_no_payment", "cancelled"].includes(order.status)}
+                                            disabled={["pending_payment", "payment_pending", "payment_failed", "void_no_payment", "cancelled"].includes(orderStatus)}
                                             className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
                                         >
-                                            {["pending_payment", "payment_pending"].includes(order.status) ? "Waiting for payment" : order.status === "void_no_payment" ? "Order voided" : "Track package"}
+                                            {["pending_payment", "payment_pending"].includes(orderStatus) ? "Waiting for payment" : orderStatus === "void_no_payment" ? "Order voided" : "Track package"}
                                         </button>
                                     </div>
                                 </div>

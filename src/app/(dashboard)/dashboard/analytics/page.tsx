@@ -19,7 +19,14 @@ import { useCurrency } from "@/hooks/useCurrency";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement, Filler);
 
-const numeric = (value: any) => Number(value || 0);
+const numeric = (value: any) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+const safeText = (value: unknown, fallback = "") => {
+    const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+    return text || fallback;
+};
 const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
 
 function computeChartData(orders: any[], timeframe: string): { labels: string[]; data: number[] } {
@@ -149,7 +156,7 @@ export default function AnalyticsPage() {
                     const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
                     setRawOrders(orders);
 
-                    const totalRev = orders.reduce((acc, curr) => acc + (curr.resellPrice || 0), 0);
+                    const totalRev = orders.reduce((acc, curr) => acc + numeric(curr.resellPrice), 0);
                     const impressions = numeric(uData?.storeViews || uData?.impressions || uData?.stats?.views);
                     const visits = numeric(uData?.storeVisits || impressions);
                     // Today's count only — don't fall back to the all-time total.
@@ -160,10 +167,10 @@ export default function AnalyticsPage() {
 
                     const productMap: Record<string, { sales: number, revenue: number }> = {};
                     orders.forEach(order => {
-                        const name = order.productName || "Product";
+                        const name = safeText(order.productName, "Product");
                         if (!productMap[name]) productMap[name] = { sales: 0, revenue: 0 };
-                        productMap[name].sales += order.quantity || 1;
-                        productMap[name].revenue += order.resellPrice || 0;
+                        productMap[name].sales += numeric(order.quantity) || 1;
+                        productMap[name].revenue += numeric(order.resellPrice);
                     });
                     const topProds = Object.entries(productMap)
                         .map(([name, data]) => ({ name, ...data }))
@@ -171,7 +178,7 @@ export default function AnalyticsPage() {
 
                     const catMap: Record<string, number> = {};
                     orders.forEach(order => {
-                        const cat = order.category || "General";
+                        const cat = safeText(order.category, "General");
                         catMap[cat] = (catMap[cat] || 0) + 1;
                     });
 
@@ -447,28 +454,32 @@ export default function AnalyticsPage() {
                         </div>
                     ) : (
                         <div className="space-y-1.5">
-                            {stats.recentOrders.map((o) => (
-                                <div key={o.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.04] transition-colors">
+                            {stats.recentOrders.map((o, index) => {
+                                const orderId = safeText(o.id, `order-${index}`);
+                                const productName = safeText(o.productName, "Product");
+                                const status = safeText(o.status, "pending");
+                                return (
+                                <div key={orderId} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.04] transition-colors">
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
                                             <ShoppingCart className="w-3.5 h-3.5 text-zinc-500" />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-sm font-medium text-zinc-200">#{o.id.slice(-6).toUpperCase()}</p>
-                                            <p className="text-xs text-zinc-500 truncate max-w-[160px]">{o.productName}</p>
+                                            <p className="text-sm font-medium text-zinc-200">#{orderId.slice(-6).toUpperCase()}</p>
+                                            <p className="text-xs text-zinc-500 truncate max-w-[160px]">{productName}</p>
                                         </div>
                                     </div>
                                     <div className="text-right shrink-0 ml-2">
-                                        <p className="text-sm font-semibold text-white">{currency.money(o.resellPrice || 0)}</p>
+                                        <p className="text-sm font-semibold text-white">{currency.money(numeric(o.resellPrice))}</p>
                                         <span className={cn("text-[10px] font-medium capitalize",
-                                            o.status === 'delivered' ? 'text-emerald-400' :
-                                            o.status === 'cancelled' ? 'text-red-400' : 'text-blue-400'
+                                            status === 'delivered' ? 'text-emerald-400' :
+                                            status === 'cancelled' ? 'text-red-400' : 'text-blue-400'
                                         )}>
-                                            {o.status}
+                                            {status}
                                         </span>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     )}
                 </div>

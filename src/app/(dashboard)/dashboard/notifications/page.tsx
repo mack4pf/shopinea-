@@ -7,6 +7,15 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Bell, ShoppingCart, ArrowUpRight, ShieldAlert, Zap, Circle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const safeText = (value: unknown, fallback = "") => {
+    const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+    return text || fallback;
+};
+const toValidDate = (value: any): Date | null => {
+    const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+};
+
 export default function NotificationsPage() {
     const [user, setUser] = useState<any>(null);
     const [notifications, setNotifications] = useState<any[]>([]);
@@ -97,22 +106,26 @@ export default function NotificationsPage() {
                         <p className="text-sm text-zinc-500">No notifications found.</p>
                     </div>
                 ) : (
-                    filteredNotifications.map((n) => (
-                        <div key={n.id} className={cn(
+                    filteredNotifications.map((n, index) => {
+                        const notificationId = safeText(n.id, `notification-${index}`);
+                        const type = safeText(n.type, "system");
+                        const createdAt = toValidDate(n.createdAt);
+                        return (
+                        <div key={notificationId} className={cn(
                             "p-4 rounded-xl border flex gap-4 transition-colors",
                             n.read ? "bg-white/[0.02] border-white/[0.04]" : "bg-white/[0.04] border-white/[0.08]"
                         )}>
-                            <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", getIconStyle(n.type))}>
-                                {getIcon(n.type)}
+                            <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", getIconStyle(type))}>
+                                {getIcon(type)}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-start gap-2">
-                                    <h3 className={cn("text-sm font-medium text-white", n.read && "opacity-60")}>{n.title}</h3>
+                                    <h3 className={cn("text-sm font-medium text-white", n.read && "opacity-60")}>{safeText(n.title, "Notification")}</h3>
                                     <span className="text-[10px] text-zinc-600 shrink-0">
-                                        {n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString() : 'Now'}
+                                        {createdAt ? createdAt.toLocaleDateString() : 'Now'}
                                     </span>
                                 </div>
-                                <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{n.description || n.message}</p>
+                                <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{safeText(n.description || n.message)}</p>
                                 {!n.read && (
                                     <div className="flex items-center gap-1 mt-1.5">
                                         <Circle className="w-1.5 h-1.5 fill-blue-500 text-blue-500" />
@@ -121,7 +134,7 @@ export default function NotificationsPage() {
                                 )}
                             </div>
                         </div>
-                    ))
+                    )})
                 )}
             </div>
         </div>

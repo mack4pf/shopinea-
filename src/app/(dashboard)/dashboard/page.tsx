@@ -14,7 +14,14 @@ import { useRouter } from "next/navigation";
 import { useCurrency } from "@/hooks/useCurrency";
 
 const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
-const numeric = (value: any) => Number(value || 0);
+const numeric = (value: any) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+const firstName = (value: unknown) => {
+    const name = typeof value === "string" ? value.trim() : "";
+    return name ? name.split(/\s+/)[0] : "there";
+};
 
 export default function ResellerHome() {
     const router = useRouter();
@@ -27,10 +34,11 @@ export default function ResellerHome() {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
+            try {
+                if (firebaseUser) {
                 setUser(firebaseUser);
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-                const data = userDoc.data();
+                const data = userDoc.exists() ? userDoc.data() : {};
                 setUserData(data);
 
                 if (data?.role === "buyer") { router.push("/buyer-orders"); return; }
@@ -48,7 +56,7 @@ export default function ResellerHome() {
                 const q = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid), where("createdAt", ">=", today));
                 const snap = await getDocs(q);
                 let rev = 0;
-                snap.docs.forEach(d => rev += d.data().resellPrice || 0);
+                snap.docs.forEach(d => rev += numeric(d.data().resellPrice));
 
                 const allOrdersQ = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid));
                 const allOrdersSnap = await getDocs(allOrdersQ);
@@ -59,8 +67,15 @@ export default function ResellerHome() {
                 const recentQ = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid), orderBy("createdAt", "desc"), limit(5));
                 const recentSnap = await getDocs(recentQ);
                 setRecentOrders(recentSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                }
+            } catch (error) {
+                console.error("Dashboard overview failed to load:", error);
+                setUserData({});
+                setStats({ revenueToday: 0, ordersToday: 0, visitorsToday: 0, totalOrders: 0, totalVisitors: 0 });
+                setRecentOrders([]);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         });
         return () => unsubscribe();
     }, []);
@@ -94,7 +109,7 @@ export default function ResellerHome() {
                 <div>
                     <p className="text-xs font-medium text-zinc-500 mb-1">Overview</p>
                     <h1 className="text-2xl font-bold text-white leading-tight">
-                        Good day, {userData?.displayName?.split(' ')[0] || 'there'}
+                        Good day, {firstName(userData?.displayName)}
                     </h1>
                     <p className="text-sm text-zinc-500 mt-0.5">Here&apos;s what&apos;s happening with your store today.</p>
                 </div>

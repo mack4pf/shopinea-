@@ -14,6 +14,8 @@ import WithdrawalModal from "@/components/modals/WithdrawalModal";
 import AdDepositModal from "@/components/modals/AdDepositModal";
 import { useCurrency } from "@/hooks/useCurrency";
 
+const safeText = (value: unknown) => String(value || "");
+
 export default function WalletPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
@@ -154,15 +156,19 @@ export default function WalletPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    transactions.map((t) => (
-                                        <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">
+                                    transactions.map((t, index) => {
+                                        const transactionId = safeText(t.id || `transaction-${index}`);
+                                        const transactionType = safeText(t.type || "transaction");
+                                        const transactionStatus = safeText(t.status || "pending");
+                                        return (
+                                        <tr key={transactionId} className="hover:bg-white/[0.02] transition-colors">
                                             <td className="py-4 px-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getTypeBg(t.type)}`}>
-                                                        {getTypeIcon(t.type)}
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${getTypeBg(transactionType)}`}>
+                                                        {getTypeIcon(transactionType)}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-zinc-200 capitalize">{t.type.replace(/_/g, ' ')}</p>
+                                                        <p className="text-sm font-medium text-zinc-200 capitalize">{transactionType.replace(/_/g, ' ')}</p>
                                                         <p className="text-xs text-zinc-600">
                                                             {t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'N/A'}
                                                         </p>
@@ -174,12 +180,12 @@ export default function WalletPage() {
                                                 {t.bonus > 0 && <p className="text-[10px] text-emerald-400">+{currency.money(t.bonus)} bonus</p>}
                                             </td>
                                             <td className="py-4 px-5 text-right">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium capitalize ${getStatusStyle(t.status)}`}>
-                                                    {t.status}
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium capitalize ${getStatusStyle(transactionStatus)}`}>
+                                                    {transactionStatus}
                                                 </span>
                                             </td>
                                         </tr>
-                                    ))
+                                    )})
                                 )}
                             </tbody>
                         </table>

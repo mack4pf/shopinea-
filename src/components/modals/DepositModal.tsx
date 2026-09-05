@@ -278,7 +278,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
     const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
     const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
     const customDepositMethods = configuredMethods.filter((m: any) => {
-        const type = (m?.type || m?.id || "").toLowerCase();
+        const type = String(m?.type || m?.id || "").toLowerCase();
         return m?.enabled && (m.flow === "deposit" || m.flow === "both") && (cardPaymentsEnabled || type !== "card");
     });
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", logoUrl: "", destination: "" };
@@ -486,7 +486,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                     <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
                         <p className="text-sm text-zinc-400">How would you like to deposit <span className="text-white font-medium">{currencySymbol}{Number(amount).toLocaleString()}</span>?</p>
                         {depositMethods.map((m: any) => {
-                            const type = (m.type || m.id || "").toLowerCase();
+                            const type = String(m.type || m.id || "").toLowerCase();
                             const icon = m.logoUrl ? <img src={m.logoUrl} alt="" className="w-7 h-7 object-contain" /> :
                                 type === "crypto" ? <BitcoinLogo size={20} /> :
                                 type === "cashapp" ? <CashAppLogo size={20} /> :
@@ -597,7 +597,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                             </div>
                         ) : (
                         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
-                            {selectedMethodConfig && !["cashapp", "paypal", "crypto"].includes((selectedMethodConfig.type || selectedMethodConfig.id || "").toLowerCase()) && (<>
+                            {selectedMethodConfig && !["cashapp", "paypal", "crypto"].includes(String(selectedMethodConfig.type || selectedMethodConfig.id || "").toLowerCase()) && (<>
                                 <p className="text-xs font-medium text-zinc-400">{selectedMethodConfig.label} Details</p>
                                 <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 text-xs text-zinc-300 break-words leading-relaxed">
                                     {selectedMethodConfig.destination || "Not configured"}

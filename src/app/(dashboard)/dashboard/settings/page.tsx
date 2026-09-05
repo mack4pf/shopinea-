@@ -18,6 +18,11 @@ import { CountrySelect } from "@/components/ui/country-select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+const safeText = (value: unknown, fallback = "") => {
+    const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+    return text || fallback;
+};
+
 export default function SettingsPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
@@ -158,6 +163,8 @@ export default function SettingsPage() {
     };
 
     if (loading) return <div className="h-[80vh] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>;
+
+    const payoutMethods = Array.isArray(userData?.payoutMethods) ? userData.payoutMethods : [];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -393,21 +400,23 @@ export default function SettingsPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {(userData?.payoutMethods || []).length === 0 ? (
+                                    {payoutMethods.length === 0 ? (
                                         <div className="py-12 text-center border border-dashed border-white/[0.08] rounded-xl">
                                             <CreditCard className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
                                             <p className="text-sm text-zinc-500">No payout methods added yet.</p>
                                         </div>
                                     ) : (
-                                        userData.payoutMethods.map((m: any) => (
-                                            <div key={m.id} className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center justify-between">
+                                        payoutMethods.map((m: any, index: number) => {
+                                            const methodType = safeText(m.type);
+                                            return (
+                                            <div key={safeText(m.id, `payout-${index}`)} className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center text-white", m.type === 'crypto' ? 'bg-orange-600' : 'bg-blue-600')}>
-                                                        {m.type === 'crypto' ? <Bitcoin className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
+                                                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center text-white", methodType === 'crypto' ? 'bg-orange-600' : 'bg-blue-600')}>
+                                                        {methodType === 'crypto' ? <Bitcoin className="w-5 h-5" /> : <Building2 className="w-5 h-5" />}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-white">{m.label}</p>
-                                                        <p className="text-xs text-zinc-500">{m.type === 'crypto' ? m.network : m.bankName}</p>
+                                                        <p className="text-sm font-medium text-white">{safeText(m.label, "Payout method")}</p>
+                                                        <p className="text-xs text-zinc-500">{methodType === 'crypto' ? safeText(m.network) : safeText(m.bankName)}</p>
                                                     </div>
                                                 </div>
                                                 <Button type="button" variant="ghost" onClick={() => handleRemovePayout(m)}
@@ -415,7 +424,7 @@ export default function SettingsPage() {
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
-                                        ))
+                                        )})
                                     )}
                                 </div>
                             </div>

@@ -17,11 +17,17 @@ const planVisuals: Record<string, { icon: ElementType; color: string; bg: string
     enterprise_5000: { icon: Building2, color: "text-amber-400", bg: "bg-amber-500/10" },
 };
 
+function toValidDate(value: any): Date | null {
+    const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+}
+
 export default function SubscriptionPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<any>(null);
+    const renewalDate = toValidDate(userData?.planExpiryDate);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -93,7 +99,7 @@ export default function SubscriptionPage() {
             </div>
 
             {/* Billing info */}
-            {userData?.planExpiryDate && (
+            {renewalDate && (
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex items-center justify-between">
                     <div>
                         <p className="text-sm font-medium text-zinc-300">Billing Cycle</p>
@@ -102,7 +108,7 @@ export default function SubscriptionPage() {
                     <div className="text-right">
                         <p className="text-xs text-zinc-500">Next renewal</p>
                         <p className="text-sm font-semibold text-white">
-                            {new Date(userData.planExpiryDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {renewalDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                     </div>
                 </div>

@@ -10,6 +10,16 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const safeText = (value: unknown) => String(value || "");
+const safeAmount = (value: unknown) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+const toValidDate = (value: any): Date | null => {
+    const date = value?.toDate ? value.toDate() : (value ? new Date(value) : null);
+    return date && !Number.isNaN(date.getTime()) ? date : null;
+};
+
 export default function TransactionHistoryPage() {
     const [user, setUser] = useState<any>(null);
     const [history, setHistory] = useState<any[]>([]);
@@ -148,8 +158,12 @@ export default function TransactionHistoryPage() {
                                 </tr>
                             ) : (
                                 filtered.map((t, index) => {
-                                    const recordId = (t.id || `record-${index}`).toString();
-                                    const recordType = (t.type || "record").toString();
+                                    const recordId = safeText(t.id || `record-${index}`);
+                                    const recordType = safeText(t.type || "record");
+                                    const recordStatus = safeText(t.status || "pending");
+                                    const recordDate = toValidDate(t.createdAt);
+                                    const recordAmount = safeAmount(t.amount);
+                                    const isCredit = t.type === 'earning' || t.type === 'deposit' || t.type === 'ad_deposit';
                                     return (
                                     <tr key={recordId} className="hover:bg-white/[0.02] transition-colors">
                                         <td className="py-4 px-5">
@@ -159,7 +173,7 @@ export default function TransactionHistoryPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-zinc-200">#{recordId.slice(0, 8)}</p>
-                                                    <p className="text-xs text-zinc-600 truncate max-w-[200px]">{t.description || recordType.replace('_', ' ')}</p>
+                                                    <p className="text-xs text-zinc-600 truncate max-w-[200px]">{safeText(t.description) || recordType.replace('_', ' ')}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -168,20 +182,20 @@ export default function TransactionHistoryPage() {
                                         </td>
                                         <td className="py-4 px-4">
                                             <p className={cn("text-sm font-semibold",
-                                                (t.type === 'earning' || t.type === 'deposit' || t.type === 'ad_deposit') ? 'text-emerald-400' : 'text-white'
+                                                isCredit ? 'text-emerald-400' : 'text-white'
                                             )}>
-                                                {(t.type === 'earning' || t.type === 'deposit' || t.type === 'ad_deposit') ? '+' : ''}${t.amount?.toLocaleString()}
+                                                {isCredit ? '+' : ''}${recordAmount.toLocaleString()}
                                             </p>
-                                            {t.bonus > 0 && <p className="text-[10px] text-emerald-400">+${t.bonus} bonus</p>}
+                                            {safeAmount(t.bonus) > 0 && <p className="text-[10px] text-emerald-400">+${safeAmount(t.bonus)} bonus</p>}
                                         </td>
                                         <td className="py-4 px-4">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium capitalize ${getStatusStyle(t.status)}`}>
-                                                {t.status || 'pending'}
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium capitalize ${getStatusStyle(recordStatus)}`}>
+                                                {recordStatus}
                                             </span>
                                         </td>
                                         <td className="py-4 px-5 text-right">
-                                            <p className="text-sm text-zinc-300">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'N/A'}</p>
-                                            <p className="text-[10px] text-zinc-600">{t.createdAt?.toDate ? t.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</p>
+                                            <p className="text-sm text-zinc-300">{recordDate ? recordDate.toLocaleDateString() : 'N/A'}</p>
+                                            <p className="text-[10px] text-zinc-600">{recordDate ? recordDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</p>
                                         </td>
                                     </tr>
                                 )})

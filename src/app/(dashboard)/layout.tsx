@@ -17,6 +17,16 @@ import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/currency";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
+const safeText = (value: unknown, fallback = "") => {
+    const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+    return text || fallback;
+};
+
+const safeNumber = (value: unknown) => {
+    const next = Number(value || 0);
+    return Number.isFinite(next) ? next : 0;
+};
+
 const getNavItems = (role?: string) => {
     if (role === "buyer") {
         return [
@@ -97,6 +107,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
 
     const currencySymbol = getCurrencySymbol(userData?.currency);
+    const displayName = safeText(userData?.displayName, "User");
+    const storeName = safeText(userData?.storeName, "My Store");
+    const walletBalance = safeNumber(userData?.walletBalance);
 
     if (userData?.role === "buyer" || pathname === "/buyer-orders") {
         return (
@@ -281,7 +294,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         {/* Balance chip - desktop only */}
                         <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-slate-200 shadow-sm dark:bg-white/[0.04] dark:border-white/[0.08] dark:shadow-none">
                             <Wallet className="w-4 h-4 text-emerald-400" />
-                            <span className="text-sm font-semibold text-slate-950 dark:text-white">{currencySymbol}{userData?.walletBalance?.toLocaleString() || "0"}</span>
+                            <span className="text-sm font-semibold text-slate-950 dark:text-white">{currencySymbol}{walletBalance.toLocaleString()}</span>
                         </div>
 
                         <button className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors dark:hover:bg-white/[0.06]">
@@ -291,11 +304,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                         <div className="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-white/[0.08]">
                             <div className="hidden xl:block text-right">
-                                <p className="text-sm font-semibold text-slate-950 leading-none dark:text-white">{userData?.displayName || "User"}</p>
-                                <p className="text-xs text-slate-500 mt-0.5 dark:text-zinc-500">{userData?.storeName || "My Store"}</p>
+                                <p className="text-sm font-semibold text-slate-950 leading-none dark:text-white">{displayName}</p>
+                                <p className="text-xs text-slate-500 mt-0.5 dark:text-zinc-500">{storeName}</p>
                             </div>
                             <div className="w-9 h-9 rounded-full bg-sky-600 border border-sky-500 flex items-center justify-center text-sm font-semibold text-white dark:bg-white/[0.1] dark:border-white/[0.12]">
-                                {userData?.displayName?.[0] || <UserIcon className="w-4 h-4" />}
+                                {displayName[0] || <UserIcon className="w-4 h-4" />}
                             </div>
                         </div>
                     </div>
