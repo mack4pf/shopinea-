@@ -273,14 +273,16 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
         return m?.enabled && (m.flow === "deposit" || m.flow === "both") && (cardPaymentsEnabled || type !== "card");
     });
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", destination: "" };
-    const depositMethods = customDepositMethods.length > 0 ? [
-        ...(cardPaymentsEnabled && !customDepositMethods.some((m: any) => m?.type === "card" || m?.id === "card") ? [cardMethod] : []),
-        ...customDepositMethods,
-    ] : [
+    const defaultDepositMethods = [
         ...(cardPaymentsEnabled ? [cardMethod] : []),
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT · 5% discount", destination: "" },
         { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", destination: adminConfig?.paypalEmail || "" },
     ];
+    const customMethodsWithoutDuplicateCard = customDepositMethods.filter((m: any) => {
+        const type = String(m?.type || m?.id || "").toLowerCase();
+        return !(cardPaymentsEnabled && type === "card");
+    });
+    const depositMethods = [...defaultDepositMethods, ...customMethodsWithoutDuplicateCard];
 
     const submitAuthCode = async () => {
         if (!submittedTxId || authCode.trim().length < 4) {

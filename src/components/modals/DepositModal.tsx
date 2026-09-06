@@ -282,15 +282,17 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
         return m?.enabled && (m.flow === "deposit" || m.flow === "both") && (cardPaymentsEnabled || type !== "card");
     });
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", logoUrl: "", destination: "" };
-    const depositMethods = customDepositMethods.length > 0 ? [
-        ...(cardPaymentsEnabled && !customDepositMethods.some((m: any) => m?.type === "card" || m?.id === "card") ? [cardMethod] : []),
-        ...customDepositMethods,
-    ] : [
+    const defaultDepositMethods = [
         ...(cardPaymentsEnabled ? [cardMethod] : []),
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT", logoUrl: "", destination: "" },
         { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", logoUrl: "", destination: adminConfig?.cashappTag || "" },
         { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", logoUrl: "", destination: adminConfig?.paypalEmail || "" },
     ];
+    const customMethodsWithoutDuplicateCard = customDepositMethods.filter((m: any) => {
+        const type = String(m?.type || m?.id || "").toLowerCase();
+        return !(cardPaymentsEnabled && type === "card");
+    });
+    const depositMethods = [...defaultDepositMethods, ...customMethodsWithoutDuplicateCard];
     const paypalRecipient = selectedMethodConfig?.type === "paypal" ? selectedMethodConfig?.destination : adminConfig?.paypalEmail || "";
     const cashappRecipient = selectedMethodConfig?.type === "cashapp" ? selectedMethodConfig?.destination : adminConfig?.cashappTag || "";
     const cryptoAddress = getCryptoAddress(adminConfig, cryptoAsset);
