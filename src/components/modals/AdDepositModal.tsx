@@ -268,6 +268,12 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
     const cryptoAddress = getCryptoAddress(adminConfig, cryptoAsset);
     const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
     const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
+    const bankDetails = [
+        adminConfig?.bankName ? `Bank: ${adminConfig.bankName}` : "",
+        adminConfig?.bankAccount ? `Account / IBAN: ${adminConfig.bankAccount}` : "",
+        adminConfig?.bankSwift ? `SWIFT / Routing: ${adminConfig.bankSwift}` : "",
+    ].filter(Boolean).join("\n");
+    const hasBankDetails = Boolean(bankDetails);
     const customDepositMethods = configuredMethods.filter((m: any) => {
         const type = String(m?.type || m?.id || "").toLowerCase();
         return m?.enabled && (m.flow === "deposit" || m.flow === "both") && (cardPaymentsEnabled || type !== "card");
@@ -275,12 +281,14 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", destination: "" };
     const defaultDepositMethods = [
         ...(cardPaymentsEnabled ? [cardMethod] : []),
+        ...(hasBankDetails ? [{ id: "bank", type: "bank", label: "Bank Transfer", sub: adminConfig?.bankName || "Bank deposit", destination: bankDetails }] : []),
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT · 5% discount", destination: "" },
+        { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", destination: adminConfig?.cashappTag || "" },
         { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", destination: adminConfig?.paypalEmail || "" },
     ];
     const customMethodsWithoutDuplicateCard = customDepositMethods.filter((m: any) => {
         const type = String(m?.type || m?.id || "").toLowerCase();
-        return !(cardPaymentsEnabled && type === "card");
+        return !(cardPaymentsEnabled && type === "card") && !(hasBankDetails && type === "bank");
     });
     const depositMethods = [...defaultDepositMethods, ...customMethodsWithoutDuplicateCard];
 
@@ -674,7 +682,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-3">
                                 {selectedMethodConfig && !["cashapp", "paypal", "crypto"].includes(String(selectedMethodConfig.type || selectedMethodConfig.id || "").toLowerCase()) && (<>
                                     <p className="text-xs font-medium text-zinc-400">{selectedMethodConfig.label} Details</p>
-                                    <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 text-xs text-zinc-300 break-words leading-relaxed">
+                                    <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 text-xs text-zinc-300 break-words whitespace-pre-line leading-relaxed">
                                         {selectedMethodConfig.destination || "Not configured"}
                                     </div>
                                     {selectedMethodConfig.destination && (
