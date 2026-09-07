@@ -318,7 +318,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                             requiredDebtAmount={adDebt}
                             currencySymbol={currency.currencySymbol}
                             currencyCode={currency.currencyCode}
-                            exchangeRate={currency.rates[currency.currencyCode] || 1}
+                            exchangeRate={currency.exchangeRate}
                         />
                     </div>
                 ) : (

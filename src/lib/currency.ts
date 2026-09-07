@@ -10,6 +10,7 @@ export type CountryCurrency = {
 export type ExchangeRates = Record<string, number>;
 
 export const DEFAULT_CURRENCY = "USD";
+const DEFAULT_LOCALE = "en-US";
 
 export const FALLBACK_COUNTRIES: CountryCurrency[] = [
     {
@@ -2045,6 +2046,23 @@ function safeNumber(value: unknown, fallback = 0) {
     return Number.isFinite(next) ? next : fallback;
 }
 
+const supportedCurrencyCache = new Map<string, boolean>();
+
+export function isSupportedCurrencyCode(currencyCode?: unknown) {
+    const code = typeof currencyCode === "string" ? currencyCode.trim().toUpperCase() : "";
+    if (!/^[A-Z]{3}$/.test(code)) return false;
+    if (supportedCurrencyCache.has(code)) return supportedCurrencyCache.get(code) === true;
+
+    try {
+        new Intl.NumberFormat(DEFAULT_LOCALE, { style: "currency", currency: code }).format(1);
+        supportedCurrencyCache.set(code, true);
+        return true;
+    } catch {
+        supportedCurrencyCache.set(code, false);
+        return false;
+    }
+}
+
 export function getFlagEmoji(countryCode: string) {
     if (!countryCode || countryCode.length !== 2) return "🌐";
     return countryCode
@@ -2054,13 +2072,13 @@ export function getFlagEmoji(countryCode: string) {
 
 export function sanitizeCurrencyCode(currencyCode?: unknown) {
     const code = typeof currencyCode === "string" ? currencyCode.trim().toUpperCase() : "";
-    return /^[A-Z]{3}$/.test(code) ? code : DEFAULT_CURRENCY;
+    return isSupportedCurrencyCode(code) ? code : DEFAULT_CURRENCY;
 }
 
 export function getCurrencySymbol(currencyCode = DEFAULT_CURRENCY) {
     const safeCode = sanitizeCurrencyCode(currencyCode);
     try {
-        const parts = new Intl.NumberFormat("en-US", {
+        const parts = new Intl.NumberFormat(DEFAULT_LOCALE, {
             style: "currency",
             currency: safeCode,
             currencyDisplay: "narrowSymbol",
@@ -2078,14 +2096,32 @@ export function getCountryByName(name?: string) {
 
 export function convertFromUsd(amountUsd: number, currencyCode = DEFAULT_CURRENCY, rates: ExchangeRates = FALLBACK_RATES) {
     const safeCode = sanitizeCurrencyCode(currencyCode);
-    const rate = safeNumber(rates?.[safeCode], 1) || 1;
+    const rate = getExchangeRate(safeCode, rates);
     return safeNumber(amountUsd) * rate;
 }
 
 export function convertToUsd(amount: number, currencyCode = DEFAULT_CURRENCY, rates: ExchangeRates = FALLBACK_RATES) {
     const safeCode = sanitizeCurrencyCode(currencyCode);
-    const rate = safeNumber(rates?.[safeCode], 1) || 1;
+    const rate = getExchangeRate(safeCode, rates);
     return safeNumber(amount) / rate;
+}
+
+export function getExchangeRate(currencyCode = DEFAULT_CURRENCY, rates: ExchangeRates = FALLBACK_RATES) {
+    const safeCode = sanitizeCurrencyCode(currencyCode);
+    const directRate = safeNumber(rates?.[safeCode], 0);
+    if (directRate > 0) return directRate;
+
+    const fallbackRate = safeNumber(FALLBACK_RATES[safeCode], 0);
+    return fallbackRate > 0 ? fallbackRate : 1;
+}
+
+export function formatNumber(value: unknown, options: Intl.NumberFormatOptions = {}) {
+    const safeValue = safeNumber(value);
+    try {
+        return new Intl.NumberFormat(DEFAULT_LOCALE, options).format(safeValue);
+    } catch {
+        return safeValue.toFixed(options.maximumFractionDigits ?? 0);
+    }
 }
 
 export function formatCurrency(
@@ -2097,13 +2133,13 @@ export function formatCurrency(
     const safeCode = sanitizeCurrencyCode(currencyCode);
     const converted = safeNumber(convertFromUsd(amountUsd, safeCode, rates));
     try {
-        return new Intl.NumberFormat("en-US", {
+        return new Intl.NumberFormat(DEFAULT_LOCALE, {
             style: "currency",
             currency: safeCode,
             maximumFractionDigits: converted >= 1000 ? 0 : 2,
             ...options,
         }).format(converted);
     } catch {
-        return `${getCurrencySymbol(safeCode)}${converted.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        return `${getCurrencySymbol(safeCode)}${formatNumber(converted, { maximumFractionDigits: 2 })}`;
     }
 }

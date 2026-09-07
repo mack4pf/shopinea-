@@ -769,7 +769,7 @@ export default function AdsPage() {
             </div>
 
             {/* Modals */}
-            <AdDepositModal isOpen={showDepositModal} onClose={() => setShowDepositModal(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.rates[currency.currencyCode] || 1} />
+            <AdDepositModal isOpen={showDepositModal} onClose={() => setShowDepositModal(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.exchangeRate} />
             <KYCModal isOpen={showKYCModal} onClose={() => setShowKYCModal(false)} userId={user?.uid} />
 
             <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Create Campaign" description="Set up your ad campaign across Meta, TikTok, or Google.">

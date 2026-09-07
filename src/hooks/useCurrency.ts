@@ -8,6 +8,7 @@ import {
     convertFromUsd,
     convertToUsd,
     formatCurrency,
+    getExchangeRate,
     getCurrencySymbol,
     sanitizeCurrencyCode,
 } from "@/lib/currency";
@@ -31,6 +32,7 @@ export function useCurrency(userData?: any) {
         currencyCode,
         currencySymbol: getCurrencySymbol(currencyCode),
         rates,
+        exchangeRate: getExchangeRate(currencyCode, rates),
         fromUsd: (amountUsd: number) => convertFromUsd(amountUsd, currencyCode, rates),
         toUsd: (amount: number) => convertToUsd(amount, currencyCode, rates),
         money: (amountUsd: number, options?: Intl.NumberFormatOptions) => formatCurrency(amountUsd, currencyCode, rates, options),

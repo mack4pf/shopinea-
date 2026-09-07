@@ -220,8 +220,8 @@ export default function WalletPage() {
             </div>
 
             <WithdrawalModal isOpen={isWithdrawModalOpen} onClose={() => setIsWithdrawModalOpen(false)} userData={userData} currencySymbol={currency.currencySymbol} onSuccess={() => { if (user) refreshUserData(user.uid); }} />
-            <DepositModal isOpen={isDepositModalOpen} onClose={() => setIsDepositModalOpen(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.rates[currency.currencyCode] || 1} />
-            <AdDepositModal isOpen={isAdModalOpen} onClose={() => setIsAdModalOpen(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.rates[currency.currencyCode] || 1} />
+            <DepositModal isOpen={isDepositModalOpen} onClose={() => setIsDepositModalOpen(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.exchangeRate} />
+            <AdDepositModal isOpen={isAdModalOpen} onClose={() => setIsAdModalOpen(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.exchangeRate} />
             <RefundModal isOpen={isRefundModalOpen} onClose={() => setIsRefundModalOpen(false)} userId={user?.uid} availableBalance={userData?.walletBalance || 0} currencySymbol={currency.currencySymbol} />
         </div>
     );

@@ -553,7 +553,7 @@ export default function MarketingPage() {
                     userId={user.uid}
                     currencySymbol={currencySymbol}
                     currencyCode={currency.currencyCode}
-                    exchangeRate={currency.rates[currency.currencyCode] || 1}
+                    exchangeRate={currency.exchangeRate}
                 />
             )}
         </div>
