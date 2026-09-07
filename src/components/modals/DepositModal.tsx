@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, validateSafeCardInput } from "@/lib/payments/card";
 import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
 import { getEnabledCryptoOptions, getCryptoAddress } from "@/lib/payments/crypto";
+import { formatNumber, safeNumber } from "@/lib/currency";
 
 interface DepositModalProps {
     isOpen: boolean;
@@ -113,8 +114,9 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
     }, [submittedTxId]);
 
     const labelIdx = step <= 1 ? 0 : step <= 3 ? 1 : 2;
-    const amountLocal = Number(amount) || 0;
-    const amountUsd = amountLocal / (exchangeRate || 1);
+    const safeExchangeRate = safeNumber(exchangeRate, 1) || 1;
+    const amountLocal = safeNumber(amount);
+    const amountUsd = amountLocal / safeExchangeRate;
 
     const handleCopy = async (text: string, key: string) => {
         if (!text) { toast.error("Not configured yet."); return; }
@@ -223,8 +225,8 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                         data: {
                             subject: "Deposit Request Received",
                             html: `<p>Hello ${userData.displayName || userData.fullName || "Merchant"},</p>
-                                <p>We received your wallet deposit request for <strong>${currencySymbol}${amountLocal.toLocaleString()} ${currencyCode}</strong>.</p>
-                                <p><strong>USD equivalent:</strong> $${amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                <p>We received your wallet deposit request for <strong>${currencySymbol}${formatNumber(amountLocal)} ${currencyCode}</strong>.</p>
+                                <p><strong>USD equivalent:</strong> $${formatNumber(amountUsd, { maximumFractionDigits: 2 })}</p>
                                 <p><strong>Status:</strong> Pending review. We will email you again once the payment receipt is approved or rejected.</p>
                                 <p><strong>Payment method:</strong> ${(method || "transfer").toUpperCase()}${cryptoAsset ? ` (${cryptoAsset.toUpperCase()})` : ""}</p>`
                         }
@@ -555,7 +557,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                                     : <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{amountLocal.toLocaleString()} {currencyCode}</span> to the details below, then upload your receipt.</>
                                 }
                             </p>
-                            {currencyCode !== "USD" && <p className="text-[11px] text-zinc-600 mt-1">Estimated USD credit: ${amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>}
+                            {currencyCode !== "USD" && <p className="text-[11px] text-zinc-600 mt-1">Estimated USD credit: ${formatNumber(amountUsd, { maximumFractionDigits: 2 })}</p>}
                         </div>
 
                         {selectedMethodConfig?.type === "card" ? (

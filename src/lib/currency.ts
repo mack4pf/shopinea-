@@ -2041,7 +2041,7 @@ export const FALLBACK_RATES: ExchangeRates = {
     "JPY": 157
 };
 
-function safeNumber(value: unknown, fallback = 0) {
+export function safeNumber(value: unknown, fallback = 0) {
     const next = Number(value);
     return Number.isFinite(next) ? next : fallback;
 }

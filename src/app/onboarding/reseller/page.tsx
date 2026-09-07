@@ -25,6 +25,7 @@ import { getFastProductImageUrl, getProductKey, getMarketplaceSourceLabel, PRODU
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useCurrency } from "@/hooks/useCurrency";
+import { formatNumber, safeNumber } from "@/lib/currency";
 
 interface Product {
     id: string;
@@ -46,6 +47,7 @@ interface Product {
 const FREE_PLAN_LIMIT = 20;
 const ONBOARDING_PRODUCT_PAGE_SIZE = 120;
 const getRandomStock = () => Math.floor(Math.random() * 41) + 10;
+const textValue = (value: unknown) => String(value ?? "").toLowerCase();
 
 export default function ResellerOnboarding() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -134,11 +136,13 @@ export default function ResellerOnboarding() {
     }, [combinedProducts]);
 
     const filteredProducts = combinedProducts.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (product.source || "").toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+        const normalizedSearch = searchQuery.trim().toLowerCase();
+        const matchesSearch = !normalizedSearch ||
+            textValue(product.name).includes(normalizedSearch) ||
+            textValue(product.description).includes(normalizedSearch) ||
+            textValue(product.category).includes(normalizedSearch) ||
+            textValue(product.source).includes(normalizedSearch);
+        const matchesCategory = selectedCategory === "All" || textValue(product.category) === selectedCategory.toLowerCase();
         const isNotOwned = !existingProductIds.has(product.id);
         return matchesSearch && matchesCategory && isNotOwned;
     });
@@ -612,8 +616,10 @@ function dedupeProducts(products: Product[]) {
      const [imageFailed, setImageFailed] = useState(false);
      const imageUrl = getFastProductImageUrl(product.image);
      const sourceLabel = getMarketplaceSourceLabel(product.source);
-     const displayedResellPrice = currency.fromUsd(isSelected ? selectedData.resellPrice : Math.ceil(product.price * 1.5));
-     const displayedProfit = currency.fromUsd((selectedData?.resellPrice || Math.ceil(product.price * 1.5)) - product.price);
+     const basePrice = safeNumber(product.price);
+     const selectedPrice = safeNumber(selectedData?.resellPrice, Math.ceil(basePrice * 1.5));
+     const displayedResellPrice = currency.fromUsd(isSelected ? selectedPrice : Math.ceil(basePrice * 1.5));
+     const displayedProfit = currency.fromUsd(selectedPrice - basePrice);
  
      return (
          <div className={cn(
@@ -660,7 +666,7 @@ function dedupeProducts(products: Product[]) {
                  {/* Tags */}
                  <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 flex gap-1 sm:gap-2">
                      <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-black/60 backdrop-blur-md rounded-md text-[8px] sm:text-[9px] font-bold text-white border border-white/10 uppercase tracking-wider">
-                         {currency.money(product.price)}
+                         {currency.money(basePrice)}
                      </span>
                      <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-600 rounded-md text-[8px] sm:text-[9px] font-bold text-white uppercase tracking-wider shadow-lg">
                          {sourceLabel}
@@ -705,7 +711,7 @@ function dedupeProducts(products: Product[]) {
                      {isSelected && (
                          <div className="flex justify-between items-center p-2 sm:p-2.5 bg-emerald-500/5 rounded-lg border border-emerald-500/10 animate-in slide-in-from-top-2 duration-300">
                              <span className="text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Est. Profit</span>
-                             <span className="text-xs sm:text-xs font-bold text-emerald-500">+{currency.currencySymbol}{displayedProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                             <span className="text-xs sm:text-xs font-bold text-emerald-500">+{currency.currencySymbol}{formatNumber(displayedProfit, { maximumFractionDigits: 2 })}</span>
                          </div>
                      )}
  

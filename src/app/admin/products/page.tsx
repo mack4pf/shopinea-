@@ -34,6 +34,7 @@ import {
     X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatNumber } from "@/lib/currency";
 
 interface Product {
     id: string;
@@ -48,6 +49,8 @@ interface Product {
     isPromoted?: boolean;
     sortOrder?: number;
 }
+
+const textValue = (value: unknown) => String(value ?? "").toLowerCase();
 
 interface ImportedProduct {
     source: "Aliexpress";
@@ -295,7 +298,7 @@ export default function AdminProductsPage() {
 
     const handleImportAliExpressProduct = async (product: ImportedProduct) => {
         const existing = products.find((p) => {
-            return p.sourceProductId === product.sourceProductId || p.sourceUrl === product.sourceUrl || p.name.toLowerCase() === product.name.toLowerCase();
+            return p.sourceProductId === product.sourceProductId || p.sourceUrl === product.sourceUrl || textValue(p.name) === textValue(product.name);
         });
 
         if (existing) {
@@ -571,7 +574,7 @@ export default function AdminProductsPage() {
                         <div className="mt-5 grid gap-3 lg:grid-cols-2">
                             {aliExpressResults.map((product) => {
                                 const alreadyImported = products.some((p) => {
-                                    return p.sourceProductId === product.sourceProductId || p.sourceUrl === product.sourceUrl || p.name.toLowerCase() === product.name.toLowerCase();
+                                    return p.sourceProductId === product.sourceProductId || p.sourceUrl === product.sourceUrl || textValue(p.name) === textValue(product.name);
                                 });
 
                                 return (
@@ -588,7 +591,7 @@ export default function AdminProductsPage() {
                                                 <div className="min-w-0 flex-1">
                                                     <h3 className="line-clamp-2 text-sm font-black text-white">{product.name}</h3>
                                                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                                                        <span className="text-sm font-black text-emerald-400">${product.price.toLocaleString()}</span>
+                                                        <span className="text-sm font-black text-emerald-400">${formatNumber(product.price)}</span>
                                                         <span className="rounded-full bg-zinc-900 px-2 py-1 text-[11px] font-bold text-zinc-400">{aliExpressCategory.trim() || product.category || "AliExpress"}</span>
                                                     </div>
                                                 </div>

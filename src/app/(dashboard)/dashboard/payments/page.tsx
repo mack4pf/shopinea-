@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import Link from "next/link";
+import { formatNumber } from "@/lib/currency";
 
 export default function PaymentsPage() {
     const [loading, setLoading] = useState(true);
@@ -101,7 +102,7 @@ export default function PaymentsPage() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Available Payout Balance</p>
-                                    <h2 className="text-6xl font-black tracking-tighter">{currencySymbol}{(userData?.payoutBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
+                                    <h2 className="text-6xl font-black tracking-tighter">{currencySymbol}{formatNumber(userData?.payoutBalance, { minimumFractionDigits: 2 })}</h2>
                                 </div>
                                 <div className="p-4 bg-zinc-800/50 backdrop-blur-2xl rounded-3xl border border-zinc-700/50">
                                     <Wallet className="w-8 h-8 text-blue-500" />
@@ -128,7 +129,7 @@ export default function PaymentsPage() {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Last Withdrawal</p>
-                                <h3 className="text-2xl font-black text-white">{currencySymbol}{lastPayout.toLocaleString()}</h3>
+                                <h3 className="text-2xl font-black text-white">{currencySymbol}{formatNumber(lastPayout)}</h3>
                             </div>
                         </div>
                         <div className="bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-800 flex items-center gap-6 shadow-sm group">

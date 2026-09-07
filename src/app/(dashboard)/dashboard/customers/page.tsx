@@ -217,7 +217,7 @@ const filteredCustomers = customers.filter(c =>
                                         </td>
                                         <td className="py-4 px-5 text-right">
                                             <p className="text-sm text-zinc-300">
-                                                {toValidDate(c.lastOrder)?.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || 'N/A'}
+                                                {toValidDate(c.lastOrder)?.toLocaleDateString("en-US", { month: 'short', day: 'numeric' }) || 'N/A'}
                                             </p>
                                         </td>
                                     </tr>

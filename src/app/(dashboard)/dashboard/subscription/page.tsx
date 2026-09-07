@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { SubscriptionPaymentModal } from "@/components/modals/SubscriptionPaymentModal";
 import { cn } from "@/lib/utils";
 import { SUBSCRIPTION_PLANS } from "@/lib/plans";
+import { formatNumber } from "@/lib/currency";
 
 const planVisuals: Record<string, { icon: ElementType; color: string; bg: string }> = {
     pro_300: { icon: Rocket, color: "text-blue-400", bg: "bg-blue-500/10" },
@@ -75,7 +76,7 @@ export default function SubscriptionPage() {
                             </div>
                             <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
                             <div className="flex items-baseline gap-1 mt-1 mb-6">
-                                <span className="text-3xl font-bold text-white">${plan.price.toLocaleString()}</span>
+                                <span className="text-3xl font-bold text-white">${formatNumber(plan.price)}</span>
                                 <span className="text-xs text-zinc-500">{plan.billingLabel}</span>
                             </div>
                             <div className="space-y-3 flex-1 mb-6">
@@ -108,7 +109,7 @@ export default function SubscriptionPage() {
                     <div className="text-right">
                         <p className="text-xs text-zinc-500">Next renewal</p>
                         <p className="text-sm font-semibold text-white">
-                            {renewalDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {renewalDate.toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                     </div>
                 </div>

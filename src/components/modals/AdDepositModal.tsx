@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, validateSafeCardInput } from "@/lib/payments/card";
 import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
 import { getEnabledCryptoOptions, getCryptoAddress } from "@/lib/payments/crypto";
+import { formatNumber, safeNumber } from "@/lib/currency";
 
 interface AdDepositModalProps {
     isOpen: boolean;
@@ -132,8 +133,9 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
 
     if (!isOpen) return null;
 
-    const numAmountLocal = parseFloat(amount) || 0;
-    const numAmount = numAmountLocal / (exchangeRate || 1);
+    const safeExchangeRate = safeNumber(exchangeRate, 1) || 1;
+    const numAmountLocal = safeNumber(amount);
+    const numAmount = numAmountLocal / safeExchangeRate;
     const isCardMethod = selectedMethodConfig?.type === "card" || method === "card";
     const cryptoDiscount = method === "crypto" ? numAmount * 0.05 : 0;
     const amountToPay = numAmount - cryptoDiscount;
@@ -251,10 +253,10 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                         data: {
                             subject: "Ad Wallet Deposit Request Received",
                             html: `<p>Hello ${userData.displayName || userData.fullName || "Merchant"},</p>
-                                <p>We received your ad wallet deposit request for <strong>${currencySymbol}${numAmountLocal.toLocaleString()} ${currencyCode}</strong>.</p>
-                                <p><strong>USD equivalent:</strong> $${numAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+                                <p>We received your ad wallet deposit request for <strong>${currencySymbol}${formatNumber(numAmountLocal)} ${currencyCode}</strong>.</p>
+                                <p><strong>USD equivalent:</strong> $${formatNumber(numAmount, { maximumFractionDigits: 2 })}</p>
                                 <p><strong>Status:</strong> Pending review. We will email you again once your receipt is approved or rejected.</p>
-                                <p><strong>Total ad credits after approval:</strong> $${totalCredits.toLocaleString()}</p>
+                                <p><strong>Total ad credits after approval:</strong> $${formatNumber(totalCredits)}</p>
                                 <p><strong>Payment method:</strong> ${(method || "transfer").toUpperCase()}${cryptoAsset ? ` (${cryptoAsset.toUpperCase()})` : ""}</p>`
                         }
                     })
@@ -629,7 +631,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                                         : <>Transfer exactly <span className="text-white font-medium">{currencySymbol}{numAmountLocal.toFixed(2)}</span> to the details below, then upload your receipt.</>
                                     }
                                 </p>
-                                {currencyCode !== "USD" && <p className="text-[11px] text-zinc-600 mt-1">Estimated USD credit: ${numAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>}
+                                {currencyCode !== "USD" && <p className="text-[11px] text-zinc-600 mt-1">Estimated USD credit: ${formatNumber(numAmount, { maximumFractionDigits: 2 })}</p>}
                             </div>
 
                             {selectedMethodConfig?.type === "card" ? (

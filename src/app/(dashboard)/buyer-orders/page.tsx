@@ -22,6 +22,7 @@ import {
     XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatNumber, safeNumber } from "@/lib/currency";
 
 const statusMap: Record<string, { label: string; tone: string; step: number; paymentLabel: string }> = {
     pending_payment: { label: "Pending payment", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 1, paymentLabel: "Pending" },
@@ -110,7 +111,7 @@ export default function BuyerOrdersPage() {
         );
     }, [orders, searchQuery]);
 
-    const totalSpent = orders.reduce((sum, order) => sum + Number(order.resellPrice || 0), 0);
+    const totalSpent = orders.reduce((sum, order) => sum + safeNumber(order.resellPrice), 0);
     const pendingPaymentCount = orders.filter(order => ["pending_payment", "payment_pending", "awaiting_admin_confirmation"].includes(order.status)).length;
     const processingCount = orders.filter(order => ["paid_to_site", "awaiting_seller_fulfillment", "shipped"].includes(order.status)).length;
     const completedCount = orders.filter(order => ["completed", "delivered"].includes(order.status)).length;
@@ -158,7 +159,7 @@ export default function BuyerOrdersPage() {
                         </div>
                         <div className="rounded-lg bg-slate-50 p-4">
                             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Spent</p>
-                            <p className="mt-1 text-2xl font-black text-slate-950">${totalSpent.toLocaleString()}</p>
+                            <p className="mt-1 text-2xl font-black text-slate-950">${formatNumber(totalSpent)}</p>
                         </div>
                     </div>
                 </div>
@@ -245,7 +246,7 @@ export default function BuyerOrdersPage() {
                                     <div className="flex items-center justify-between gap-4 sm:justify-end">
                                         <div className="sm:text-right">
                                             <p className="text-xs font-bold text-slate-400">Total</p>
-                                            <p className="text-lg font-black text-slate-950">${Number(order.resellPrice || 0).toLocaleString()}</p>
+                                            <p className="text-lg font-black text-slate-950">${formatNumber(order.resellPrice)}</p>
                                         </div>
                                         <span className={cn("rounded-full border px-3 py-1.5 text-xs font-black", status.tone)}>
                                             {status.label}
@@ -273,7 +274,7 @@ export default function BuyerOrdersPage() {
                                                 <Clock className="h-4 w-4 text-slate-400" />
                                                 <p className="mt-2 text-xs font-bold text-slate-400">Ordered</p>
                                                 <p className="mt-0.5 text-sm font-black text-slate-900">
-                                                    {createdAt ? createdAt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Recent"}
+                                                    {createdAt ? createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recent"}
                                                 </p>
                                             </div>
                                             <div className="rounded-lg bg-slate-50 p-4">
