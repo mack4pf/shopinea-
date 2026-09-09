@@ -47,6 +47,7 @@ export default function ProductsPage() {
     const [customStoreSubmitting, setCustomStoreSubmitting] = useState(false);
     const [activeStoreId, setActiveStoreId] = useState("primary");
     const [newStoreName, setNewStoreName] = useState("");
+    const [createStoreModalOpen, setCreateStoreModalOpen] = useState(false);
     const [customStoreMessages, setCustomStoreMessages] = useState([
         {
             role: "assistant",
@@ -168,7 +169,7 @@ export default function ProductsPage() {
                 storeTemplate: userData?.storeTemplate || "classic",
                 storeLayout: userData?.storeLayout || "grid",
                 storeLogo: userData?.storeLogo || "",
-                storeProducts: products,
+                storeProducts: [],
                 createdAt: new Date().toISOString(),
             };
             const nextStores = [...additionalStores, newStore];
@@ -176,9 +177,10 @@ export default function ProductsPage() {
             await updateDoc(doc(db, "users", user.uid), {
                 additionalStores: nextStores,
                 additionalStoreSlugs: nextSlugs,
+                maxStores,
                 updatedAt: new Date().toISOString(),
             });
-            setUserData((prev: any) => ({ ...prev, additionalStores: nextStores, additionalStoreSlugs: nextSlugs }));
+            setUserData((prev: any) => ({ ...prev, additionalStores: nextStores, additionalStoreSlugs: nextSlugs, maxStores }));
             setActiveStoreId(newStore.id);
             setStoreDraft({
                 storeName: newStore.storeName,
@@ -189,6 +191,7 @@ export default function ProductsPage() {
                 storeLogo: newStore.storeLogo,
             });
             setNewStoreName("");
+            setCreateStoreModalOpen(false);
             toast.success("New store created. Store-wide ads can spread across your stores.");
             window.open(`${window.location.origin}/store/${newStore.storeSlug}`, "_blank");
         } catch (error) {
@@ -343,6 +346,16 @@ export default function ProductsPage() {
     ];
     const activeStore = allStores.find((store: any) => store.id === activeStoreId) || allStores[0];
     const products = Array.isArray(activeStore?.storeProducts) ? activeStore.storeProducts : [];
+    const planStoreLimit = userData?.plan === "enterprise_5000"
+        ? 999
+        : userData?.plan === "venture_1200"
+            ? 10
+            : (userData?.plan === "elite_500" || String(userData?.planName || "").toLowerCase() === "professional")
+                ? 3
+                : 1;
+    const maxStores = Math.max(Number(userData?.maxStores || 1), planStoreLimit);
+    const canCreateStore = maxStores > 1 && allStores.length < maxStores;
+    const addProductsHref = activeStoreId === "primary" ? "/onboarding/reseller" : `/onboarding/reseller?storeId=${encodeURIComponent(activeStoreId)}`;
     const filteredProducts = products.filter((p: any) =>
         (p?.name || "").toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -368,9 +381,19 @@ export default function ProductsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Products</h1>
-                    <p className="text-sm text-zinc-500 mt-1">Manage your product catalog and pricing.</p>
+                    <p className="text-sm text-zinc-500 mt-1">Managing products for <span className="text-white font-semibold">{activeStore?.storeName || "My Store"}</span>.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    {maxStores > 1 && (
+                        <button
+                            onClick={() => setCreateStoreModalOpen(true)}
+                            disabled={!canCreateStore}
+                            className="flex items-center gap-2 px-5 py-2.5 text-sm font-black rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 transition-colors shadow-lg shadow-emerald-500/10"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Create New Store
+                        </button>
+                    )}
                     <button
                         onClick={() => window.open(`${window.location.origin}/store/${activeStore?.storeSlug || userData?.storeSlug || ''}`, '_blank')}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
@@ -383,7 +406,7 @@ export default function ProductsPage() {
                             if (atLimit) {
                                 window.location.href = '/dashboard/subscription';
                             } else {
-                                window.location.href = '/onboarding/reseller';
+                                window.location.href = addProductsHref;
                             }
                         }}
                         className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
@@ -393,10 +416,35 @@ export default function ProductsPage() {
                         }`}
                     >
                         <Plus className="w-4 h-4" />
-                        {atLimit ? 'Upgrade to Add More' : 'Add Products'}
+                        {atLimit ? 'Upgrade to Add More' : `Add Products to ${activeStore?.storeName || "Store"}`}
                     </button>
                 </div>
             </div>
+
+            {maxStores > 1 && (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                            <Plus className="w-5 h-5 text-emerald-300" />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-semibold text-white">Create and manage more stores</h2>
+                            <p className="text-xs text-zinc-400 mt-1 leading-5">
+                                Name a new store, switch to it here, then add fresh products directly into that store.
+                            </p>
+                            <p className="text-[11px] text-violet-300 mt-1">Store-wide ads can spread traffic across all stores on your plan.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setCreateStoreModalOpen(true)}
+                        disabled={!canCreateStore}
+                        className="h-11 px-5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-sm font-black flex items-center justify-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create New Store
+                    </button>
+                </div>
+            )}
 
             {/* Free Plan Limit Banner */}
             {isFree && (
@@ -579,13 +627,13 @@ export default function ProductsPage() {
                 </div>
             </div>
 
-            {Number(userData?.maxStores || 1) > 1 && (
+            {maxStores > 1 && (
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-4">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div>
                             <h2 className="text-sm font-semibold text-white">Multiple stores</h2>
                             <p className="text-xs text-zinc-500 mt-1">
-                                {allStores.length}/{userData?.maxStores} stores used on your {userData?.planName || "current"} plan.
+                                {allStores.length}/{maxStores} stores used on your {userData?.planName || "current"} plan.
                             </p>
                             <p className="text-[11px] text-violet-300 mt-1">
                                 Store-wide ads can spread traffic across all stores on your plan.
@@ -600,7 +648,7 @@ export default function ProductsPage() {
                             />
                             <button
                                 onClick={createAdditionalStore}
-                                disabled={creatingStore || allStores.length >= Number(userData?.maxStores || 1)}
+                                disabled={creatingStore || !canCreateStore}
                                 className="flex items-center justify-center gap-2 px-4 h-10 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
                             >
                                 {creatingStore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
@@ -638,6 +686,15 @@ export default function ProductsPage() {
                                     >
                                         {isActiveStore ? "Editing this store" : "Edit this store"}
                                     </button>
+                                    {isActiveStore && (
+                                        <button
+                                            type="button"
+                                            onClick={() => { window.location.href = activeStoreId === "primary" ? "/onboarding/reseller" : `/onboarding/reseller?storeId=${encodeURIComponent(activeStoreId)}`; }}
+                                            className="mt-2 h-8 w-full rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/15"
+                                        >
+                                            Add products here
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })}
@@ -650,12 +707,12 @@ export default function ProductsPage() {
                 <div className="text-center py-20 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.08]">
                     <Package className="w-12 h-12 text-zinc-800 mx-auto mb-4" />
                     <h2 className="text-lg font-semibold text-white mb-2">No products yet</h2>
-                    <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto">Add products from the marketplace to start selling.</p>
+                    <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto">Add products to {activeStore?.storeName || "this store"} to start selling.</p>
                     <button
-                        onClick={() => window.location.href = '/onboarding/reseller'}
+                        onClick={() => window.location.href = addProductsHref}
                         className="px-5 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
                     >
-                        Browse Products
+                        Add Products
                     </button>
                 </div>
             ) : (
@@ -767,6 +824,40 @@ export default function ProductsPage() {
                     })}
                 </div>
             )}
+
+            <Modal isOpen={createStoreModalOpen} onClose={() => setCreateStoreModalOpen(false)} title="Create New Store" panelClassName="sm:max-w-lg">
+                <div className="space-y-4">
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-4">
+                        <p className="text-sm font-semibold text-white">Name your new store</p>
+                        <p className="text-xs text-zinc-400 mt-1 leading-5">
+                            After it is created, this page switches to the new store so you can add products into it immediately.
+                        </p>
+                        <p className="text-[11px] text-violet-300 mt-2">Store-wide ads can spread across every store on your plan.</p>
+                    </div>
+                    <input
+                        value={newStoreName}
+                        onChange={(event) => setNewStoreName(event.target.value)}
+                        placeholder="Example: Rine Wellness Store"
+                        className="h-12 w-full rounded-xl border border-white/[0.08] bg-zinc-950 px-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                            onClick={() => setCreateStoreModalOpen(false)}
+                            className="h-11 rounded-lg border border-white/[0.08] bg-white/[0.04] text-sm font-bold text-zinc-300 hover:bg-white/[0.08]"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={createAdditionalStore}
+                            disabled={creatingStore || !canCreateStore}
+                            className="h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-sm font-black text-slate-950 flex items-center justify-center gap-2"
+                        >
+                            {creatingStore ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                            Create Store
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             <Modal isOpen={customStoreModalOpen} onClose={() => setCustomStoreModalOpen(false)} title="AI Custom Store Builder" panelClassName="sm:max-w-2xl">
                 <div className="space-y-4">

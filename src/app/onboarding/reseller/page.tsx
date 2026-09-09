@@ -62,6 +62,10 @@ export default function ResellerOnboarding() {
     const [submitting, setSubmitting] = useState(false);
     const [launchSuccess, setLaunchSuccess] = useState(false);
     const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
+    const [targetStoreId] = useState(() => {
+        if (typeof window === "undefined") return "primary";
+        return new URLSearchParams(window.location.search).get("storeId") || "primary";
+    });
 
     // Filter State
     const [searchQuery, setSearchQuery] = useState("");
@@ -80,15 +84,18 @@ export default function ResellerOnboarding() {
                     if (userDoc.exists()) {
                         const data = userDoc.data();
                         setUserData(data);
-                        if (data.storeProducts) {
-                            setExistingProductIds(new Set(data.storeProducts.map((p: any) => p.id)));
-                        }
+                        const additionalStores = Array.isArray(data.additionalStores) ? data.additionalStores : [];
+                        const targetStore = targetStoreId === "primary"
+                            ? data
+                            : additionalStores.find((store: any) => store.id === targetStoreId);
+                        const existingProducts = Array.isArray(targetStore?.storeProducts) ? targetStore.storeProducts : [];
+                        setExistingProductIds(new Set(existingProducts.map((p: any) => p.id)));
                     }
                 } catch (err) { console.error(err); }
             }
         });
         return () => unsub();
-    }, []);
+    }, [targetStoreId]);
 
     const buildProductQuery = useCallback((nextCursor?: ProductCursor) => {
         const constraints: QueryConstraint[] = selectedCategory === "All"
@@ -200,9 +207,25 @@ export default function ResellerOnboarding() {
 
                 const updates: any = {};
                 if (isAddMode) {
-                    const currentProducts = userData.storeProducts || [];
-                    updates.storeProducts = [...currentProducts, ...formattedProducts];
-                    updates.updatedAt = new Date().toISOString();
+                    if (targetStoreId !== "primary") {
+                        const additionalStores = Array.isArray(userData.additionalStores) ? userData.additionalStores : [];
+                        const nextStores = additionalStores.map((store: any) => {
+                            if (store.id !== targetStoreId) return store;
+                            const currentProducts = Array.isArray(store.storeProducts) ? store.storeProducts : [];
+                            return {
+                                ...store,
+                                storeProducts: [...currentProducts, ...formattedProducts],
+                                updatedAt: new Date().toISOString(),
+                            };
+                        });
+                        updates.additionalStores = nextStores;
+                        updates.additionalStoreSlugs = nextStores.map((store: any) => store.storeSlug).filter(Boolean);
+                        updates.updatedAt = new Date().toISOString();
+                    } else {
+                        const currentProducts = userData.storeProducts || [];
+                        updates.storeProducts = [...currentProducts, ...formattedProducts];
+                        updates.updatedAt = new Date().toISOString();
+                    }
                 } else {
                     updates.storeProducts = formattedProducts;
                     updates.onboardingCompleted = true;
@@ -233,6 +256,12 @@ export default function ResellerOnboarding() {
 
     if (loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-blue-600" /></div>;
 
+    const additionalStores = Array.isArray(userData?.additionalStores) ? userData.additionalStores : [];
+    const targetStore = targetStoreId === "primary"
+        ? userData
+        : additionalStores.find((store: any) => store.id === targetStoreId);
+    const targetStoreName = targetStore?.storeName || userData?.storeName || "your store";
+
     return (
         <div className="min-h-screen bg-[#09090b] text-white selection:bg-blue-500/30 pb-28 sm:pb-20">
             {/* Header / Progress Bar */}
@@ -255,6 +284,11 @@ export default function ResellerOnboarding() {
                                     {selectedProducts.length}/3
                                 </span>
                             </div>
+                            {userData?.onboardingCompleted && (
+                                <p className="mt-1 text-[10px] font-semibold text-blue-300">
+                                    Adding to {targetStoreName}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -295,7 +329,7 @@ export default function ResellerOnboarding() {
                         Pick products, set prices, launch.
                     </h2>
                     <p className="text-zinc-500 mt-2 sm:mt-4 text-sm sm:text-base leading-relaxed font-medium">
-                        Search, tap products, adjust the selling price, and finish from the button below.
+                        Search, tap products, adjust the selling price, and add them to {targetStoreName}.
                     </p>
                 </section>
 
