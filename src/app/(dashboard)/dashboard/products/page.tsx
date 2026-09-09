@@ -15,6 +15,24 @@ import { ImageUpload } from "@/components/ui/image-upload";
 import { getDefaultStock, STORE_LAYOUTS, STORE_TEMPLATES, STORE_THEME_COLORS } from "@/lib/catalog";
 import { Modal } from "@/components/ui/modal";
 import { useCurrency } from "@/hooks/useCurrency";
+import { safeNumber } from "@/lib/currency";
+
+const slugify = (value: unknown) => String(value || "store")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "store";
+
+const uniqueStoreSlug = (name: string, usedSlugs: string[]) => {
+    const base = slugify(name);
+    let slug = base;
+    let index = 2;
+    while (usedSlugs.includes(slug)) {
+        slug = `${base}-${index}`;
+        index += 1;
+    }
+    return slug;
+};
 
 export default function ProductsPage() {
     const [user, setUser] = useState<any>(null);
@@ -27,6 +45,8 @@ export default function ProductsPage() {
     const [customStoreModalOpen, setCustomStoreModalOpen] = useState(false);
     const [customStorePrompt, setCustomStorePrompt] = useState("");
     const [customStoreSubmitting, setCustomStoreSubmitting] = useState(false);
+    const [activeStoreId, setActiveStoreId] = useState("primary");
+    const [newStoreName, setNewStoreName] = useState("");
     const [customStoreMessages, setCustomStoreMessages] = useState([
         {
             role: "assistant",
@@ -78,7 +98,7 @@ export default function ProductsPage() {
         if (!user?.uid) return;
         setCustomizing(true);
         try {
-            const updates = {
+            const updates: any = {
                 storeName: storeDraft.storeName.trim() || userData?.storeName || "My Store",
                 storeTagline: storeDraft.storeTagline.trim() || "Premium sourced products, fast shipping.",
                 themeColor: storeDraft.themeColor,
@@ -87,8 +107,32 @@ export default function ProductsPage() {
                 storeLogo: storeDraft.storeLogo,
                 updatedAt: new Date().toISOString(),
             };
-            await updateDoc(doc(db, "users", user.uid), updates);
-            setUserData((prev: any) => ({ ...prev, ...updates }));
+            if (activeStoreId !== "primary") {
+                const additionalStores = Array.isArray(userData?.additionalStores) ? userData.additionalStores : [];
+                const usedSlugs = [
+                    userData?.storeSlug,
+                    ...additionalStores.filter((store: any) => store.id !== activeStoreId).map((store: any) => store.storeSlug),
+                ].filter(Boolean);
+                const nextStores = additionalStores.map((store: any) => {
+                    if (store.id !== activeStoreId) return store;
+                    const storeName = updates.storeName || store.storeName || "My Store";
+                    return {
+                        ...store,
+                        ...updates,
+                        storeName,
+                        storeSlug: store.storeSlug || uniqueStoreSlug(storeName, usedSlugs),
+                    };
+                });
+                await updateDoc(doc(db, "users", user.uid), {
+                    additionalStores: nextStores,
+                    additionalStoreSlugs: nextStores.map((store: any) => store.storeSlug).filter(Boolean),
+                    updatedAt: new Date().toISOString(),
+                });
+                setUserData((prev: any) => ({ ...prev, additionalStores: nextStores, additionalStoreSlugs: nextStores.map((store: any) => store.storeSlug).filter(Boolean) }));
+            } else {
+                await updateDoc(doc(db, "users", user.uid), updates);
+                setUserData((prev: any) => ({ ...prev, ...updates }));
+            }
             toast.success("Store design saved.");
         } catch (error) {
             console.error(error);
@@ -106,19 +150,19 @@ export default function ProductsPage() {
             toast.error("Upgrade your plan to create more stores.");
             return;
         }
+        const requestedName = newStoreName.trim();
+        if (requestedName.length < 2) {
+            toast.error("Enter a name for the new store.");
+            return;
+        }
 
         setCreatingStore(true);
         try {
-            const storeNumber = additionalStores.length + 2;
-            const baseSlug = (userData?.storeSlug || userData?.storeName || user?.displayName || "store")
-                .toString()
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-+|-+$/g, "");
+            const usedSlugs = [userData?.storeSlug, ...additionalStores.map((store: any) => store.storeSlug)].filter(Boolean);
             const newStore = {
                 id: `store-${Date.now()}`,
-                storeName: `${userData?.storeName || "My Store"} ${storeNumber}`,
-                storeSlug: `${baseSlug}-${storeNumber}`,
+                storeName: requestedName,
+                storeSlug: uniqueStoreSlug(requestedName, usedSlugs),
                 storeTagline: userData?.storeTagline || "Premium sourced products, fast shipping.",
                 themeColor: userData?.themeColor || "#10b981",
                 storeTemplate: userData?.storeTemplate || "classic",
@@ -135,6 +179,16 @@ export default function ProductsPage() {
                 updatedAt: new Date().toISOString(),
             });
             setUserData((prev: any) => ({ ...prev, additionalStores: nextStores, additionalStoreSlugs: nextSlugs }));
+            setActiveStoreId(newStore.id);
+            setStoreDraft({
+                storeName: newStore.storeName,
+                storeTagline: newStore.storeTagline,
+                themeColor: newStore.themeColor,
+                storeTemplate: newStore.storeTemplate,
+                storeLayout: newStore.storeLayout,
+                storeLogo: newStore.storeLogo,
+            });
+            setNewStoreName("");
             toast.success("New store created.");
             window.open(`${window.location.origin}/store/${newStore.storeSlug}`, "_blank");
         } catch (error) {
@@ -153,7 +207,11 @@ export default function ProductsPage() {
 
         setRemovingProductId(productKey);
         try {
-            const currentProducts = Array.isArray(userData?.storeProducts) ? userData.storeProducts : [];
+            const additionalStores = Array.isArray(userData?.additionalStores) ? userData.additionalStores : [];
+            const selectedStore = activeStoreId === "primary"
+                ? userData
+                : additionalStores.find((store: any) => store.id === activeStoreId);
+            const currentProducts = Array.isArray(selectedStore?.storeProducts) ? selectedStore.storeProducts : [];
             const nextProducts = currentProducts.filter((item: any, index: number) => {
                 if (product.id) return item.id !== product.id;
                 return !(index === currentProducts.findIndex((candidate: any) =>
@@ -163,11 +221,22 @@ export default function ProductsPage() {
                 ));
             });
 
-            await updateDoc(doc(db, "users", user.uid), {
-                storeProducts: nextProducts,
-                updatedAt: new Date().toISOString(),
-            });
-            setUserData((prev: any) => ({ ...prev, storeProducts: nextProducts }));
+            if (activeStoreId === "primary") {
+                await updateDoc(doc(db, "users", user.uid), {
+                    storeProducts: nextProducts,
+                    updatedAt: new Date().toISOString(),
+                });
+                setUserData((prev: any) => ({ ...prev, storeProducts: nextProducts }));
+            } else {
+                const nextStores = additionalStores.map((store: any) => (
+                    store.id === activeStoreId ? { ...store, storeProducts: nextProducts, updatedAt: new Date().toISOString() } : store
+                ));
+                await updateDoc(doc(db, "users", user.uid), {
+                    additionalStores: nextStores,
+                    updatedAt: new Date().toISOString(),
+                });
+                setUserData((prev: any) => ({ ...prev, additionalStores: nextStores }));
+            }
             toast.success("Product removed from your store.");
         } catch (error) {
             console.error(error);
@@ -175,6 +244,18 @@ export default function ProductsPage() {
         } finally {
             setRemovingProductId(null);
         }
+    };
+
+    const selectStore = (store: any) => {
+        setActiveStoreId(store.id);
+        setStoreDraft({
+            storeName: store.storeName || "My Store",
+            storeTagline: store.storeTagline || "Premium sourced products, fast shipping.",
+            themeColor: store.themeColor || "#10b981",
+            storeTemplate: store.storeTemplate || "classic",
+            storeLayout: store.storeLayout || "grid",
+            storeLogo: store.storeLogo || "",
+        });
     };
 
     const hasActiveSubscription = !!userData?.plan && userData?.plan !== "free";
@@ -245,7 +326,23 @@ export default function ProductsPage() {
         </div>
     );
 
-    const products = Array.isArray(userData?.storeProducts) ? userData.storeProducts : [];
+    const additionalStores = Array.isArray(userData?.additionalStores) ? userData.additionalStores : [];
+    const allStores = [
+        {
+            id: "primary",
+            storeName: userData?.storeName || "My Store",
+            storeSlug: userData?.storeSlug || "",
+            storeTagline: userData?.storeTagline || "",
+            themeColor: userData?.themeColor || "#10b981",
+            storeTemplate: userData?.storeTemplate || "classic",
+            storeLayout: userData?.storeLayout || "grid",
+            storeLogo: userData?.storeLogo || "",
+            storeProducts: Array.isArray(userData?.storeProducts) ? userData.storeProducts : [],
+        },
+        ...additionalStores,
+    ];
+    const activeStore = allStores.find((store: any) => store.id === activeStoreId) || allStores[0];
+    const products = Array.isArray(activeStore?.storeProducts) ? activeStore.storeProducts : [];
     const filteredProducts = products.filter((p: any) =>
         (p?.name || "").toString().toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -254,8 +351,8 @@ export default function ProductsPage() {
     const isFree = !userData?.plan || userData?.plan === "free";
     const atLimit = isFree && products.length >= FREE_PLAN_LIMIT;
 
-    const totalMargin = products.reduce((acc: number, p: any) => acc + (Number(p?.resellPrice || 0) - Number(p?.price || 0)), 0);
-    const totalCost = products.reduce((acc: number, p: any) => acc + Number(p?.price || 0), 0);
+    const totalMargin = products.reduce((acc: number, p: any) => acc + (safeNumber(p?.resellPrice) - safeNumber(p?.price)), 0);
+    const totalCost = products.reduce((acc: number, p: any) => acc + safeNumber(p?.price), 0);
     const avgMargin = products.length && totalCost > 0 ? ((totalMargin / totalCost) * 100).toFixed(0) : "0";
 
     const statCards = [
@@ -275,7 +372,7 @@ export default function ProductsPage() {
                 </div>
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => window.open(`${window.location.origin}/store/${userData?.storeSlug || ''}`, '_blank')}
+                        onClick={() => window.open(`${window.location.origin}/store/${activeStore?.storeSlug || userData?.storeSlug || ''}`, '_blank')}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
                     >
                         <ExternalLink className="w-4 h-4" />
@@ -483,21 +580,65 @@ export default function ProductsPage() {
             </div>
 
             {Number(userData?.maxStores || 1) > 1 && (
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-sm font-semibold text-white">Multiple stores</h2>
-                        <p className="text-xs text-zinc-500 mt-1">
-                            {(Array.isArray(userData?.additionalStores) ? userData.additionalStores.length : 0) + 1}/{userData?.maxStores} stores used on your plan.
-                        </p>
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-sm font-semibold text-white">Multiple stores</h2>
+                            <p className="text-xs text-zinc-500 mt-1">
+                                {allStores.length}/{userData?.maxStores} stores used on your {userData?.planName || "current"} plan.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 lg:w-[420px]">
+                            <input
+                                value={newStoreName}
+                                onChange={(event) => setNewStoreName(event.target.value)}
+                                placeholder="New store name"
+                                className="h-10 w-full px-3 bg-zinc-950/60 border border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-600 outline-none focus:border-blue-500/40"
+                            />
+                            <button
+                                onClick={createAdditionalStore}
+                                disabled={creatingStore || allStores.length >= Number(userData?.maxStores || 1)}
+                                className="flex items-center justify-center gap-2 px-4 h-10 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                            >
+                                {creatingStore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                                Create Store
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={createAdditionalStore}
-                        disabled={creatingStore}
-                        className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
-                    >
-                        {creatingStore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        Create Store
-                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {allStores.map((store: any) => {
+                            const isActiveStore = store.id === activeStore?.id;
+                            const productCount = Array.isArray(store.storeProducts) ? store.storeProducts.length : 0;
+                            return (
+                                <div
+                                    key={store.id}
+                                    className={`rounded-xl border p-4 transition-colors ${isActiveStore ? "border-blue-500/40 bg-blue-500/[0.08]" : "border-white/[0.07] bg-zinc-950/40"}`}
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <button type="button" onClick={() => selectStore(store)} className="min-w-0 text-left">
+                                            <p className="text-sm font-semibold text-white truncate">{store.storeName || "My Store"}</p>
+                                            <p className="text-[10px] text-zinc-500 mt-0.5">{productCount} products</p>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => window.open(`/store/${store.storeSlug || ""}`, "_blank")}
+                                            className="h-8 w-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-400 hover:text-white flex items-center justify-center"
+                                            aria-label={`Open ${store.storeName || "store"}`}
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => selectStore(store)}
+                                        className={`mt-3 h-8 w-full rounded-lg text-[11px] font-bold transition-colors ${isActiveStore ? "bg-blue-600 text-white" : "bg-white/[0.05] text-zinc-300 hover:bg-white/[0.08]"}`}
+                                    >
+                                        {isActiveStore ? "Editing this store" : "Edit this store"}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             )}
 
@@ -519,8 +660,8 @@ export default function ProductsPage() {
                     {filteredProducts.filter((p: any) => typeof p === 'object' && p !== null).map((product: any, idx: number) => {
                         const productName = (product?.name || "Product").toString();
                         const productId = product?.id?.toString() || "";
-                        const productCost = Number(product?.price || 0);
-                        const productResellPrice = Number(product?.resellPrice || productCost || 0);
+                        const productCost = safeNumber(product?.price);
+                        const productResellPrice = safeNumber(product?.resellPrice, productCost);
                         const profit = productResellPrice - productCost;
                         const marginPct = productCost > 0 ? ((profit / productCost) * 100).toFixed(0) : "0";
                         const stock = Number(product?.stock ?? getDefaultStock(productId || productName));
@@ -551,7 +692,7 @@ export default function ProductsPage() {
                                     </div>
                                     <div className="absolute top-3 right-3">
                                         <button
-                                            onClick={() => copyToClipboard(`${window.location.origin}/store/${userData?.storeSlug}/product/${productId}`)}
+                                            onClick={() => copyToClipboard(`${window.location.origin}/store/${activeStore?.storeSlug || userData?.storeSlug}/product/${productId}`)}
                                             className="w-8 h-8 bg-black/40 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
                                         >
                                             <Copy className="w-3.5 h-3.5" />
@@ -603,7 +744,7 @@ export default function ProductsPage() {
                                             <Megaphone className="w-3.5 h-3.5" /> Promote
                                         </button>
                                         <button
-                                            onClick={() => window.open(`/store/${userData?.storeSlug}`, '_blank')}
+                                            onClick={() => window.open(`/store/${activeStore?.storeSlug || userData?.storeSlug}`, '_blank')}
                                             className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white/[0.04] text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors"
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Preview

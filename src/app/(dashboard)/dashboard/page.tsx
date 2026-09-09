@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/hooks/useCurrency";
+import { formatNumber, formatPercent } from "@/lib/currency";
 
 const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
 const numeric = (value: any) => {
@@ -21,6 +22,11 @@ const numeric = (value: any) => {
 const firstName = (value: unknown) => {
     const name = typeof value === "string" ? value.trim() : "";
     return name ? name.split(/\s+/)[0] : "there";
+};
+const getConversionRate = (data: any, totalOrders: number, totalVisitors: number) => {
+    const override = Number(data?.conversionRateOverride);
+    if (Number.isFinite(override) && override >= 0) return override;
+    return totalOrders > 0 && totalVisitors > 0 ? (totalOrders / totalVisitors) * 100 : 0;
 };
 
 export default function ResellerHome() {
@@ -88,8 +94,8 @@ export default function ResellerHome() {
 
     // All-time conversion rate — keep this on one consistent time window
     // (total orders over total visits) rather than mixing "today" with "all-time".
-    const conversion = stats.totalOrders > 0 && stats.totalVisitors > 0
-        ? `${((stats.totalOrders / stats.totalVisitors) * 100).toFixed(1)}%` : "0%";
+    const conversionRate = getConversionRate(userData, stats.totalOrders, stats.totalVisitors);
+    const conversion = formatPercent(conversionRate);
 
     const setupSteps = [
         { icon: Package,    title: "Add your first product",  desc: "Browse and select products to sell.", done: (userData?.storeProducts?.length > 0), href: '/dashboard/products' },
@@ -136,8 +142,8 @@ export default function ResellerHome() {
                 {[
                     { label: "Revenue Today",  value: currency.money(stats.revenueToday), icon: TrendingUp,   color: "text-emerald-400", bg: "bg-emerald-500/10", trend: null },
                     { label: "Orders Today",   value: stats.ordersToday.toString(),                 icon: ShoppingCart, color: "text-blue-400",    bg: "bg-blue-500/10",    trend: null },
-                    { label: "Visits Today",   value: stats.visitorsToday.toLocaleString(),          icon: Eye,          color: "text-violet-400",  bg: "bg-violet-500/10",  trend: null },
-                    { label: "Total Visits",   value: stats.totalVisitors.toLocaleString(),          icon: Eye,          color: "text-sky-400",     bg: "bg-sky-500/10",     trend: null },
+                    { label: "Visits Today",   value: formatNumber(stats.visitorsToday),             icon: Eye,          color: "text-violet-400",  bg: "bg-violet-500/10",  trend: null },
+                    { label: "Total Visits",   value: formatNumber(stats.totalVisitors),             icon: Eye,          color: "text-sky-400",     bg: "bg-sky-500/10",     trend: null },
                     { label: "Conversion",     value: conversion,                                    icon: Zap,          color: "text-amber-400",   bg: "bg-amber-500/10",   trend: null },
                 ].map((card, i) => (
                     <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3">

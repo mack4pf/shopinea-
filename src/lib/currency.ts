@@ -2124,6 +2124,15 @@ export function formatNumber(value: unknown, options: Intl.NumberFormatOptions =
     }
 }
 
+export function formatPercent(value: unknown) {
+    const safeValue = safeNumber(value);
+    const decimals = safeValue > 0 && safeValue < 0.1 ? 2 : 1;
+    return `${formatNumber(safeValue, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+    })}%`;
+}
+
 export function formatCurrency(
     amountUsd: number,
     currencyCode = DEFAULT_CURRENCY,

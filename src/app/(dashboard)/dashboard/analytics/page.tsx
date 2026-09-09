@@ -16,6 +16,7 @@ import { Line, Doughnut } from 'react-chartjs-2';
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/hooks/useCurrency";
+import { formatNumber, formatPercent } from "@/lib/currency";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement, Filler);
 
@@ -28,6 +29,12 @@ const safeText = (value: unknown, fallback = "") => {
     return text || fallback;
 };
 const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
+const getConversionRate = (data: any, totalOrders: number, totalVisits: number, impressions: number) => {
+    const override = Number(data?.conversionRateOverride);
+    if (Number.isFinite(override) && override >= 0) return override;
+    const convBase = totalVisits || impressions;
+    return convBase > 0 ? (totalOrders / convBase) * 100 : 0;
+};
 
 function computeChartData(orders: any[], timeframe: string): { labels: string[]; data: number[] } {
     const now = new Date();
@@ -161,8 +168,7 @@ export default function AnalyticsPage() {
                     const visits = numeric(uData?.storeVisits || impressions);
                     // Today's count only — don't fall back to the all-time total.
                     const visitsToday = numeric(uData?.dailyStoreVisits?.[todayAnalyticsKey()]);
-                    const convBase = visits || impressions;
-                    const convRate = convBase > 0 ? (orders.length / convBase) * 100 : 0;
+                    const convRate = getConversionRate(uData, orders.length, visits, impressions);
                     const avgVal = orders.length > 0 ? totalRev / orders.length : 0;
 
                     const productMap: Record<string, { sales: number, revenue: number }> = {};
@@ -298,7 +304,7 @@ export default function AnalyticsPage() {
                             <div className="w-px h-8 bg-white/20" />
                             <div>
                                 <p className="text-xs text-blue-300">Conversion</p>
-                                <p className="text-lg font-bold text-white">{stats.conversionRate.toFixed(1)}%</p>
+                                <p className="text-lg font-bold text-white">{formatPercent(stats.conversionRate)}</p>
                             </div>
                             <div className="w-px h-8 bg-white/20" />
                             <div>
@@ -312,10 +318,10 @@ export default function AnalyticsPage() {
                 {/* Supporting KPIs */}
                 <div className="grid grid-cols-2 lg:grid-cols-1 lg:col-span-2 gap-4">
                     {[
-                        { label: "Total Orders", value: stats.totalOrders.toLocaleString(), icon: Package, iconColor: "text-blue-400", iconBg: "bg-blue-500/10", change: "+0%" },
-                        { label: "Store Views", value: stats.totalImpressions.toLocaleString(), icon: Eye, iconColor: "text-violet-400", iconBg: "bg-violet-500/10", change: "+0%" },
-                        { label: "Visits Today", value: stats.visitsToday.toLocaleString(), icon: Users, iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", change: "" },
-                        { label: "Conversion Rate", value: `${stats.conversionRate.toFixed(1)}%`, icon: Target, iconColor: "text-amber-400", iconBg: "bg-amber-500/10", change: "" },
+                        { label: "Total Orders", value: formatNumber(stats.totalOrders), icon: Package, iconColor: "text-blue-400", iconBg: "bg-blue-500/10", change: "+0%" },
+                        { label: "Store Views", value: formatNumber(stats.totalImpressions), icon: Eye, iconColor: "text-violet-400", iconBg: "bg-violet-500/10", change: "+0%" },
+                        { label: "Visits Today", value: formatNumber(stats.visitsToday), icon: Users, iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", change: "" },
+                        { label: "Conversion Rate", value: formatPercent(stats.conversionRate), icon: Target, iconColor: "text-amber-400", iconBg: "bg-amber-500/10", change: "" },
                         { label: "Avg. Order Value", value: currency.money(stats.avgOrderValue), icon: TrendingUp, iconColor: "text-emerald-400", iconBg: "bg-emerald-500/10", change: "" },
                     ].map((item, i) => (
                         <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:bg-white/[0.05] transition-colors flex items-center gap-4">

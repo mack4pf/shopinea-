@@ -34,7 +34,8 @@ import {
     UnlockKeyhole,
     KeyRound,
     Bot,
-    Globe
+    Globe,
+    Target
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, cn } from "@/components/ui/button";
@@ -46,6 +47,7 @@ import { where, addDoc, serverTimestamp, getDoc, collection, doc, getDocs, incre
 import { db, auth } from "@/lib/firebase/config";
 import { useState, useEffect } from "react";
 import { SUBSCRIPTION_PLANS, getPlanExpiryDate, getSubscriptionPlan } from "@/lib/plans";
+import { formatNumber, formatPercent } from "@/lib/currency";
 
 const ADMIN_PAYMENT_PLANS = SUBSCRIPTION_PLANS;
 
@@ -59,6 +61,16 @@ const numberValue = (value: unknown) => {
 };
 const todayStoreVisitsFor = (user: any) => numberValue(user?.dailyStoreVisits?.[todayAnalyticsKey()]);
 const totalStoreVisitsFor = (user: any) => numberValue(user?.storeVisits || user?.storeViews || user?.impressions || user?.stats?.views);
+const totalOrdersFor = (user: any) => numberValue(user?.totalOrders || user?.stats?.orders || user?.stats?.sales);
+const calculatedConversionRateFor = (user: any) => {
+    const visits = totalStoreVisitsFor(user);
+    const orders = totalOrdersFor(user);
+    return visits > 0 && orders > 0 ? (orders / visits) * 100 : 0;
+};
+const visibleConversionRateFor = (user: any) => {
+    const override = Number(user?.conversionRateOverride);
+    return Number.isFinite(override) && override >= 0 ? override : calculatedConversionRateFor(user);
+};
 
 // ─── City API helper ──────────────────────────────────────────────────────────
 const cityCache: Record<string, string[]> = {};
@@ -109,6 +121,8 @@ export default function UserMatrixPage() {
     const [withdrawalCodeInput, setWithdrawalCodeInput] = useState("");
     const [savingWithdrawalMin, setSavingWithdrawalMin] = useState(false);
     const [savingWithdrawalCode, setSavingWithdrawalCode] = useState(false);
+    const [conversionRateInput, setConversionRateInput] = useState("");
+    const [savingConversionRate, setSavingConversionRate] = useState(false);
 
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
@@ -167,6 +181,7 @@ export default function UserMatrixPage() {
         setSelectedUser(user);
         setWithdrawalMinInput(String(Number(user.withdrawalMinLimit ?? DEFAULT_WITHDRAWAL_MIN_LIMIT)));
         setWithdrawalCodeInput(String(user.withdrawalCode || ""));
+        setConversionRateInput(user.conversionRateOverride === undefined || user.conversionRateOverride === null ? "" : String(user.conversionRateOverride));
         // Pre-select all store products for the simulator
         setSelectedSimProducts((user.storeProducts || []).map((p: any) => p.id));
         setSimLocations([{ country: "United States", count: "10" }]);
@@ -812,6 +827,42 @@ export default function UserMatrixPage() {
         }
     };
 
+    const saveConversionRateOverride = async () => {
+        if (!selectedUser) return;
+        const trimmed = conversionRateInput.trim();
+        const updates: any = {
+            updatedAt: serverTimestamp(),
+        };
+        let nextValue: number | null = null;
+
+        if (trimmed) {
+            const parsed = Number(trimmed);
+            if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+                toast.error("Enter a conversion rate from 0 to 100.");
+                return;
+            }
+            nextValue = parsed;
+            updates.conversionRateOverride = parsed;
+            updates.conversionRateEditedAt = serverTimestamp();
+        } else {
+            updates.conversionRateOverride = null;
+            updates.conversionRateEditedAt = serverTimestamp();
+        }
+
+        setSavingConversionRate(true);
+        try {
+            await updateDoc(doc(db, "users", selectedUser.id), updates);
+            setSelectedUser((prev: any) => prev ? { ...prev, conversionRateOverride: nextValue } : prev);
+            setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, conversionRateOverride: nextValue } : user));
+            toast.success(nextValue === null ? "Conversion rate returned to automatic calculation." : `Conversion rate set to ${formatPercent(nextValue)}.`);
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to update conversion rate.");
+        } finally {
+            setSavingConversionRate(false);
+        }
+    };
+
     const filtered = users.filter(u =>
         u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1153,8 +1204,56 @@ export default function UserMatrixPage() {
                             </div>
                             <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
                                 <p className="text-xs text-zinc-500">Visits Today</p>
-                                <p className="text-xl font-bold text-violet-300">{todayStoreVisitsFor(selectedUser).toLocaleString()}</p>
-                                <p className="text-[10px] text-zinc-600">{totalStoreVisitsFor(selectedUser).toLocaleString()} total visits</p>
+                                <p className="text-xl font-bold text-violet-300">{formatNumber(todayStoreVisitsFor(selectedUser))}</p>
+                                <p className="text-[10px] text-zinc-600">{formatNumber(totalStoreVisitsFor(selectedUser))} total visits</p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-5 space-y-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                                        <Target className="w-4 h-4 text-amber-300" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-white">Conversion Rate</h3>
+                                        <p className="text-[10px] text-zinc-500">
+                                            Automatic: {formatPercent(calculatedConversionRateFor(selectedUser))} from {formatNumber(totalOrdersFor(selectedUser))} orders / {formatNumber(totalStoreVisitsFor(selectedUser))} visits.
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className="text-lg font-black text-amber-200">{formatPercent(visibleConversionRateFor(selectedUser))}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2">
+                                <div className="relative">
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        step="0.01"
+                                        value={conversionRateInput}
+                                        onChange={(event) => setConversionRateInput(event.target.value)}
+                                        className="h-10 pr-8 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                        placeholder="Leave blank for automatic"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500">%</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={saveConversionRateOverride}
+                                    disabled={savingConversionRate}
+                                    className="h-10 px-4 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-slate-950 text-xs font-black flex items-center justify-center gap-2"
+                                >
+                                    {savingConversionRate ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                    Save Rate
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setConversionRateInput("")}
+                                    className="h-10 px-4 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white text-xs font-bold"
+                                >
+                                    Auto
+                                </button>
                             </div>
                         </div>
 
