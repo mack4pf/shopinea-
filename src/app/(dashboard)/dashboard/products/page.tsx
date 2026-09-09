@@ -189,7 +189,7 @@ export default function ProductsPage() {
                 storeLogo: newStore.storeLogo,
             });
             setNewStoreName("");
-            toast.success("New store created.");
+            toast.success("New store created. Store-wide ads can spread across your stores.");
             window.open(`${window.location.origin}/store/${newStore.storeSlug}`, "_blank");
         } catch (error) {
             console.error(error);
@@ -586,6 +586,9 @@ export default function ProductsPage() {
                             <h2 className="text-sm font-semibold text-white">Multiple stores</h2>
                             <p className="text-xs text-zinc-500 mt-1">
                                 {allStores.length}/{userData?.maxStores} stores used on your {userData?.planName || "current"} plan.
+                            </p>
+                            <p className="text-[11px] text-violet-300 mt-1">
+                                Store-wide ads can spread traffic across all stores on your plan.
                             </p>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 lg:w-[420px]">

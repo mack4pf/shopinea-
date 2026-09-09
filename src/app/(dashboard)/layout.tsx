@@ -6,7 +6,7 @@ import {
     LayoutDashboard, Wallet, Package, ShoppingCart, BarChart3,
     Users, Megaphone, UserCircle, CreditCard, Bell, Settings,
     HelpCircle, LogOut, Menu, X, User as UserIcon, Search,
-    ChevronRight, History, MessageSquare, Zap, Crown, AlertTriangle, Home, Heart, Headphones
+    ChevronRight, History, MessageSquare, Zap, Crown, AlertTriangle, Home, Heart, Headphones, Store
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
@@ -40,6 +40,7 @@ const getNavItems = (role?: string) => {
         { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
         { name: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
         { name: "Products", href: "/dashboard/products", icon: Package },
+        { name: "Stores", href: "/dashboard/stores", icon: Store },
         { name: "Customers", href: "/dashboard/customers", icon: UserCircle },
         { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
         { name: "History", href: "/dashboard/history", icon: History },

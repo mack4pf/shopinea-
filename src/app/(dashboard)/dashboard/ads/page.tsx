@@ -244,6 +244,7 @@ export default function AdsPage() {
                 startDate, endDate,
                 startTime: scheduleMode === 'later' ? startTime : new Date().toTimeString().slice(0, 5),
                 scheduleMode, status: "reviewing", impressions: 0, clicks: 0, spend: 0,
+                storeDistribution: targetType === "store" ? "all_stores" : "selected_products",
                 isPostpaid: paymentMode === 'later', countryReach: [], createdAt: serverTimestamp()
             });
 
@@ -838,6 +839,7 @@ export default function AdsPage() {
                                         targetType === 'store' ? "border-blue-500 bg-blue-500/10" : "border-white/[0.08] bg-white/[0.03] hover:border-white/[0.15]")}>
                                     <Globe className={cn("w-6 h-6", targetType === 'store' ? "text-blue-400" : "text-zinc-600")} />
                                     <span className={cn("text-xs font-medium", targetType === 'store' ? "text-blue-400" : "text-zinc-500")}>Entire Store</span>
+                                    <span className="text-[10px] text-zinc-500 text-center leading-4">Traffic can spread across all stores</span>
                                 </button>
                                 <button onClick={() => setTargetType('products')}
                                     className={cn("p-4 rounded-xl border flex flex-col items-center gap-2 transition-colors",

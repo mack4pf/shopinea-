@@ -62,6 +62,9 @@ const numberValue = (value: unknown) => {
 const todayStoreVisitsFor = (user: any) => numberValue(user?.dailyStoreVisits?.[todayAnalyticsKey()]);
 const totalStoreVisitsFor = (user: any) => numberValue(user?.storeVisits || user?.storeViews || user?.impressions || user?.stats?.views);
 const totalOrdersFor = (user: any) => numberValue(user?.totalOrders || user?.stats?.orders || user?.stats?.sales);
+const runningAdCountFor = (user: any) => numberValue(user?.adStats?.active);
+const reviewingAdCountFor = (user: any) => numberValue(user?.adStats?.reviewing);
+const totalAdCountFor = (user: any) => numberValue(user?.adStats?.total);
 const calculatedConversionRateFor = (user: any) => {
     const visits = totalStoreVisitsFor(user);
     const orders = totalOrdersFor(user);
@@ -150,7 +153,9 @@ export default function UserMatrixPage() {
             const snap = await getDocs(q);
             const usersList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const ordersSnap = await getDocs(collection(db, "orders"));
+            const campaignsSnap = await getDocs(collection(db, "campaigns"));
             const salesByUser: Record<string, { totalSales: number; totalProfit: number; totalOrders: number }> = {};
+            const adsByUser: Record<string, { total: number; active: number; reviewing: number; completed: number }> = {};
 
             ordersSnap.docs.forEach(orderDoc => {
                 const order = orderDoc.data();
@@ -161,12 +166,24 @@ export default function UserMatrixPage() {
                 salesByUser[userId].totalProfit += Number(order.resellerProfit || 0);
                 salesByUser[userId].totalOrders += 1;
             });
+            campaignsSnap.docs.forEach(campaignDoc => {
+                const campaign = campaignDoc.data();
+                const userId = campaign.sellerId || campaign.userId;
+                if (!userId) return;
+                if (!adsByUser[userId]) adsByUser[userId] = { total: 0, active: 0, reviewing: 0, completed: 0 };
+                const status = String(campaign.status || "").toLowerCase();
+                adsByUser[userId].total += 1;
+                if (status === "active") adsByUser[userId].active += 1;
+                if (status === "reviewing" || status === "scheduled") adsByUser[userId].reviewing += 1;
+                if (status === "completed") adsByUser[userId].completed += 1;
+            });
 
             setUsers(usersList.map(user => ({
                 ...user,
                 totalSales: salesByUser[user.id]?.totalSales || 0,
                 totalProfit: salesByUser[user.id]?.totalProfit || 0,
                 totalOrders: salesByUser[user.id]?.totalOrders || 0,
+                adStats: adsByUser[user.id] || { total: 0, active: 0, reviewing: 0, completed: 0 },
             })));
         } catch (err) {
             console.error(err);
@@ -202,13 +219,27 @@ export default function UserMatrixPage() {
                 orderBy("createdAt", "desc")
             ));
             const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const campaignsSnap = await getDocs(query(
+                collection(db, "campaigns"),
+                where("sellerId", "==", user.id),
+                orderBy("createdAt", "desc")
+            ));
+            const campaigns = campaignsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const adStats = campaigns.reduce((summary, campaign: any) => {
+                const status = String(campaign.status || "").toLowerCase();
+                summary.total += 1;
+                if (status === "active") summary.active += 1;
+                if (status === "reviewing" || status === "scheduled") summary.reviewing += 1;
+                if (status === "completed") summary.completed += 1;
+                return summary;
+            }, { total: 0, active: 0, reviewing: 0, completed: 0 });
             const salesSummary = orders.reduce((summary, order: any) => ({
                 totalSales: summary.totalSales + Number(order.resellPrice || order.totalAmount || 0),
                 totalProfit: summary.totalProfit + Number(order.resellerProfit || 0),
                 totalOrders: summary.totalOrders + 1,
             }), { totalSales: 0, totalProfit: 0, totalOrders: 0 });
             setUserOrders(orders);
-            setSelectedUser((prev: any) => prev ? { ...prev, ...salesSummary } : prev);
+            setSelectedUser((prev: any) => prev ? { ...prev, ...salesSummary, adStats, adCampaigns: campaigns.slice(0, 5) } : prev);
 
             // Extract unique products from orders for "View Products"
             const products = ordersSnap.docs.map(d => ({ id: d.data().productId, name: d.data().productName }));
@@ -953,6 +984,11 @@ export default function UserMatrixPage() {
                                     <p className="text-xs font-semibold text-violet-300">Today {todayStoreVisitsFor(u).toLocaleString()}</p>
                                     <p className="text-xs font-semibold text-sky-300">Total {totalStoreVisitsFor(u).toLocaleString()}</p>
                                 </div>
+                                <div className="p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+                                    <p className="text-[10px] text-zinc-600">Running Ads</p>
+                                    <p className="text-xs font-semibold text-emerald-300">Active {formatNumber(runningAdCountFor(u))}</p>
+                                    <p className="text-xs font-semibold text-amber-300">Reviewing {formatNumber(reviewingAdCountFor(u))}</p>
+                                </div>
                             </div>
                             <div className="flex gap-2">
                                 <button onClick={() => fetchUserDetails(u)} className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">View</button>
@@ -970,6 +1006,7 @@ export default function UserMatrixPage() {
                                 <th className="px-4 py-4">Status</th>
                                 <th className="px-4 py-4">Sales</th>
                                 <th className="px-4 py-4">Store Visits</th>
+                                <th className="px-4 py-4">Ads</th>
                                 <th className="px-4 py-4">Balances</th>
                                 <th className="px-4 py-4">Plan</th>
                                 <th className="px-5 py-4 text-right">Actions</th>
@@ -978,7 +1015,7 @@ export default function UserMatrixPage() {
                         <tbody className="divide-y divide-white/[0.04]">
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-5 py-16 text-center">
+                                    <td colSpan={8} className="px-5 py-16 text-center">
                                         <p className="text-sm text-zinc-600">No users found</p>
                                     </td>
                                 </tr>
@@ -1039,6 +1076,16 @@ export default function UserMatrixPage() {
                                                     <p className="text-xs text-violet-300">Today {todayStoreVisitsFor(u).toLocaleString()}</p>
                                                 </div>
                                                 <p className="text-[10px] text-sky-300">Total {totalStoreVisitsFor(u).toLocaleString()}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Megaphone className="w-3 h-3 text-emerald-400" />
+                                                    <p className="text-xs text-emerald-300">Active {formatNumber(runningAdCountFor(u))}</p>
+                                                </div>
+                                                <p className="text-[10px] text-amber-300">Reviewing {formatNumber(reviewingAdCountFor(u))}</p>
+                                                <p className="text-[10px] text-zinc-500">Total {formatNumber(totalAdCountFor(u))}</p>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
@@ -1180,7 +1227,7 @@ export default function UserMatrixPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                             <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
                                 <p className="text-xs text-zinc-500">Total Sales</p>
                                 <p className="text-xl font-bold text-emerald-400">{money(selectedUser.totalSales || 0)}</p>
@@ -1207,6 +1254,47 @@ export default function UserMatrixPage() {
                                 <p className="text-xl font-bold text-violet-300">{formatNumber(todayStoreVisitsFor(selectedUser))}</p>
                                 <p className="text-[10px] text-zinc-600">{formatNumber(totalStoreVisitsFor(selectedUser))} total visits</p>
                             </div>
+                            <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                <p className="text-xs text-zinc-500">Running Ads</p>
+                                <p className="text-xl font-bold text-emerald-300">{formatNumber(runningAdCountFor(selectedUser))}</p>
+                                <p className="text-[10px] text-zinc-600">{formatNumber(totalAdCountFor(selectedUser))} total campaigns</p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-blue-500/15 bg-blue-500/[0.05] p-5 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Megaphone className="w-4 h-4 text-blue-300" />
+                                <h3 className="text-sm font-semibold text-white">User Ads</h3>
+                                <span className="ml-auto text-[10px] text-zinc-500">
+                                    {formatNumber(reviewingAdCountFor(selectedUser))} reviewing
+                                </span>
+                            </div>
+                            {Array.isArray(selectedUser.adCampaigns) && selectedUser.adCampaigns.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {selectedUser.adCampaigns.map((campaign: any) => (
+                                        <div key={campaign.id} className="rounded-lg border border-white/[0.07] bg-zinc-950/40 p-3">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-xs font-semibold text-white">{campaign.campaignName || campaign.productName || "Ad campaign"}</p>
+                                                    <p className="text-[10px] text-zinc-500 mt-0.5">{campaign.platform || "ads"} - {money(campaign.totalBudget || 0)}</p>
+                                                </div>
+                                                <span className={cn(
+                                                    "shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold",
+                                                    campaign.status === "active"
+                                                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                                                        : campaign.status === "reviewing" || campaign.status === "scheduled"
+                                                            ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+                                                            : "border-white/[0.08] bg-white/[0.04] text-zinc-400"
+                                                )}>
+                                                    {campaign.status || "queued"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-zinc-500">No campaigns found for this user.</p>
+                            )}
                         </div>
 
                         <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-5 space-y-4">
