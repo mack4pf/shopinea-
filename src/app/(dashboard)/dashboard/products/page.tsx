@@ -34,6 +34,23 @@ const uniqueStoreSlug = (name: string, usedSlugs: string[]) => {
     return slug;
 };
 
+const getPlanStoreLimit = (userData: any) => {
+    const plan = String(userData?.plan || "").toLowerCase();
+    const planName = String(userData?.planName || "").toLowerCase();
+
+    if (plan === "enterprise_5000" || planName.includes("enterprise")) return 999;
+    if (plan === "venture_1200" || planName.includes("scale") || planName.includes("venture")) return 10;
+    if (plan === "elite_500" || planName.includes("professional")) return 3;
+    return 1;
+};
+
+const getEffectiveMaxStores = (userData: any) => {
+    const storedLimit = Number(userData?.maxStores || 1);
+    return Math.max(Number.isFinite(storedLimit) ? storedLimit : 1, getPlanStoreLimit(userData));
+};
+
+const hasMultiStorePlan = (userData: any) => getEffectiveMaxStores(userData) > 1;
+
 export default function ProductsPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
@@ -45,7 +62,10 @@ export default function ProductsPage() {
     const [customStoreModalOpen, setCustomStoreModalOpen] = useState(false);
     const [customStorePrompt, setCustomStorePrompt] = useState("");
     const [customStoreSubmitting, setCustomStoreSubmitting] = useState(false);
-    const [activeStoreId, setActiveStoreId] = useState("primary");
+    const [activeStoreId, setActiveStoreId] = useState(() => {
+        if (typeof window === "undefined") return "primary";
+        return new URLSearchParams(window.location.search).get("storeId") || "primary";
+    });
     const [newStoreName, setNewStoreName] = useState("");
     const [createStoreModalOpen, setCreateStoreModalOpen] = useState(false);
     const [customStoreMessages, setCustomStoreMessages] = useState([
@@ -145,9 +165,9 @@ export default function ProductsPage() {
 
     const createAdditionalStore = async () => {
         if (!user?.uid) return;
-        const maxStores = Number(userData?.maxStores || 1);
+        const maxStores = getEffectiveMaxStores(userData);
         const additionalStores = Array.isArray(userData?.additionalStores) ? userData.additionalStores : [];
-        if (maxStores <= 1 || additionalStores.length + 1 >= maxStores) {
+        if (!hasMultiStorePlan(userData) || additionalStores.length + 1 >= maxStores) {
             toast.error("Upgrade your plan to create more stores.");
             return;
         }
@@ -192,8 +212,8 @@ export default function ProductsPage() {
             });
             setNewStoreName("");
             setCreateStoreModalOpen(false);
-            toast.success("New store created. Store-wide ads can spread across your stores.");
-            window.open(`${window.location.origin}/store/${newStore.storeSlug}`, "_blank");
+            toast.success("New store created. Add products to launch it now.");
+            window.location.href = `/onboarding/reseller?storeId=${encodeURIComponent(newStore.id)}`;
         } catch (error) {
             console.error(error);
             toast.error("Could not create store.");
@@ -346,15 +366,8 @@ export default function ProductsPage() {
     ];
     const activeStore = allStores.find((store: any) => store.id === activeStoreId) || allStores[0];
     const products = Array.isArray(activeStore?.storeProducts) ? activeStore.storeProducts : [];
-    const planStoreLimit = userData?.plan === "enterprise_5000"
-        ? 999
-        : userData?.plan === "venture_1200"
-            ? 10
-            : (userData?.plan === "elite_500" || String(userData?.planName || "").toLowerCase() === "professional")
-                ? 3
-                : 1;
-    const maxStores = Math.max(Number(userData?.maxStores || 1), planStoreLimit);
-    const canCreateStore = maxStores > 1 && allStores.length < maxStores;
+    const maxStores = getEffectiveMaxStores(userData);
+    const canCreateStore = hasMultiStorePlan(userData) && allStores.length < maxStores;
     const addProductsHref = activeStoreId === "primary" ? "/onboarding/reseller" : `/onboarding/reseller?storeId=${encodeURIComponent(activeStoreId)}`;
     const filteredProducts = products.filter((p: any) =>
         (p?.name || "").toString().toLowerCase().includes(searchQuery.toLowerCase())

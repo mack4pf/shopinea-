@@ -209,6 +209,12 @@ export default function ResellerOnboarding() {
                 if (isAddMode) {
                     if (targetStoreId !== "primary") {
                         const additionalStores = Array.isArray(userData.additionalStores) ? userData.additionalStores : [];
+                        const targetStoreExists = additionalStores.some((store: any) => store.id === targetStoreId);
+                        if (!targetStoreExists) {
+                            toast.error("Store not found. Please choose the store again.");
+                            router.push("/dashboard/products");
+                            return;
+                        }
                         const nextStores = additionalStores.map((store: any) => {
                             if (store.id !== targetStoreId) return store;
                             const currentProducts = Array.isArray(store.storeProducts) ? store.storeProducts : [];
@@ -241,7 +247,7 @@ export default function ResellerOnboarding() {
                 await updateDoc(doc(db, "users", user.uid), updates);
                 setLaunchSuccess(true);
                 toast.success(isAddMode ? "Products added!" : "Store launched successfully!");
-                setTimeout(() => router.push(isAddMode ? "/dashboard/products" : "/dashboard"), 2000);
+                setTimeout(() => router.push(isAddMode ? `/dashboard/products?storeId=${encodeURIComponent(targetStoreId)}` : "/dashboard"), 2000);
             } else { router.push("/login"); }
         } catch (error) { console.error(error); setSubmitting(false); }
     };
