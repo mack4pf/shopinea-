@@ -15,8 +15,15 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Inbox, Loader2, Mail, MessageSquare, Search, Send, ShieldCheck } from "lucide-react";
+import { CheckCircle2, File as FileIcon, ImageIcon, Inbox, Loader2, Mail, MessageSquare, Paperclip, Search, Send, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
+
+type SupportAttachment = {
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+};
 
 export default function AdminSupportPage() {
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -26,7 +33,10 @@ export default function AdminSupportPage() {
     const [reply, setReply] = useState("");
     const [search, setSearch] = useState("");
     const [sending, setSending] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [attachments, setAttachments] = useState<SupportAttachment[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const fileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (user) => {
@@ -81,25 +91,56 @@ export default function AdminSupportPage() {
 
     const selectedThread = threads.find((thread) => thread.id === selectedId);
 
+    const uploadFiles = async (files: FileList | null) => {
+        if (!files?.length) return;
+        setUploading(true);
+        try {
+            const uploaded: SupportAttachment[] = [];
+            for (const file of Array.from(files)) {
+                const fd = new FormData();
+                fd.append("file", file);
+                const res = await fetch("/api/upload", { method: "POST", body: fd });
+                const data = await res.json();
+                if (!res.ok || !data.url) throw new Error(data?.error || "Upload failed");
+                uploaded.push({ url: data.url, name: file.name, type: file.type || "file", size: file.size });
+            }
+            setAttachments(prev => [...prev, ...uploaded]);
+            toast.success(uploaded.length === 1 ? "File attached." : `${uploaded.length} files attached.`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not upload attachment.");
+        } finally {
+            setUploading(false);
+            if (fileRef.current) fileRef.current.value = "";
+        }
+    };
+
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    };
+
     const sendReply = async (event?: React.FormEvent) => {
         event?.preventDefault();
         const cleanReply = reply.trim();
-        if (!selectedId || !cleanReply) return;
+        if (!selectedId || (!cleanReply && attachments.length === 0)) return;
 
         setSending(true);
         try {
+            const lastMessage = cleanReply || `Sent ${attachments.length} attachment${attachments.length === 1 ? "" : "s"}`;
             await addDoc(collection(db, "support_chats", selectedId, "messages"), {
                 text: cleanReply,
+                attachments,
                 sender: "admin",
                 createdAt: serverTimestamp(),
             });
             await updateDoc(doc(db, "support_chats", selectedId), {
-                lastMessage: cleanReply,
+                lastMessage,
                 lastMessageAt: serverTimestamp(),
                 unreadByUser: true,
                 status: "active",
             });
             setReply("");
+            setAttachments([]);
         } catch (error) {
             console.error(error);
             toast.error("Could not send support reply.");
@@ -221,7 +262,41 @@ export default function AdminSupportPage() {
                                                     ? "bg-sky-600 text-white rounded-br-md"
                                                     : "bg-white border border-slate-200 text-slate-800 rounded-bl-md"
                                             )}>
-                                                <p>{message.text}</p>
+                                                {message.text && <p>{message.text}</p>}
+                                                {Array.isArray(message.attachments) && message.attachments.length > 0 && (
+                                                    <div className="mt-3 grid gap-2">
+                                                        {message.attachments.map((item: any, index: number) => {
+                                                            const isImage = String(item.type || "").startsWith("image/");
+                                                            return (
+                                                                <a
+                                                                    key={`${item.url}-${index}`}
+                                                                    href={item.url}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className={cn(
+                                                                        "block overflow-hidden rounded-xl border",
+                                                                        fromAdmin ? "border-white/20 bg-white/10" : "border-slate-200 bg-slate-50"
+                                                                    )}
+                                                                >
+                                                                    {isImage ? (
+                                                                        <img src={item.url} alt={item.name || "Attachment"} className="max-h-56 w-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-2 p-3">
+                                                                            <FileIcon className="w-4 h-4 shrink-0" />
+                                                                            <span className="text-xs font-bold truncate">{item.name || "Attachment"}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {isImage && (
+                                                                        <div className="flex items-center gap-2 px-3 py-2">
+                                                                            <ImageIcon className="w-3.5 h-3.5 shrink-0" />
+                                                                            <span className="text-xs font-bold truncate">{item.name || "Image attachment"}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </a>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
                                                 <p className={cn("text-[10px] mt-1.5 opacity-60", fromAdmin && "text-right")}>
                                                     {message.createdAt?.toDate ? `${message.createdAt.toDate().toLocaleDateString([], { month: "short", day: "numeric" })} · ${message.createdAt.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "..."}
                                                 </p>
@@ -233,7 +308,30 @@ export default function AdminSupportPage() {
                             </div>
 
                             <form onSubmit={sendReply} className="p-4 border-t border-slate-200 bg-white">
+                                {attachments.length > 0 && (
+                                    <div className="mb-3 flex flex-wrap gap-2">
+                                        {attachments.map((item, index) => (
+                                            <div key={`${item.url}-${index}`} className="flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                                {String(item.type || "").startsWith("image/") ? <ImageIcon className="w-3.5 h-3.5 text-sky-600 shrink-0" /> : <FileIcon className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
+                                                <span className="max-w-[220px] truncate font-bold">{item.name || "Attachment"}</span>
+                                                <button type="button" onClick={() => removeAttachment(index)} className="text-slate-400 hover:text-slate-950" aria-label="Remove attachment">
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-2">
+                                    <input ref={fileRef} type="file" multiple className="hidden" onChange={(event) => uploadFiles(event.target.files)} />
+                                    <button
+                                        type="button"
+                                        onClick={() => fileRef.current?.click()}
+                                        disabled={uploading || sending}
+                                        className="h-12 w-12 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                                        aria-label="Attach files"
+                                    >
+                                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                                    </button>
                                     <input
                                         value={reply}
                                         onChange={(event) => setReply(event.target.value)}
@@ -242,7 +340,7 @@ export default function AdminSupportPage() {
                                     />
                                     <button
                                         type="submit"
-                                        disabled={sending || !reply.trim()}
+                                        disabled={sending || uploading || (!reply.trim() && attachments.length === 0)}
                                         className="h-12 w-12 rounded-xl bg-lime-400 text-slate-950 hover:bg-lime-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
                                     >
                                         {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

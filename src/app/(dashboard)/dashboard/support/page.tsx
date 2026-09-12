@@ -4,8 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { MessageSquare, Book, FileText, Mail, Zap, ChevronRight, Loader2, Send, KeyRound, ShieldCheck } from "lucide-react";
+import { MessageSquare, Book, FileText, Mail, Zap, ChevronRight, Loader2, Send, KeyRound, ShieldCheck, Paperclip, X, ImageIcon, File as FileIcon } from "lucide-react";
 import { toast } from "sonner";
+
+type SupportAttachment = {
+    url: string;
+    name: string;
+    type: string;
+    size: number;
+};
 
 function TargetIcon(props: any) {
     return (
@@ -21,7 +28,10 @@ export default function SupportPage() {
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [attachments, setAttachments] = useState<SupportAttachment[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const fileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -40,18 +50,51 @@ export default function SupportPage() {
         return () => unsubscribe();
     }, [user, isChatActive]);
 
+    const uploadFiles = async (files: FileList | null) => {
+        if (!files?.length) return;
+        setUploading(true);
+        try {
+            const uploaded: SupportAttachment[] = [];
+            for (const file of Array.from(files)) {
+                const fd = new FormData();
+                fd.append("file", file);
+                const res = await fetch("/api/upload", { method: "POST", body: fd });
+                const data = await res.json();
+                if (!res.ok || !data.url) throw new Error(data?.error || "Upload failed");
+                uploaded.push({ url: data.url, name: file.name, type: file.type || "file", size: file.size });
+            }
+            setAttachments(prev => [...prev, ...uploaded]);
+            toast.success(uploaded.length === 1 ? "File attached." : `${uploaded.length} files attached.`);
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not upload attachment.");
+        } finally {
+            setUploading(false);
+            if (fileRef.current) fileRef.current.value = "";
+        }
+    };
+
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, itemIndex) => itemIndex !== index));
+    };
+
     const sendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!newMessage.trim() || !user) return;
+        const cleanMessage = newMessage.trim();
+        if ((!cleanMessage && attachments.length === 0) || !user) return;
         setLoading(true);
         try {
+            const lastMessage = cleanMessage || `Sent ${attachments.length} attachment${attachments.length === 1 ? "" : "s"}`;
             await setDoc(doc(db, "support_chats", user.uid), {
-                userId: user.uid, userEmail: user.email, lastMessage: newMessage,
+                userId: user.uid, userEmail: user.email, lastMessage,
                 lastMessageAt: serverTimestamp(), status: "active", unreadByAdmin: true
             }, { merge: true });
             await addDoc(collection(db, "support_chats", user.uid, "messages"), {
-                text: newMessage, sender: "user", createdAt: serverTimestamp()
+                text: cleanMessage, attachments, sender: "user", createdAt: serverTimestamp()
             });
+            const attachmentHtml = attachments.length
+                ? `<p><strong>Attachments:</strong></p><ul>${attachments.map((item) => `<li><a href="${item.url}">${item.name || item.url}</a></li>`).join("")}</ul>`
+                : "";
             fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -60,11 +103,12 @@ export default function SupportPage() {
                     to: 'mackiyeritufu@gmail.com',
                     data: {
                         subject: `New support message from ${user.email}`,
-                        html: `<p><strong>From:</strong> ${user.email}</p><p><strong>Message:</strong></p><p>${newMessage}</p><p><a href="https://shoplinea.shop/admin/support">Open Support Chat</a></p>`,
+                        html: `<p><strong>From:</strong> ${user.email}</p><p><strong>Message:</strong></p><p>${cleanMessage || "Attachment sent"}</p>${attachmentHtml}<p><a href="https://shoplinea.shop/admin/support">Open Support Chat</a></p>`,
                     },
                 }),
             }).catch(() => undefined);
             setNewMessage("");
+            setAttachments([]);
         } catch (error) {
             console.error(error);
             toast.error("Failed to send message");
@@ -113,7 +157,38 @@ export default function SupportPage() {
                                     <div className={`max-w-[80%] md:max-w-[60%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${m.sender === 'user'
                                         ? 'bg-blue-600 text-white rounded-br-md'
                                         : 'bg-white/[0.06] border border-white/[0.08] text-zinc-200 rounded-bl-md'}`}>
-                                        {m.text}
+                                        {m.text && <p>{m.text}</p>}
+                                        {Array.isArray(m.attachments) && m.attachments.length > 0 && (
+                                            <div className="mt-3 grid gap-2">
+                                                {m.attachments.map((item: any, index: number) => {
+                                                    const isImage = String(item.type || "").startsWith("image/");
+                                                    return (
+                                                        <a
+                                                            key={`${item.url}-${index}`}
+                                                            href={item.url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className={`rounded-xl overflow-hidden border ${m.sender === "user" ? "border-white/20 bg-white/10" : "border-white/[0.08] bg-zinc-950/40"} block`}
+                                                        >
+                                                            {isImage ? (
+                                                                <img src={item.url} alt={item.name || "Attachment"} className="max-h-48 w-full object-cover" />
+                                                            ) : (
+                                                                <div className="flex items-center gap-2 p-3">
+                                                                    <FileIcon className="w-4 h-4 shrink-0" />
+                                                                    <span className="text-xs font-semibold truncate">{item.name || "Attachment"}</span>
+                                                                </div>
+                                                            )}
+                                                            {isImage && (
+                                                                <div className="flex items-center gap-2 px-3 py-2">
+                                                                    <ImageIcon className="w-3.5 h-3.5 shrink-0" />
+                                                                    <span className="text-xs font-semibold truncate">{item.name || "Image attachment"}</span>
+                                                                </div>
+                                                            )}
+                                                        </a>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                         <p className={`text-[10px] mt-1.5 opacity-50 ${m.sender === 'user' ? 'text-right' : ''}`}>
                                             {m.createdAt?.toDate ? `${m.createdAt.toDate().toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${m.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '...'}
                                         </p>
@@ -126,11 +201,34 @@ export default function SupportPage() {
 
                     {/* Input */}
                     <form onSubmit={sendMessage} className="p-3 border-t border-white/[0.06] shrink-0">
+                        {attachments.length > 0 && (
+                            <div className="mb-3 flex flex-wrap gap-2">
+                                {attachments.map((item, index) => (
+                                    <div key={`${item.url}-${index}`} className="flex max-w-full items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs text-zinc-200">
+                                        {String(item.type || "").startsWith("image/") ? <ImageIcon className="w-3.5 h-3.5 text-blue-300 shrink-0" /> : <FileIcon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />}
+                                        <span className="max-w-[180px] truncate font-semibold">{item.name || "Attachment"}</span>
+                                        <button type="button" onClick={() => removeAttachment(index)} className="text-zinc-500 hover:text-white" aria-label="Remove attachment">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         <div className="flex items-center gap-2">
+                            <input ref={fileRef} type="file" multiple className="hidden" onChange={(event) => uploadFiles(event.target.files)} />
+                            <button
+                                type="button"
+                                onClick={() => fileRef.current?.click()}
+                                disabled={uploading || loading}
+                                className="w-10 h-10 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] rounded-lg flex items-center justify-center text-zinc-300 shrink-0 transition-colors disabled:opacity-40"
+                                aria-label="Attach files"
+                            >
+                                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                            </button>
                             <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)}
                                 placeholder="Type your message..."
                                 className="flex-1 px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-600 outline-none focus:border-blue-500/40 transition-colors" />
-                            <button type="submit" disabled={loading || !newMessage.trim()}
+                            <button type="submit" disabled={loading || uploading || (!newMessage.trim() && attachments.length === 0)}
                                 className="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-lg flex items-center justify-center text-white shrink-0 transition-colors disabled:opacity-40">
                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                             </button>
