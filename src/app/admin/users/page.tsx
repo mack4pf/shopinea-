@@ -76,28 +76,39 @@ const visibleConversionRateFor = (user: any) => {
 };
 
 // ─── City API helper ──────────────────────────────────────────────────────────
-const allStoreProductsFor = (user: any) => {
+const allStoresFor = (user: any) => {
     const primaryProducts = Array.isArray(user?.storeProducts) ? user.storeProducts : [];
     const additionalStores = Array.isArray(user?.additionalStores) ? user.additionalStores : [];
 
     return [
-        ...primaryProducts.map((product: any, index: number) => ({
-            ...product,
-            _storeId: "primary",
-            _storeName: user?.storeName || "Primary store",
-            _selectionId: `primary:${product?.id || product?.name || index}`,
+        {
+            id: "primary",
+            storeName: user?.storeName || "Primary store",
+            storeSlug: user?.storeSlug || "",
+            storeViews: numberValue(user?.storeViews || user?.impressions || user?.stats?.views),
+            storeVisits: numberValue(user?.storeVisits || user?.storeViews || user?.impressions || user?.stats?.views),
+            products: primaryProducts,
+        },
+        ...additionalStores.map((store: any) => ({
+            id: store?.id || store?.storeSlug || "store",
+            storeName: store?.storeName || "Additional store",
+            storeSlug: store?.storeSlug || "",
+            storeViews: numberValue(store?.storeViews || store?.impressions),
+            storeVisits: numberValue(store?.storeVisits),
+            products: Array.isArray(store?.storeProducts) ? store.storeProducts : [],
         })),
-        ...additionalStores.flatMap((store: any) => {
-            const storeProducts = Array.isArray(store?.storeProducts) ? store.storeProducts : [];
-            return storeProducts.map((product: any, index: number) => ({
-                ...product,
-                _storeId: store?.id || store?.storeSlug || "store",
-                _storeName: store?.storeName || "Additional store",
-                _selectionId: `${store?.id || store?.storeSlug || "store"}:${product?.id || product?.name || index}`,
-            }));
-        }),
     ];
 };
+
+const allStoreProductsFor = (user: any) => allStoresFor(user).flatMap((store: any) => {
+    const products = Array.isArray(store?.products) ? store.products : [];
+    return products.map((product: any, index: number) => ({
+        ...product,
+        _storeId: store?.id || "store",
+        _storeName: store?.storeName || "Additional store",
+        _selectionId: `${store?.id || "store"}:${product?.id || product?.name || index}`,
+    }));
+});
 
 const cityCache: Record<string, string[]> = {};
 async function fetchCitiesForCountry(country: string): Promise<string[]> {
@@ -153,6 +164,7 @@ export default function UserMatrixPage() {
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
     const [selectedSimProducts, setSelectedSimProducts] = useState<string[]>([]);
+    const [salesTargetStoreId, setSalesTargetStoreId] = useState("all");
     const [simOrderDate, setSimOrderDate] = useState<"today" | "yesterday">("today");
     const addSimLocation = () => setSimLocations(prev => [...prev, { country: "", count: "5" }]);
     const removeSimLocation = (i: number) => setSimLocations(prev => prev.filter((_, idx) => idx !== i));
@@ -162,6 +174,7 @@ export default function UserMatrixPage() {
     // Store Booster
     const [storeBoostViews, setStoreBoostViews] = useState("5000");
     const [storeBoostVisits, setStoreBoostVisits] = useState("1500");
+    const [boostTargetStoreId, setBoostTargetStoreId] = useState("all");
     const [boostingStore, setBoostingStore] = useState(false);
 
     // Email Module
@@ -223,7 +236,9 @@ export default function UserMatrixPage() {
         setWithdrawalCodeInput(String(user.withdrawalCode || ""));
         setConversionRateInput(user.conversionRateOverride === undefined || user.conversionRateOverride === null ? "" : String(user.conversionRateOverride));
         // Pre-select all store products for the simulator
-        setSelectedSimProducts((user.storeProducts || []).map((p: any) => p.id));
+        setSalesTargetStoreId("all");
+        setBoostTargetStoreId("all");
+        setSelectedSimProducts(allStoreProductsFor(user).map((p: any) => p._selectionId));
         setSimLocations([{ country: "United States", count: "10" }]);
         setSimOrderDate("today");
         try {
@@ -312,7 +327,10 @@ export default function UserMatrixPage() {
     ];
 
     const handleBoostSales = async () => {
-        const storeProds = allStoreProductsFor(selectedUser).filter((p: any) => selectedSimProducts.includes(p._selectionId));
+        const storeProds = allStoreProductsFor(selectedUser).filter((p: any) =>
+            selectedSimProducts.includes(p._selectionId) &&
+            (salesTargetStoreId === "all" || p._storeId === salesTargetStoreId)
+        );
         if (!selectedUser || storeProds.length === 0) {
             toast.error("Select at least one product to simulate orders for.");
             return;
@@ -439,22 +457,26 @@ export default function UserMatrixPage() {
             if (additionalStores.length > 0 && (views > 0 || visits > 0)) {
                 updates.additionalStores = additionalStores.map((store: any) => ({
                     ...store,
-                    storeViews: numberValue(store?.storeViews) + views,
-                    impressions: numberValue(store?.impressions) + views,
-                    storeVisits: numberValue(store?.storeVisits) + visits,
+                    ...((boostTargetStoreId === "all" || store?.id === boostTargetStoreId || store?.storeSlug === boostTargetStoreId) ? {
+                        storeViews: numberValue(store?.storeViews) + views,
+                        impressions: numberValue(store?.impressions) + views,
+                        storeVisits: numberValue(store?.storeVisits) + visits,
+                    } : {}),
                     dailyStoreViews: {
                         ...(store?.dailyStoreViews || {}),
-                        [dateKey]: numberValue(store?.dailyStoreViews?.[dateKey]) + views,
+                        [dateKey]: numberValue(store?.dailyStoreViews?.[dateKey]) + ((boostTargetStoreId === "all" || store?.id === boostTargetStoreId || store?.storeSlug === boostTargetStoreId) ? views : 0),
                     },
                     dailyStoreVisits: {
                         ...(store?.dailyStoreVisits || {}),
-                        [dateKey]: numberValue(store?.dailyStoreVisits?.[dateKey]) + visits,
+                        [dateKey]: numberValue(store?.dailyStoreVisits?.[dateKey]) + ((boostTargetStoreId === "all" || store?.id === boostTargetStoreId || store?.storeSlug === boostTargetStoreId) ? visits : 0),
                     },
                     updatedAt: new Date().toISOString(),
                 }));
             }
             // Distribute views across products from the primary store and all additional stores.
-            const prods: any[] = allStoreProductsFor(selectedUser);
+            const prods: any[] = allStoreProductsFor(selectedUser).filter((product: any) =>
+                boostTargetStoreId === "all" || product._storeId === boostTargetStoreId
+            );
             if (prods.length > 0 && views > 0) {
                 // Random weights so distribution looks natural
                 const weights = prods.map(() => Math.random());
@@ -470,7 +492,13 @@ export default function UserMatrixPage() {
                 });
             }
             await updateDoc(doc(db, "users", selectedUser.id), updates);
-            const storeCount = 1 + additionalStores.length;
+            const refreshedUser = await getDoc(doc(db, "users", selectedUser.id));
+            if (refreshedUser.exists()) {
+                const nextUser = { id: selectedUser.id, ...refreshedUser.data() };
+                setSelectedUser(nextUser);
+                setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, ...nextUser } : user));
+            }
+            const storeCount = boostTargetStoreId === "all" ? 1 + additionalStores.length : 1;
             toast.success(`Injected ${views.toLocaleString()} views + ${visits.toLocaleString()} visits across ${storeCount} store(s) and ${prods.length} product(s)!`);
         } catch (err) {
             console.error(err);
@@ -943,6 +971,11 @@ export default function UserMatrixPage() {
         u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.id.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    const selectedUserStores = selectedUser ? allStoresFor(selectedUser) : [];
+    const selectedUserProducts = selectedUser ? allStoreProductsFor(selectedUser) : [];
+    const salesTargetProducts = selectedUserProducts.filter((product: any) =>
+        salesTargetStoreId === "all" || product._storeId === salesTargetStoreId
+    );
 
     if (loading) return (
         <div className="h-screen flex items-center justify-center bg-zinc-950">
@@ -1302,6 +1335,58 @@ export default function UserMatrixPage() {
                                 <p className="text-xs text-zinc-500">Running Ads</p>
                                 <p className="text-xl font-bold text-emerald-300">{formatNumber(runningAdCountFor(selectedUser))}</p>
                                 <p className="text-[10px] text-zinc-600">{formatNumber(totalAdCountFor(selectedUser))} total campaigns</p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.05] p-5 space-y-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-emerald-300" />
+                                    <h3 className="text-sm font-semibold text-white">User Stores</h3>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-200">
+                                    {selectedUserStores.length} store(s) - {selectedUserProducts.length} product(s)
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                {selectedUserStores.map((store: any) => {
+                                    const products = Array.isArray(store.products) ? store.products : [];
+                                    return (
+                                        <div key={store.id} className="rounded-xl border border-white/[0.07] bg-zinc-950/40 p-4 space-y-3">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-bold text-white truncate">{store.storeName}</p>
+                                                    <p className="text-[10px] text-zinc-500 truncate">{store.storeSlug ? `/store/${store.storeSlug}` : "No store URL"}</p>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-xs font-bold text-emerald-200">{products.length} products</p>
+                                                    <p className="text-[10px] text-zinc-500">{formatNumber(store.storeVisits)} visits</p>
+                                                </div>
+                                            </div>
+                                            {products.length === 0 ? (
+                                                <p className="rounded-lg border border-dashed border-white/[0.06] py-4 text-center text-xs text-zinc-600">No products in this store.</p>
+                                            ) : (
+                                                <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+                                                    {products.map((product: any, index: number) => (
+                                                        <div key={`${store.id}-${product?.id || product?.name || index}`} className="flex items-center gap-2 rounded-lg border border-white/[0.05] bg-white/[0.03] p-2">
+                                                            {product?.image ? (
+                                                                <img src={product.image} alt="" className="h-9 w-9 shrink-0 rounded-md object-cover" />
+                                                            ) : (
+                                                                <div className="h-9 w-9 shrink-0 rounded-md bg-white/[0.05] flex items-center justify-center">
+                                                                    <Package className="h-4 w-4 text-zinc-600" />
+                                                                </div>
+                                                            )}
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate text-xs font-semibold text-white">{product?.name || "Product"}</p>
+                                                                <p className="text-[10px] text-zinc-500">{money(product?.resellPrice || product?.price || 0)}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -1764,6 +1849,25 @@ export default function UserMatrixPage() {
                                 </div>
                             </div>
 
+                            <div className="space-y-1">
+                                <Label className="text-xs text-zinc-400 font-medium">Sales Target</Label>
+                                <select
+                                    value={salesTargetStoreId}
+                                    onChange={(event) => {
+                                        const nextTarget = event.target.value;
+                                        setSalesTargetStoreId(nextTarget);
+                                        const nextProducts = selectedUserProducts.filter((product: any) => nextTarget === "all" || product._storeId === nextTarget);
+                                        setSelectedSimProducts(nextProducts.map((product: any) => product._selectionId));
+                                    }}
+                                    className="h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-sm text-white outline-none focus:border-amber-500/40"
+                                >
+                                    <option value="all">All stores</option>
+                                    {selectedUserStores.map((store: any) => (
+                                        <option key={store.id} value={store.id}>{store.storeName}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             {/* Product Selector */}
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
@@ -1773,20 +1877,20 @@ export default function UserMatrixPage() {
                                     </div>
                                     <button
                                         onClick={() => {
-                                            const prods = allStoreProductsFor(selectedUser);
+                                            const prods = salesTargetProducts;
                                             if (selectedSimProducts.length === prods.length) setSelectedSimProducts([]);
                                             else setSelectedSimProducts(prods.map((p: any) => p._selectionId));
                                         }}
                                         className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold transition-colors"
                                     >
-                                        {selectedSimProducts.length === allStoreProductsFor(selectedUser).length ? "Deselect All" : "Select All"}
+                                        {selectedSimProducts.length === salesTargetProducts.length ? "Deselect All" : "Select All"}
                                     </button>
                                 </div>
-                                {allStoreProductsFor(selectedUser).length === 0 ? (
+                                {salesTargetProducts.length === 0 ? (
                                     <p className="text-xs text-zinc-600 py-3 text-center border border-dashed border-white/[0.06] rounded-lg">No products in store yet</p>
                                 ) : (
                                     <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
-                                        {allStoreProductsFor(selectedUser).map((p: any) => (
+                                        {salesTargetProducts.map((p: any) => (
                                             <label key={p._selectionId} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.1] cursor-pointer transition-colors">
                                                 <input
                                                     type="checkbox"
@@ -1874,6 +1978,19 @@ export default function UserMatrixPage() {
                                 <span className="ml-auto text-[10px] font-mono text-zinc-500 truncate max-w-[180px]">{selectedUser.email}</span>
                             </div>
                             <p className="text-xs text-zinc-500 -mt-1">Inject views and visits into this reseller&apos;s store analytics dashboard.</p>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-zinc-400 font-medium">Analytics Target</Label>
+                                <select
+                                    value={boostTargetStoreId}
+                                    onChange={(event) => setBoostTargetStoreId(event.target.value)}
+                                    className="h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-sm text-white outline-none focus:border-blue-500/40"
+                                >
+                                    <option value="all">All stores</option>
+                                    {selectedUserStores.map((store: any) => (
+                                        <option key={store.id} value={store.id}>{store.storeName}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <Label className="text-xs text-zinc-400 font-medium">Add Views</Label>
