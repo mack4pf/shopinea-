@@ -35,6 +35,59 @@ const getConversionRate = (data: any, totalOrders: number, totalVisits: number, 
     const convBase = totalVisits || impressions;
     return convBase > 0 ? (totalOrders / convBase) * 100 : 0;
 };
+const allStoresFor = (data: any) => {
+    const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
+    const totalViews = numeric(data?.storeViews || data?.impressions || data?.stats?.views);
+    const totalVisits = numeric(data?.storeVisits || totalViews);
+    const additionalViews = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeViews || store?.impressions), 0);
+    const additionalVisits = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeVisits), 0);
+    const additionalVisitsToday = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]), 0);
+    return [
+        {
+            id: "primary",
+            name: data?.storeName || "Primary store",
+            slug: data?.storeSlug || "",
+            products: Array.isArray(data?.storeProducts) ? data.storeProducts : [],
+            views: Math.max(0, totalViews - additionalViews),
+            visits: Math.max(0, totalVisits - additionalVisits),
+            visitsToday: Math.max(0, numeric(data?.dailyStoreVisits?.[todayAnalyticsKey()]) - additionalVisitsToday),
+        },
+        ...additionalStores.map((store: any) => ({
+            id: store?.id || store?.storeSlug || "store",
+            name: store?.storeName || "Additional store",
+            slug: store?.storeSlug || "",
+            products: Array.isArray(store?.storeProducts) ? store.storeProducts : [],
+            views: numeric(store?.storeViews || store?.impressions),
+            visits: numeric(store?.storeVisits),
+            visitsToday: numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]),
+        })),
+    ];
+};
+const orderBelongsToStore = (order: any, store: any) => {
+    if (order?.storeId && order.storeId === store.id) return true;
+    const productId = String(order?.productId || "");
+    const productName = String(order?.productName || "").toLowerCase();
+    return store.products.some((product: any) =>
+        (productId && String(product?.id || "") === productId) ||
+        (productName && String(product?.name || "").toLowerCase() === productName)
+    );
+};
+const buildStoreBreakdown = (data: any, orders: any[]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return allStoresFor(data).map((store: any) => {
+        const storeOrders = orders.filter(order => orderBelongsToStore(order, store));
+        const todayOrders = storeOrders.filter(order => {
+            const createdAt = order?.createdAt?.toDate ? order.createdAt.toDate() : new Date(order?.createdAt || 0);
+            return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        });
+        const revenue = storeOrders.reduce((sum, order) => sum + numeric(order?.resellPrice || order?.totalAmount), 0);
+        const revenueToday = todayOrders.reduce((sum, order) => sum + numeric(order?.resellPrice || order?.totalAmount), 0);
+        const avgOrderValue = storeOrders.length > 0 ? revenue / storeOrders.length : 0;
+        const conversion = store.visits > 0 ? (storeOrders.length / store.visits) * 100 : 0;
+        return { ...store, orders: storeOrders.length, ordersToday: todayOrders.length, revenue, revenueToday, avgOrderValue, conversion };
+    });
+};
 
 function computeChartData(orders: any[], timeframe: string): { labels: string[]; data: number[] } {
     const now = new Date();
@@ -133,6 +186,7 @@ export default function AnalyticsPage() {
     const [loading, setLoading] = useState(true);
     const [timeframe, setTimeframe] = useState("7D");
     const [rawOrders, setRawOrders] = useState<any[]>([]);
+    const [storeBreakdown, setStoreBreakdown] = useState<any[]>([]);
 
     const [stats, setStats] = useState({
         totalRevenue: 0, totalOrders: 0, totalImpressions: 0,
@@ -162,6 +216,7 @@ export default function AnalyticsPage() {
                     const ordersSnap = await getDocs(ordersQuery);
                     const orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
                     setRawOrders(orders);
+                    setStoreBreakdown(buildStoreBreakdown(uData, orders));
 
                     const totalRev = orders.reduce((acc, curr) => acc + numeric(curr.resellPrice), 0);
                     const impressions = numeric(uData?.storeViews || uData?.impressions || uData?.stats?.views);
@@ -336,6 +391,61 @@ export default function AnalyticsPage() {
                     ))}
                 </div>
             </div>
+
+            {storeBreakdown.length > 1 && (
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-6 space-y-5">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+                        <div>
+                            <h3 className="text-base font-semibold text-white">Store Comparison</h3>
+                            <p className="text-xs text-zinc-500 mt-1">See what each store has made, how many buyers ordered, and how traffic converts.</p>
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                            {storeBreakdown.length} stores tracked
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                        {storeBreakdown.map((store) => {
+                            const bestRevenue = Math.max(...storeBreakdown.map(item => numeric(item.revenue)), 1);
+                            const revenuePct = Math.round((numeric(store.revenue) / bestRevenue) * 100);
+                            return (
+                                <div key={store.id} className="rounded-xl border border-white/[0.07] bg-zinc-950/40 p-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-white truncate">{store.name}</p>
+                                            <p className="text-[10px] text-zinc-600">{store.products.length} products</p>
+                                        </div>
+                                        <div className="text-left sm:text-right">
+                                            <p className="text-lg font-black text-emerald-300">{currency.money(store.revenue)}</p>
+                                            <p className="text-[10px] text-zinc-500">Today {currency.money(store.revenueToday)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${revenuePct}%` }} />
+                                    </div>
+                                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                        {[
+                                            { label: "Orders", value: formatNumber(store.orders) },
+                                            { label: "Visits", value: formatNumber(store.visits) },
+                                            { label: "Views", value: formatNumber(store.views) },
+                                            { label: "Conversion", value: formatPercent(store.conversion) },
+                                            { label: "Avg Order", value: currency.money(store.avgOrderValue) },
+                                        ].map((item) => (
+                                            <div key={item.label} className="rounded-lg bg-white/[0.03] p-2">
+                                                <p className="text-[10px] text-zinc-600">{item.label}</p>
+                                                <p className="mt-1 text-xs font-bold text-white truncate">{item.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-zinc-500">
+                                        <span className="rounded-md bg-blue-500/[0.08] px-2 py-1 text-blue-200">{store.ordersToday} orders today</span>
+                                        <span className="rounded-md bg-violet-500/[0.08] px-2 py-1 text-violet-200">{formatNumber(store.visitsToday)} visits today</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

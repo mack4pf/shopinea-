@@ -28,6 +28,58 @@ const getConversionRate = (data: any, totalOrders: number, totalVisitors: number
     if (Number.isFinite(override) && override >= 0) return override;
     return totalOrders > 0 && totalVisitors > 0 ? (totalOrders / totalVisitors) * 100 : 0;
 };
+const allStoresFor = (data: any) => {
+    const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
+    const totalViews = numeric(data?.storeViews || data?.impressions || data?.stats?.views);
+    const totalVisits = numeric(data?.storeVisits || totalViews);
+    const additionalViews = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeViews || store?.impressions), 0);
+    const additionalVisits = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeVisits), 0);
+    const additionalVisitsToday = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]), 0);
+    return [
+        {
+            id: "primary",
+            name: data?.storeName || "Primary store",
+            slug: data?.storeSlug || "",
+            products: Array.isArray(data?.storeProducts) ? data.storeProducts : [],
+            views: Math.max(0, totalViews - additionalViews),
+            visits: Math.max(0, totalVisits - additionalVisits),
+            visitsToday: Math.max(0, numeric(data?.dailyStoreVisits?.[todayAnalyticsKey()]) - additionalVisitsToday),
+        },
+        ...additionalStores.map((store: any) => ({
+            id: store?.id || store?.storeSlug || "store",
+            name: store?.storeName || "Additional store",
+            slug: store?.storeSlug || "",
+            products: Array.isArray(store?.storeProducts) ? store.storeProducts : [],
+            views: numeric(store?.storeViews || store?.impressions),
+            visits: numeric(store?.storeVisits),
+            visitsToday: numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]),
+        })),
+    ];
+};
+const orderBelongsToStore = (order: any, store: any) => {
+    if (order?.storeId && order.storeId === store.id) return true;
+    const productId = String(order?.productId || "");
+    const productName = String(order?.productName || "").toLowerCase();
+    return store.products.some((product: any) =>
+        (productId && String(product?.id || "") === productId) ||
+        (productName && String(product?.name || "").toLowerCase() === productName)
+    );
+};
+const buildStoreBreakdown = (data: any, orders: any[]) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return allStoresFor(data).map((store: any) => {
+        const storeOrders = orders.filter(order => orderBelongsToStore(order, store));
+        const todayOrders = storeOrders.filter(order => {
+            const createdAt = order?.createdAt?.toDate ? order.createdAt.toDate() : new Date(order?.createdAt || 0);
+            return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
+        });
+        const revenue = storeOrders.reduce((sum, order) => sum + numeric(order?.resellPrice || order?.totalAmount), 0);
+        const revenueToday = todayOrders.reduce((sum, order) => sum + numeric(order?.resellPrice || order?.totalAmount), 0);
+        const conversion = store.visits > 0 ? (storeOrders.length / store.visits) * 100 : 0;
+        return { ...store, orders: storeOrders.length, ordersToday: todayOrders.length, revenue, revenueToday, conversion };
+    });
+};
 
 export default function ResellerHome() {
     const router = useRouter();
@@ -36,6 +88,7 @@ export default function ResellerHome() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({ revenueToday: 0, ordersToday: 0, visitorsToday: 0, totalOrders: 0, totalVisitors: 0 });
     const [recentOrders, setRecentOrders] = useState<any[]>([]);
+    const [storeBreakdown, setStoreBreakdown] = useState<any[]>([]);
     const currency = useCurrency(userData);
 
     useEffect(() => {
@@ -66,9 +119,11 @@ export default function ResellerHome() {
 
                 const allOrdersQ = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid));
                 const allOrdersSnap = await getDocs(allOrdersQ);
+                const allOrders = allOrdersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 const totalOrders = numeric(data?.stats?.orders) || allOrdersSnap.size || snap.size;
 
                 setStats({ revenueToday: rev, ordersToday: snap.size, visitorsToday, totalOrders, totalVisitors });
+                setStoreBreakdown(buildStoreBreakdown(data, allOrders));
 
                 const recentQ = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid), orderBy("createdAt", "desc"), limit(5));
                 const recentSnap = await getDocs(recentQ);
@@ -79,6 +134,7 @@ export default function ResellerHome() {
                 setUserData({});
                 setStats({ revenueToday: 0, ordersToday: 0, visitorsToday: 0, totalOrders: 0, totalVisitors: 0 });
                 setRecentOrders([]);
+                setStoreBreakdown([]);
             } finally {
                 setLoading(false);
             }
@@ -159,6 +215,55 @@ export default function ResellerHome() {
             </div>
 
             {/* ── Main Grid ── */}
+            {storeBreakdown.length > 1 && (
+                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <h2 className="text-sm font-semibold text-white">Store Performance</h2>
+                            <p className="text-xs text-zinc-500 mt-1">Compare revenue, orders, visits, views, and conversion for each store.</p>
+                        </div>
+                        <button onClick={() => router.push('/dashboard/analytics')} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                            Full analytics <ArrowUpRight className="w-3 h-3" />
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {storeBreakdown.map((store) => (
+                            <div key={store.id} className="rounded-xl border border-white/[0.07] bg-zinc-950/40 p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-white truncate">{store.name}</p>
+                                        <p className="text-[10px] text-zinc-600">{store.products.length} products</p>
+                                    </div>
+                                    <p className="text-sm font-bold text-emerald-300">{currency.money(store.revenue)}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="rounded-lg bg-white/[0.03] p-2">
+                                        <p className="text-zinc-600">Orders</p>
+                                        <p className="font-bold text-white">{formatNumber(store.orders)}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white/[0.03] p-2">
+                                        <p className="text-zinc-600">Visits</p>
+                                        <p className="font-bold text-white">{formatNumber(store.visits)}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white/[0.03] p-2">
+                                        <p className="text-zinc-600">Views</p>
+                                        <p className="font-bold text-white">{formatNumber(store.views)}</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white/[0.03] p-2">
+                                        <p className="text-zinc-600">Conversion</p>
+                                        <p className="font-bold text-white">{formatPercent(store.conversion)}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg bg-blue-500/[0.06] border border-blue-500/10 px-3 py-2">
+                                    <span className="text-[10px] text-blue-200">Today</span>
+                                    <span className="text-xs font-bold text-white">{currency.money(store.revenueToday)} - {store.ordersToday} orders - {formatNumber(store.visitsToday)} visits</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
                 {/* Left — checklist + ad CTA */}

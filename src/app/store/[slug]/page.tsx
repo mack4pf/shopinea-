@@ -164,14 +164,42 @@ export default function StorePage() {
 
                     // Record a real visit — once per browser session per store, so
                     // navigating between product pages doesn't inflate the count.
-                    const visitedKey = `storeVisit:${uDoc.id}`;
+                    const visitedKey = `storeVisit:${uDoc.id}:${slug}`;
                     const alreadyCounted = typeof window !== "undefined" && sessionStorage.getItem(visitedKey);
                     const todayKey = new Date().toISOString().slice(0, 10);
-                    const visitUpdates: Record<string, any> = { "stats.views": increment(1) };
+                    const visitUpdates: Record<string, any> = {
+                        "stats.views": increment(1),
+                        storeViews: increment(1),
+                        impressions: increment(1),
+                        [`dailyStoreViews.${todayKey}`]: increment(1),
+                    };
                     if (!alreadyCounted) {
                         visitUpdates.storeVisits = increment(1);
                         visitUpdates[`dailyStoreVisits.${todayKey}`] = increment(1);
                         if (typeof window !== "undefined") sessionStorage.setItem(visitedKey, "1");
+                    }
+                    if (additionalStore) {
+                        const extraStores = Array.isArray(ownerData.additionalStores) ? ownerData.additionalStores : [];
+                        visitUpdates.additionalStores = extraStores.map((store: any) => {
+                            if (store.id !== additionalStore.id && store.storeSlug !== slug) return store;
+                            return {
+                                ...store,
+                                storeViews: Number(store.storeViews || store.impressions || 0) + 1,
+                                impressions: Number(store.impressions || store.storeViews || 0) + 1,
+                                dailyStoreViews: {
+                                    ...(store.dailyStoreViews || {}),
+                                    [todayKey]: Number(store.dailyStoreViews?.[todayKey] || 0) + 1,
+                                },
+                                ...(!alreadyCounted ? {
+                                    storeVisits: Number(store.storeVisits || 0) + 1,
+                                    dailyStoreVisits: {
+                                        ...(store.dailyStoreVisits || {}),
+                                        [todayKey]: Number(store.dailyStoreVisits?.[todayKey] || 0) + 1,
+                                    },
+                                } : {}),
+                                updatedAt: new Date().toISOString(),
+                            };
+                        });
                     }
                     await updateDoc(doc(db, "users", uDoc.id), visitUpdates);
 
