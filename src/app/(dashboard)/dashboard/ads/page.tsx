@@ -773,7 +773,7 @@ export default function AdsPage() {
             <AdDepositModal isOpen={showDepositModal} onClose={() => setShowDepositModal(false)} userId={user?.uid} currencySymbol={currency.currencySymbol} currencyCode={currency.currencyCode} exchangeRate={currency.exchangeRate} />
             <KYCModal isOpen={showKYCModal} onClose={() => setShowKYCModal(false)} userId={user?.uid} />
 
-            <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Create Campaign" description="Set up your ad campaign across Meta, TikTok, or Google.">
+            <Modal isOpen={showCampaignModal} onClose={() => setShowCampaignModal(false)} title="Create Campaign" description="Set up your ad campaign across Meta, TikTok, Google, or YouTube.">
                 {generatingAI ? (
                     <div className="py-8 space-y-6">
                         <div className="flex flex-col items-center justify-center text-center space-y-4">
@@ -876,11 +876,12 @@ export default function AdsPage() {
                         {/* Platform */}
                         <div className="space-y-2">
                             <Label className="text-xs font-medium text-zinc-400">Platform</Label>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {[
                                     { key: 'meta', Logo: MetaLogo, label: 'Meta' },
                                     { key: 'tiktok', Logo: TikTokLogo, label: 'TikTok' },
                                     { key: 'google', Logo: GoogleLogo, label: 'Google' },
+                                    { key: 'youtube', Logo: YouTubeLogo, label: 'YouTube' },
                                 ].map(({ key, Logo, label }) => (
                                     <button key={key} onClick={() => setSelectedPlatform(key)}
                                         className={cn("py-3 rounded-lg border text-xs font-medium capitalize transition-colors flex flex-col items-center gap-1.5",

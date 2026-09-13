@@ -76,6 +76,29 @@ const visibleConversionRateFor = (user: any) => {
 };
 
 // ─── City API helper ──────────────────────────────────────────────────────────
+const allStoreProductsFor = (user: any) => {
+    const primaryProducts = Array.isArray(user?.storeProducts) ? user.storeProducts : [];
+    const additionalStores = Array.isArray(user?.additionalStores) ? user.additionalStores : [];
+
+    return [
+        ...primaryProducts.map((product: any, index: number) => ({
+            ...product,
+            _storeId: "primary",
+            _storeName: user?.storeName || "Primary store",
+            _selectionId: `primary:${product?.id || product?.name || index}`,
+        })),
+        ...additionalStores.flatMap((store: any) => {
+            const storeProducts = Array.isArray(store?.storeProducts) ? store.storeProducts : [];
+            return storeProducts.map((product: any, index: number) => ({
+                ...product,
+                _storeId: store?.id || store?.storeSlug || "store",
+                _storeName: store?.storeName || "Additional store",
+                _selectionId: `${store?.id || store?.storeSlug || "store"}:${product?.id || product?.name || index}`,
+            }));
+        }),
+    ];
+};
+
 const cityCache: Record<string, string[]> = {};
 async function fetchCitiesForCountry(country: string): Promise<string[]> {
     const key = country.trim().toLowerCase();
@@ -289,7 +312,7 @@ export default function UserMatrixPage() {
     ];
 
     const handleBoostSales = async () => {
-        const storeProds = (selectedUser?.storeProducts || []).filter((p: any) => selectedSimProducts.includes(p.id));
+        const storeProds = allStoreProductsFor(selectedUser).filter((p: any) => selectedSimProducts.includes(p._selectionId));
         if (!selectedUser || storeProds.length === 0) {
             toast.error("Select at least one product to simulate orders for.");
             return;
@@ -365,6 +388,8 @@ export default function UserMatrixPage() {
                         ...(randomCity ? { customerCity: randomCity } : {}),
                         productId: product.id,
                         productName: product.name,
+                        storeId: product._storeId,
+                        storeName: product._storeName,
                         resellPrice: product.resellPrice || product.price || 0,
                         resellerProfit: payout,
                         status: 'shipped',
@@ -410,8 +435,26 @@ export default function UserMatrixPage() {
                 updates.storeVisits = increment(visits);
                 updates[`dailyStoreVisits.${dateKey}`] = increment(visits);
             }
-            // Distribute views across all store products
-            const prods: any[] = selectedUser.storeProducts || [];
+            const additionalStores = Array.isArray(selectedUser.additionalStores) ? selectedUser.additionalStores : [];
+            if (additionalStores.length > 0 && (views > 0 || visits > 0)) {
+                updates.additionalStores = additionalStores.map((store: any) => ({
+                    ...store,
+                    storeViews: numberValue(store?.storeViews) + views,
+                    impressions: numberValue(store?.impressions) + views,
+                    storeVisits: numberValue(store?.storeVisits) + visits,
+                    dailyStoreViews: {
+                        ...(store?.dailyStoreViews || {}),
+                        [dateKey]: numberValue(store?.dailyStoreViews?.[dateKey]) + views,
+                    },
+                    dailyStoreVisits: {
+                        ...(store?.dailyStoreVisits || {}),
+                        [dateKey]: numberValue(store?.dailyStoreVisits?.[dateKey]) + visits,
+                    },
+                    updatedAt: new Date().toISOString(),
+                }));
+            }
+            // Distribute views across products from the primary store and all additional stores.
+            const prods: any[] = allStoreProductsFor(selectedUser);
             if (prods.length > 0 && views > 0) {
                 // Random weights so distribution looks natural
                 const weights = prods.map(() => Math.random());
@@ -427,7 +470,8 @@ export default function UserMatrixPage() {
                 });
             }
             await updateDoc(doc(db, "users", selectedUser.id), updates);
-            toast.success(`Injected ${views.toLocaleString()} views + ${visits.toLocaleString()} visits — distributed across ${prods.length} product(s)!`);
+            const storeCount = 1 + additionalStores.length;
+            toast.success(`Injected ${views.toLocaleString()} views + ${visits.toLocaleString()} visits across ${storeCount} store(s) and ${prods.length} product(s)!`);
         } catch (err) {
             console.error(err);
             toast.error("Store boost failed.");
@@ -1729,34 +1773,34 @@ export default function UserMatrixPage() {
                                     </div>
                                     <button
                                         onClick={() => {
-                                            const prods = selectedUser?.storeProducts || [];
+                                            const prods = allStoreProductsFor(selectedUser);
                                             if (selectedSimProducts.length === prods.length) setSelectedSimProducts([]);
-                                            else setSelectedSimProducts(prods.map((p: any) => p.id));
+                                            else setSelectedSimProducts(prods.map((p: any) => p._selectionId));
                                         }}
                                         className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold transition-colors"
                                     >
-                                        {selectedSimProducts.length === (selectedUser?.storeProducts?.length || 0) ? "Deselect All" : "Select All"}
+                                        {selectedSimProducts.length === allStoreProductsFor(selectedUser).length ? "Deselect All" : "Select All"}
                                     </button>
                                 </div>
-                                {(selectedUser?.storeProducts?.length ?? 0) === 0 ? (
+                                {allStoreProductsFor(selectedUser).length === 0 ? (
                                     <p className="text-xs text-zinc-600 py-3 text-center border border-dashed border-white/[0.06] rounded-lg">No products in store yet</p>
                                 ) : (
                                     <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
-                                        {(selectedUser?.storeProducts || []).map((p: any) => (
-                                            <label key={p.id} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.1] cursor-pointer transition-colors">
+                                        {allStoreProductsFor(selectedUser).map((p: any) => (
+                                            <label key={p._selectionId} className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.1] cursor-pointer transition-colors">
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedSimProducts.includes(p.id)}
+                                                    checked={selectedSimProducts.includes(p._selectionId)}
                                                     onChange={e => {
-                                                        if (e.target.checked) setSelectedSimProducts(prev => [...prev, p.id]);
-                                                        else setSelectedSimProducts(prev => prev.filter(id => id !== p.id));
+                                                        if (e.target.checked) setSelectedSimProducts(prev => [...prev, p._selectionId]);
+                                                        else setSelectedSimProducts(prev => prev.filter(id => id !== p._selectionId));
                                                     }}
                                                     className="accent-amber-500 shrink-0"
                                                 />
                                                 {p.image && <img src={p.image} alt="" className="w-8 h-8 rounded-md object-cover shrink-0" />}
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-xs font-medium text-white truncate">{p.name}</p>
-                                                    <p className="text-[10px] text-zinc-500">${(p.resellPrice || p.price || 0).toLocaleString()} sell · ${(p.price || 0).toLocaleString()} cost</p>
+                                                    <p className="text-[10px] text-zinc-500 truncate">{p._storeName} - ${(p.resellPrice || p.price || 0).toLocaleString()} sell - ${(p.price || 0).toLocaleString()} cost</p>
                                                 </div>
                                             </label>
                                         ))}
