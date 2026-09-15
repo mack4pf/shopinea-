@@ -10,6 +10,8 @@ import { db, auth } from "@/lib/firebase/config";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 interface InquiryModalProps {
     isOpen: boolean;
@@ -76,7 +78,7 @@ export default function InquiryModal({ isOpen, onClose, product, storeUser, onPr
                         currentUser = res.user;
                     }
                 } catch (authErr: any) {
-                    console.error(authErr);
+                    toast.error(getAuthErrorMessage(authErr, authMode === "register" ? "register" : "login"));
                     setLoading(false);
                     return;
                 }

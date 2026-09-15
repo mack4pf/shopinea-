@@ -19,6 +19,7 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, validateSafeCardInput } from "@/lib/payments/card";
 import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
 import { getEnabledCryptoOptions } from "@/lib/payments/crypto";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -135,7 +136,9 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                     email: authData.email, role: "buyer", createdAt: serverTimestamp()
                 });
             } else await signInWithEmailAndPassword(auth, authData.email, authData.password);
-        } catch (error: any) { alert(error.message); }
+        } catch (error: any) {
+            toast.error(getAuthErrorMessage(error, authMode === "register" ? "register" : "login"));
+        }
         finally { setLoading(false); }
     };
 

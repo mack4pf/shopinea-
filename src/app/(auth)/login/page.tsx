@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -25,25 +26,6 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-
-    const formatError = (err: any) => {
-        const code = err.code || err.message;
-        console.error("Firebase Login Error:", code);
-        switch (code) {
-            case "auth/user-not-found":
-            case "auth/wrong-password":
-            case "auth/invalid-credential":
-                return "Incorrect email or password. Please try again.";
-            case "auth/too-many-requests":
-                return "Too many failed attempts. Your account is temporarily locked.";
-            case "auth/user-disabled":
-                return "This account has been disabled. Contact support.";
-            case "auth/invalid-email":
-                return "Please enter a valid email address.";
-            default:
-                return "Authentication failed. Please check your credentials.";
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,7 +37,7 @@ export default function LoginPage() {
             toast.success("Signed in successfully!");
             router.push("/dashboard");
         } catch (err: any) {
-            const msg = formatError(err);
+            const msg = getAuthErrorMessage(err, "login");
             setError(msg);
             toast.error(msg);
         } finally {

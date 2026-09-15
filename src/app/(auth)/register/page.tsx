@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 function RegisterPageInner() {
     const [step, setStep] = useState(1);
@@ -54,25 +55,6 @@ function RegisterPageInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const referralRef = searchParams.get("ref");
-
-    const formatError = (err: any) => {
-        const code = err.code || err.message;
-        console.error("Firebase Error:", code);
-        switch (code) {
-            case "auth/email-already-in-use":
-                return "This email address is already registered.";
-            case "auth/invalid-email":
-                return "Please enter a valid email address.";
-            case "auth/weak-password":
-                return "Password is too weak. Please use at least 6 characters.";
-            case "auth/too-many-requests":
-                return "Too many attempts. Please try again later.";
-            case "auth/network-request-failed":
-                return "Network error. Please check your connection.";
-            default:
-                return "An error occurred during registration. Please try again.";
-        }
-    };
 
     const handleInitialSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -169,7 +151,7 @@ function RegisterPageInner() {
             toast.success("Account created successfully!");
             router.push(`/onboarding/${formData.role}`);
         } catch (err: any) {
-            const msg = formatError(err);
+            const msg = getAuthErrorMessage(err, "register");
             toast.error(msg);
             if (err.code === "auth/email-already-in-use") setStep(1);
         } finally {

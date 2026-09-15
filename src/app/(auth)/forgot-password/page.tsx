@@ -16,31 +16,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
     const [error, setError] = useState("");
-
-    const formatError = (err: unknown) => {
-        const code = typeof err === "object" && err !== null && "code" in err
-            ? String((err as { code?: unknown }).code)
-            : err instanceof Error
-                ? err.message
-                : "unknown";
-        console.error("Firebase Password Reset Error:", code);
-        switch (code) {
-            case "auth/invalid-email":
-                return "Please enter a valid email address.";
-            case "auth/too-many-requests":
-                return "Too many reset attempts. Please wait a moment and try again.";
-            case "auth/user-not-found":
-                return "No account was found with that email address.";
-            default:
-                return "We could not send the reset email. Please try again.";
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,7 +35,7 @@ export default function ForgotPasswordPage() {
             setSent(true);
             toast.success("Password reset email sent.");
         } catch (err: unknown) {
-            const msg = formatError(err);
+            const msg = getAuthErrorMessage(err, "reset");
             setError(msg);
             toast.error(msg);
         } finally {
