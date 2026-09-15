@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local databases
 *.db
+
+# local catalog source notes
+/public/Jewelry Catalog/product_details.txt
