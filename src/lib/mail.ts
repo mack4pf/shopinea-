@@ -1,8 +1,8 @@
 import { Resend } from 'resend';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@shoplinea.shop';
-const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'support@shoplinea.shop';
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@shoplinea.pro';
+const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'support@shoplinea.pro';
 const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Shopinea Support';
 const defaultFrom = `${DEFAULT_FROM_NAME} <${DEFAULT_FROM_EMAIL}>`;
 const resend = new Resend(RESEND_API_KEY);
@@ -80,7 +80,7 @@ const baseTemplate = (content: string) => `
         <div class="footer">
             <p><strong>Shoplinea</strong><br/>
             This email was sent automatically by Shopinea Support. Reply to ${SUPPORT_EMAIL}.<br/>
-            &copy; 2026 Shoplinea.shop. All rights reserved.</p>
+            &copy; 2026 Shoplinea.pro. All rights reserved.</p>
         </div>
     </div>
 </body>
@@ -122,7 +122,7 @@ export const getProductAddedEmailHtml = (userName: string, products: any[]) => b
     </div>
     
     <p>Your supplier connections have been updated. When a buyer checks out on your store, fulfillment will be managed automatically.</p>
-    <a href="https://shoplinea.shop/dashboard" style="color: white" class="button">Access Dashboard</a>
+    <a href="https://shoplinea.pro/dashboard" style="color: white" class="button">Access Dashboard</a>
 `);
 
 export const getPurchaseDetailsEmailHtml = (storeName: string, buyerName: string, orderTotal: number, itemNames: string) => baseTemplate(`
@@ -137,14 +137,14 @@ export const getPurchaseDetailsEmailHtml = (storeName: string, buyerName: string
     </div>
     
     <p>The payment has been secured and the fulfillment team has been notified. <strong>Log into your dashboard to manage shipment and collect your profit.</strong></p>
-    <a href="https://shoplinea.shop/dashboard/orders" style="color: white" class="button">View Order</a>
+    <a href="https://shoplinea.pro/dashboard/orders" style="color: white" class="button">View Order</a>
 `);
 
 export const getDepositDetailsEmailHtml = (userName: string, amount: number, method: string) => {
     const addresses = {
         crypto: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F (USDT BEP20/ERC20)",
-        paypal: "payments@shoplinea.shop",
-        card: "payments@shoplinea.shop"
+        paypal: "payments@shoplinea.pro",
+        card: "payments@shoplinea.pro"
     };
     
     return baseTemplate(`

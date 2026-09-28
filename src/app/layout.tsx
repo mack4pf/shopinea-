@@ -2,40 +2,58 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.shoplinea.shop"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Shopinea | Legitimate AI-Powered Dropshipping & Commerce Infrastructure",
-    template: "%s | Shopinea",
+    default: "Shoplinea | AI Commerce, Dropshipping & Reseller Store Platform",
+    template: `%s | ${SITE_NAME}`,
   },
-  description: "Shopinea is a legitimate AI-powered dropshipping, reseller, supplier, storefront, escrow review, and commerce infrastructure platform for launching and scaling online stores with confidence.",
-  keywords: [
-    "Shopinea",
-    "Shoplinea",
-    "legitimate dropshipping platform",
-    "AI ecommerce platform",
-    "reseller marketplace",
-    "supplier marketplace",
-    "escrow order tracking",
-    "custom online store builder",
-    "verified commerce infrastructure",
-  ],
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "Ecommerce",
+  keywords: SEO_KEYWORDS,
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Shopinea | Legitimate AI-Powered Commerce Infrastructure",
-    description: "Launch, manage, and scale online stores with Shopinea's AI-powered reseller, supplier, escrow review, and custom storefront tools.",
-    url: "https://www.shoplinea.shop",
-    siteName: "Shopinea",
+    title: "Shoplinea | AI Commerce Platform for Resellers & Suppliers",
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_NAME,
     type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: "/images/sholinealogo2.png",
+        width: 512,
+        height: 512,
+        alt: `${SITE_NAME} logo`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shoplinea | AI Commerce Platform",
+    description: SITE_DESCRIPTION,
+    images: ["/images/sholinealogo2.png"],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -53,6 +71,24 @@ export default function RootLayout({
       document.documentElement.dataset.theme = theme;
     } catch (_) {}
   `;
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: `${SITE_URL}/images/sholinealogo2.png`,
+    email: SUPPORT_EMAIL,
+    sameAs: [SITE_URL],
+  };
+  const softwareJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: SITE_NAME,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    url: SITE_URL,
+    description: SITE_DESCRIPTION,
+  };
 
   return (
     <html lang="en" translate="no" className="notranslate" suppressHydrationWarning>
@@ -60,6 +96,14 @@ export default function RootLayout({
         <meta name="color-scheme" content="light dark" />
         <meta name="google" content="notranslate" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+        />
       </head>
       <body className={plusJakartaSans.className}>
         <AuthProvider>{children}</AuthProvider>

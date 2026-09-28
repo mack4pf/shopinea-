@@ -1,0 +1,21 @@
+import type { MetadataRoute } from "next";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+
+export default function manifest(): MetadataRoute.Manifest {
+    return {
+        name: `${SITE_NAME} Commerce Platform`,
+        short_name: SITE_NAME,
+        description: SITE_DESCRIPTION,
+        start_url: SITE_URL,
+        display: "standalone",
+        background_color: "#09090b",
+        theme_color: "#2563eb",
+        icons: [
+            {
+                src: "/images/sholinealogo2.png",
+                sizes: "512x512",
+                type: "image/png",
+            },
+        ],
+    };
+}

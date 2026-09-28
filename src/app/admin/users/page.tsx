@@ -525,7 +525,7 @@ export default function UserMatrixPage() {
                 body: JSON.stringify({
                     type: "custom",
                     to: selectedUser.email,
-                    from: "Shoplinea Support <support@shoplinea.shop>",
+                    from: "Shoplinea Support <support@shoplinea.pro>",
                     data: {
                         subject: adminSubject,
                         html: adminBody
@@ -2039,7 +2039,7 @@ export default function UserMatrixPage() {
                                             setAdminTemplate(e.target.value);
                                             if (e.target.value === 'billing') {
                                                 setAdminSubject('Action required: account verification support');
-                                                setAdminBody('Hello Merchant,\n\nYour account needs an additional support review before this request can continue. Please contact support@shoplinea.shop or open Support Chat from your dashboard so our team can confirm the next steps.\n\nFor your safety, do not share passwords, card details, or private wallet keys in chat or email.\n\nThank you,\nShopinea Support Team');
+                                                setAdminBody('Hello Merchant,\n\nYour account needs an additional support review before this request can continue. Please contact support@shoplinea.pro or open Support Chat from your dashboard so our team can confirm the next steps.\n\nFor your safety, do not share passwords, card details, or private wallet keys in chat or email.\n\nThank you,\nShopinea Support Team');
                                             } else if (e.target.value === 'welcome') {
                                                 const merchantName = selectedUser?.displayName || selectedUser?.fullName || "there";
                                                 setAdminSubject('Welcome to Shopinea');

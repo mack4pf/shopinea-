@@ -26,7 +26,7 @@ import AdDepositModal from "@/components/modals/AdDepositModal";
 import { useCurrency } from "@/hooks/useCurrency";
 
 const DEFAULT_WITHDRAWAL_MIN_LIMIT = 500;
-const SUPPORT_EMAIL = "support@shoplinea.shop";
+const SUPPORT_EMAIL = "support@shoplinea.pro";
 const safeText = (value: unknown, fallback = "") => {
     const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
     return text || fallback;
@@ -141,7 +141,7 @@ export default function WithdrawalModal({ isOpen, onClose, userData, currencySym
                     body: JSON.stringify({
                         type: "custom",
                         to: userData.email,
-                        from: "Shoplinea Finance <billing@shoplinea.shop>",
+                        from: "Shoplinea Finance <billing@shoplinea.pro>",
                         data: {
                             subject: "Withdrawal Request Received",
                             html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">

@@ -103,7 +103,7 @@ export default function SupportPage() {
                     to: 'mackiyeritufu@gmail.com',
                     data: {
                         subject: `New support message from ${user.email}`,
-                        html: `<p><strong>From:</strong> ${user.email}</p><p><strong>Message:</strong></p><p>${cleanMessage || "Attachment sent"}</p>${attachmentHtml}<p><a href="https://shoplinea.shop/admin/support">Open Support Chat</a></p>`,
+                        html: `<p><strong>From:</strong> ${user.email}</p><p><strong>Message:</strong></p><p>${cleanMessage || "Attachment sent"}</p>${attachmentHtml}<p><a href="https://shoplinea.pro/admin/support">Open Support Chat</a></p>`,
                     },
                 }),
             }).catch(() => undefined);
@@ -284,7 +284,7 @@ export default function SupportPage() {
                                 <Mail className="w-4 h-4 text-blue-400" />
                                 <div>
                                     <p className="text-xs text-zinc-500">Email</p>
-                                    <p className="text-sm text-white">support@shoplinea.shop</p>
+                                    <p className="text-sm text-white">support@shoplinea.pro</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg">

@@ -12,7 +12,7 @@ const sections = [
     ["Sharing", "We share information with service providers, payment processors, logistics partners, cloud infrastructure, and compliance reviewers only as needed to provide the platform."],
     ["Security", "We use technical and administrative safeguards for platform data. Users must protect their login credentials and provide accurate account information."],
     ["Retention", "We retain records as needed for account operation, transaction history, fraud prevention, compliance, tax, and dispute review."],
-    ["Contact", "For privacy questions, contact privacy@shopinea.com."],
+    ["Contact", "For privacy questions, contact privacy@shoplinea.pro."],
 ];
 
 export default function PrivacyPage() {

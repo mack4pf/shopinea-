@@ -24,7 +24,7 @@ export default function GlobalError({
                         </div>
                         <h1 className="text-2xl font-black tracking-tight">Shoplinea could not load</h1>
                         <p className="mt-2 text-sm leading-6 text-zinc-400">
-                            Please refresh the page. If it continues, contact support@shoplinea.shop.
+                            Please refresh the page. If it continues, contact support@shoplinea.pro.
                         </p>
                         <button
                             type="button"
