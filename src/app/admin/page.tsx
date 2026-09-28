@@ -462,9 +462,23 @@ export default function AdminDashboard() {
     };
 
     if (loading) return (
-        <div className="flex flex-col items-center justify-center h-64 gap-4">
-            <div className="w-10 h-10 border-2 border-white/[0.06] border-t-blue-500 rounded-full animate-spin" />
-            <p className="text-sm text-zinc-500">Loading dashboard…</p>
+        <div className="space-y-5 animate-in fade-in duration-500">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="h-28 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5">
+                        <div className="h-4 w-24 rounded bg-white/[0.06] animate-pulse" />
+                        <div className="mt-6 h-7 w-28 rounded bg-white/[0.08] animate-pulse" />
+                    </div>
+                ))}
+            </div>
+            <div className="h-96 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6">
+                <div className="h-5 w-40 rounded bg-white/[0.08] animate-pulse" />
+                <div className="mt-6 space-y-3">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                        <div key={index} className="h-12 rounded-xl bg-white/[0.04] animate-pulse" />
+                    ))}
+                </div>
+            </div>
         </div>
     );
 

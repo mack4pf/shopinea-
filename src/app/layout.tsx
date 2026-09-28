@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
@@ -113,6 +114,30 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
         />
+        <Script id="formilla-widget" strategy="afterInteractive">
+          {`
+            (function () {
+              var head = document.getElementsByTagName("head").item(0);
+              var script = document.createElement("script");
+              var src = (document.location.protocol == "https:"
+                ? "https://www.formilla.com/scripts/feedback.js"
+                : "http://www.formilla.com/scripts/feedback.js");
+              script.setAttribute("type", "text/javascript");
+              script.setAttribute("src", src);
+              script.setAttribute("async", true);
+              var complete = false;
+              script.onload = script.onreadystatechange = function () {
+                if (!complete && (!this.readyState || this.readyState == "loaded" || this.readyState == "complete")) {
+                  complete = true;
+                  window.Formilla = window.Formilla || {};
+                  window.Formilla.guid = "csda0c16-7789-40a7-a84d-29b15c8b5460";
+                  if (window.Formilla.loadWidgets) window.Formilla.loadWidgets();
+                }
+              };
+              head.appendChild(script);
+            })();
+          `}
+        </Script>
       </head>
       <body className={plusJakartaSans.className}>
         <AuthProvider>{children}</AuthProvider>

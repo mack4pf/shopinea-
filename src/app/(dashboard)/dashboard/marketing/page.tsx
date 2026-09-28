@@ -250,7 +250,7 @@ export default function MarketingPage() {
                                     </div>
                                     <h2 className="text-2xl font-black leading-tight uppercase italic">No Business Account Needed.</h2>
                                     <p className="text-blue-100 text-sm font-medium opacity-80 leading-relaxed">
-                                        Our AI uses our premium high-limit ad accounts to push your products. Just one click and we handle the targeting, scaling, and automation.
+                                        Our AI uses our premium high-limit ad accounts to push your products. Just one click and we handle the targeting, scaling, and optimization.
                                     </p>
                                 </div>
                                 <div className="hidden md:block w-32 h-32 bg-white/10 backdrop-blur-xl rounded-full border border-white/10 flex items-center justify-center">

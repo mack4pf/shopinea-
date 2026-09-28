@@ -249,8 +249,20 @@ export default function StorePage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#09090b]">
-                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+            <div className="min-h-screen flex items-center justify-center bg-[#f4f7fb]">
+                <div className="flex flex-col items-center gap-5">
+                    <div className="relative h-20 w-20">
+                        <div className="absolute inset-0 rounded-3xl bg-blue-500/10 animate-ping" />
+                        <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
+                            <Image src="/images/sholinealogo2.png" alt="Shoplinea" width={48} height={48} className="object-contain" priority />
+                        </div>
+                    </div>
+                    <div className="grid w-72 gap-2">
+                        <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                            <div className="h-full w-1/2 rounded-full bg-blue-500 animate-pulse" />
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }

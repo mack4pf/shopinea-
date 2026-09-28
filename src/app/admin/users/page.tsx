@@ -222,8 +222,13 @@ export default function UserMatrixPage() {
             const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
             const snap = await getDocs(q);
             const usersList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            const ordersSnap = await getDocs(collection(db, "orders"));
-            const campaignsSnap = await getDocs(collection(db, "campaigns"));
+            setUsers(usersList);
+            setLoading(false);
+
+            const [ordersSnap, campaignsSnap] = await Promise.all([
+                getDocs(collection(db, "orders")),
+                getDocs(collection(db, "campaigns")),
+            ]);
             const salesByUser: Record<string, { totalSales: number; totalProfit: number; totalOrders: number }> = {};
             const adsByUser: Record<string, { total: number; active: number; reviewing: number; completed: number }> = {};
 
@@ -258,6 +263,7 @@ export default function UserMatrixPage() {
         } catch (err) {
             console.error(err);
             toast.error("Failed to fetch user database.");
+            setLoading(false);
         } finally {
             setLoading(false);
         }
@@ -1079,8 +1085,26 @@ export default function UserMatrixPage() {
     );
 
     if (loading) return (
-        <div className="h-screen flex items-center justify-center bg-zinc-950">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+        <div className="min-h-screen bg-zinc-950 p-6">
+            <div className="mx-auto max-w-7xl space-y-6">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-3">
+                        <div className="h-7 w-40 rounded-lg bg-white/[0.08] animate-pulse" />
+                        <div className="h-4 w-72 rounded bg-white/[0.04] animate-pulse" />
+                    </div>
+                    <div className="h-10 w-72 rounded-lg bg-white/[0.04] animate-pulse" />
+                </div>
+                <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.03]">
+                    {Array.from({ length: 8 }).map((_, index) => (
+                        <div key={index} className="grid grid-cols-5 gap-4 border-b border-white/[0.04] p-5 last:border-b-0">
+                            <div className="col-span-2 h-4 rounded bg-white/[0.06] animate-pulse" />
+                            <div className="h-4 rounded bg-white/[0.04] animate-pulse" />
+                            <div className="h-4 rounded bg-white/[0.04] animate-pulse" />
+                            <div className="h-4 rounded bg-white/[0.04] animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 
