@@ -18,8 +18,6 @@ import {
     User,
     Phone,
     AlertCircle,
-    ChevronLeft,
-    Globe,
     CreditCard,
     ArrowRight,
     Check,
@@ -32,7 +30,6 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 function RegisterPageInner() {
-    const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -45,9 +42,6 @@ function RegisterPageInner() {
         role: "reseller" as "reseller" | "supplier"
     });
 
-    const [generatedCode, setGeneratedCode] = useState("");
-    const [userInputCode, setUserInputCode] = useState("");
-    const [sendingCode, setSendingCode] = useState(false);
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [termsModal, setTermsModal] = useState<"terms" | "privacy" | null>(null);
@@ -105,12 +99,18 @@ function RegisterPageInner() {
             }).catch(() => undefined);
 
             toast.success("Account created successfully!");
-            router.push(`/onboarding/${formData.role}`);
+            await user.getIdToken(true).catch(() => undefined);
+            const nextPath = `/onboarding/${formData.role}`;
+            router.replace(nextPath);
+            setTimeout(() => {
+                if (typeof window !== "undefined" && window.location.pathname !== nextPath) {
+                    window.location.href = nextPath;
+                }
+            }, 700);
         } catch (err: any) {
             const msg = getAuthErrorMessage(err, "register");
             setAuthMessage(msg);
             toast.error(msg);
-            if (err.code === "auth/email-already-in-use") setStep(1);
         } finally {
             setLoading(false);
         }
@@ -128,46 +128,6 @@ function RegisterPageInner() {
         if (formData.password.length < 6) {
             setAuthMessage("Password must be at least 6 characters.");
             toast.error("Password must be at least 6 characters.");
-            return;
-        }
-
-        setSendingCode(true);
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        setGeneratedCode(code);
-
-        try {
-            const response = await fetch('/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'verification',
-                    to: formData.email,
-                    data: { code }
-                })
-            });
-
-            if (response.ok) {
-                toast.success("Verification code sent to your email.");
-                setStep(2);
-            } else {
-                setAuthMessage("Email verification is delayed. Creating your account now...");
-                toast.warning("Email verification is delayed. Creating your account now.");
-                await createAccount();
-            }
-        } catch (err: any) {
-            setAuthMessage("Email verification is delayed. Creating your account now...");
-            toast.warning("Email verification is delayed. Creating your account now.");
-            await createAccount();
-        } finally {
-            setSendingCode(false);
-        }
-    };
-
-    const handleVerifyAndRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (userInputCode !== generatedCode) {
-            setAuthMessage("Invalid verification code. Please check the code and try again.");
-            toast.error("Invalid verification code.");
             return;
         }
 
@@ -220,7 +180,6 @@ function RegisterPageInner() {
                 </div>
 
                 <div className="w-full max-w-[440px]">
-                    {step === 1 ? (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
                             <div>
                                 <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Create your account</h1>
@@ -348,10 +307,10 @@ function RegisterPageInner() {
 
                                 <Button
                                     type="submit"
-                                    disabled={sendingCode || loading}
+                                    disabled={loading}
                                     className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.99] gap-2 mt-1"
                                 >
-                                    {sendingCode || loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
                                 </Button>
                             </form>
 
@@ -360,55 +319,6 @@ function RegisterPageInner() {
                                 <Link href="/login" className="text-slate-950 dark:text-white hover:text-sky-600 dark:hover:text-blue-400 transition-colors font-medium">Sign in</Link>
                             </p>
                         </div>
-                    ) : (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-400">
-                            <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-zinc-500 hover:text-slate-950 dark:hover:text-white transition-colors group">
-                                <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" /> Back to details
-                            </button>
-
-                            <div className="text-center space-y-4">
-                                <div className="w-16 h-16 bg-sky-500/10 rounded-2xl flex items-center justify-center mx-auto border border-sky-500/20">
-                                    <Mail className="w-7 h-7 text-sky-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-950 dark:text-white">Check your email</h2>
-                                    <p className="text-sm text-slate-500 dark:text-zinc-500 mt-1.5 max-w-[280px] mx-auto">
-                                        We sent a 6-digit code to <span className="text-slate-950 dark:text-white font-medium">{formData.email}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <form onSubmit={handleVerifyAndRegister} className="space-y-5">
-                                {authMessage && (
-                                    <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-medium leading-relaxed text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-                                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                                        <span>{authMessage}</span>
-                                    </div>
-                                )}
-                                <Input
-                                    autoFocus
-                                    value={userInputCode}
-                                    onChange={e => setUserInputCode(e.target.value)}
-                                    placeholder="000000"
-                                    className="h-14 text-center text-3xl font-bold tracking-[0.25em] rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.08] text-slate-950 dark:text-white placeholder:text-slate-300 dark:placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-0 transition-all"
-                                    maxLength={6}
-                                />
-                                <p className="text-center text-xs text-slate-400 dark:text-zinc-600">
-                                    Didn&apos;t receive it?{" "}
-                                    <button type="button" onClick={handleInitialSubmit} disabled={sendingCode} className="text-sky-600 dark:text-blue-400 hover:underline font-medium">
-                                        {sendingCode ? "Resending…" : "Resend code"}
-                                    </button>
-                                </p>
-                                <Button
-                                    type="submit"
-                                    disabled={loading || userInputCode.length < 6}
-                                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.99]"
-                                >
-                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Create Account"}
-                                </Button>
-                            </form>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
