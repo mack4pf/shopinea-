@@ -35,7 +35,8 @@ import {
     KeyRound,
     Bot,
     Globe,
-    Target
+    Target,
+    Activity
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button, cn } from "@/components/ui/button";
@@ -195,6 +196,20 @@ export default function UserMatrixPage() {
     const [storeBoostVisits, setStoreBoostVisits] = useState("1500");
     const [boostTargetStoreId, setBoostTargetStoreId] = useState("all");
     const [boostingStore, setBoostingStore] = useState(false);
+    const [growthSaving, setGrowthSaving] = useState(false);
+    const [growthRunning, setGrowthRunning] = useState(false);
+    const [growthAutomation, setGrowthAutomation] = useState({
+        enabled: false,
+        frequency: "hourly",
+        targetStoreId: "all",
+        viewsMin: "200",
+        viewsMax: "500",
+        visitsMin: "38",
+        visitsMax: "50",
+        salesMin: "2",
+        salesMax: "5",
+        country: "United States",
+    });
 
     // Email Module
     const [adminTemplate, setAdminTemplate] = useState("custom");
@@ -257,6 +272,18 @@ export default function UserMatrixPage() {
         // Pre-select all store products for the simulator
         setSalesTargetStoreId("all");
         setBoostTargetStoreId("all");
+        setGrowthAutomation({
+            enabled: !!user.growthAutomation?.enabled,
+            frequency: user.growthAutomation?.frequency || "hourly",
+            targetStoreId: user.growthAutomation?.targetStoreId || "all",
+            viewsMin: String(user.growthAutomation?.viewsMin ?? 200),
+            viewsMax: String(user.growthAutomation?.viewsMax ?? 500),
+            visitsMin: String(user.growthAutomation?.visitsMin ?? 38),
+            visitsMax: String(user.growthAutomation?.visitsMax ?? 50),
+            salesMin: String(user.growthAutomation?.salesMin ?? 2),
+            salesMax: String(user.growthAutomation?.salesMax ?? 5),
+            country: user.growthAutomation?.country || "United States",
+        });
         setSelectedSimProducts(allStoreProductsFor(user).map((p: any) => p._selectionId));
         setSimLocations([{ country: "United States", count: "10" }]);
         setSimOrderDate("today");
@@ -524,6 +551,61 @@ export default function UserMatrixPage() {
             toast.error("Store boost failed.");
         } finally {
             setBoostingStore(false);
+        }
+    };
+
+    const saveGrowthAutomation = async () => {
+        if (!selectedUser) return;
+        setGrowthSaving(true);
+        try {
+            const payload = {
+                enabled: !!growthAutomation.enabled,
+                frequency: growthAutomation.frequency,
+                targetStoreId: growthAutomation.targetStoreId,
+                viewsMin: Math.max(0, Number(growthAutomation.viewsMin) || 0),
+                viewsMax: Math.max(0, Number(growthAutomation.viewsMax) || 0),
+                visitsMin: Math.max(0, Number(growthAutomation.visitsMin) || 0),
+                visitsMax: Math.max(0, Number(growthAutomation.visitsMax) || 0),
+                salesMin: Math.max(0, Number(growthAutomation.salesMin) || 0),
+                salesMax: Math.max(0, Number(growthAutomation.salesMax) || 0),
+                country: growthAutomation.country.trim() || "United States",
+                updatedAt: new Date().toISOString(),
+            };
+            await updateDoc(doc(db, "users", selectedUser.id), {
+                growthAutomation: payload,
+                updatedAt: new Date().toISOString(),
+            });
+            const nextUser = { ...selectedUser, growthAutomation: payload };
+            setSelectedUser(nextUser);
+            setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, growthAutomation: payload } : user));
+            toast.success("Growth automation settings saved.");
+        } catch (error) {
+            console.error(error);
+            toast.error("Could not save growth automation.");
+        } finally {
+            setGrowthSaving(false);
+        }
+    };
+
+    const runGrowthAutomationStep = async () => {
+        if (!selectedUser) return;
+        setGrowthRunning(true);
+        try {
+            await saveGrowthAutomation();
+            const response = await fetch("/api/admin/growth-automation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: selectedUser.id, force: true }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data?.error || "Automation run failed.");
+            await fetchUserDetails(selectedUser);
+            toast.success(`Growth automation ran for ${data.processed || 0} user(s).`);
+        } catch (error) {
+            console.error(error);
+            toast.error(error instanceof Error ? error.message : "Automation run failed.");
+        } finally {
+            setGrowthRunning(false);
         }
     };
 
@@ -2070,6 +2152,98 @@ export default function UserMatrixPage() {
                                 {boostingStore ? <Loader2 className="w-4 h-4 animate-spin" /> : <TrendingUp className="w-4 h-4" />}
                                 {boostingStore ? "Boosting..." : "Inject Analytics"}
                             </button>
+                        </div>
+
+                        <div className="bg-emerald-500/[0.04] border border-emerald-500/15 p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-emerald-300" />
+                                <h3 className="text-sm font-semibold text-white">Growth Automation</h3>
+                                <span className="ml-auto rounded-md bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-200">
+                                    {growthAutomation.enabled ? "ACTIVE" : "PAUSED"}
+                                </span>
+                            </div>
+                            <p className="text-xs text-zinc-500 -mt-1">
+                                Runs step by step from ad activity ranges. Use Vercel Cron to call <span className="font-mono text-zinc-300">/api/admin/growth-automation</span> hourly.
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <label className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 text-xs font-bold text-zinc-300">
+                                    <input
+                                        type="checkbox"
+                                        checked={growthAutomation.enabled}
+                                        onChange={(event) => setGrowthAutomation(prev => ({ ...prev, enabled: event.target.checked }))}
+                                    />
+                                    Enable automation
+                                </label>
+                                <select
+                                    value={growthAutomation.frequency}
+                                    onChange={(event) => setGrowthAutomation(prev => ({ ...prev, frequency: event.target.value }))}
+                                    className="h-10 rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-sm text-white outline-none"
+                                >
+                                    <option value="hourly">Every hour</option>
+                                    <option value="daily">Daily</option>
+                                </select>
+                                <select
+                                    value={growthAutomation.targetStoreId}
+                                    onChange={(event) => setGrowthAutomation(prev => ({ ...prev, targetStoreId: event.target.value }))}
+                                    className="h-10 rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-sm text-white outline-none"
+                                >
+                                    <option value="all">All stores</option>
+                                    {selectedUserStores.map((store: any) => (
+                                        <option key={store.id} value={store.id}>{store.storeName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+                                {[
+                                    ["viewsMin", "Views min"],
+                                    ["viewsMax", "Views max"],
+                                    ["visitsMin", "Visits min"],
+                                    ["visitsMax", "Visits max"],
+                                    ["salesMin", "Sales min"],
+                                    ["salesMax", "Sales max"],
+                                ].map(([field, label]) => (
+                                    <div key={field} className="space-y-1">
+                                        <Label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{label}</Label>
+                                        <Input
+                                            type="number"
+                                            value={(growthAutomation as any)[field]}
+                                            onChange={(event) => setGrowthAutomation(prev => ({ ...prev, [field]: event.target.value }))}
+                                            className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3">
+                                <Input
+                                    value={growthAutomation.country}
+                                    onChange={(event) => setGrowthAutomation(prev => ({ ...prev, country: event.target.value }))}
+                                    placeholder="Buyer country"
+                                    className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={saveGrowthAutomation}
+                                    disabled={growthSaving}
+                                    className="h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-bold flex items-center justify-center gap-2"
+                                >
+                                    {growthSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                    Save
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={runGrowthAutomationStep}
+                                    disabled={growthRunning}
+                                    className="h-10 px-4 rounded-lg bg-white text-slate-950 hover:bg-zinc-200 disabled:opacity-60 text-xs font-black flex items-center justify-center gap-2"
+                                >
+                                    {growthRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                                    Run Step
+                                </button>
+                            </div>
+                            {selectedUser.growthAutomation?.lastRunAt && (
+                                <p className="text-[10px] text-zinc-500">
+                                    Last run: {new Date(selectedUser.growthAutomation.lastRunAt).toLocaleString()} - next: {selectedUser.growthAutomation.nextRunAt ? new Date(selectedUser.growthAutomation.nextRunAt).toLocaleString() : "not scheduled"}
+                                </p>
+                            )}
                         </div>
 
                         {/* Send Email */}

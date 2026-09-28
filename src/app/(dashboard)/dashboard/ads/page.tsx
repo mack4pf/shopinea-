@@ -27,6 +27,7 @@ import {
 } from "chart.js";
 import { Line, Doughnut, Bar } from "react-chartjs-2";
 import { useCurrency } from "@/hooks/useCurrency";
+import { getStoreSubdomainUrl } from "@/lib/site";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -71,9 +72,18 @@ export default function AdsPage() {
     const [startTime, setStartTime] = useState("09:00");
     const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now');
     const [paymentMode, setPaymentMode] = useState<'now' | 'later'>('now');
+    const [storeUrlMode, setStoreUrlMode] = useState<"store" | "custom">("store");
+    const [campaignStoreUrl, setCampaignStoreUrl] = useState("");
+    const [adContent, setAdContent] = useState({ headline: "", primaryText: "", callToAction: "Shop Now" });
 
     const todayStr = new Date().toISOString().split('T')[0];
     const currency = useCurrency(userData);
+
+    useEffect(() => {
+        if (!userData) return;
+        const url = getStoreSubdomainUrl(userData.storeSlug);
+        setCampaignStoreUrl((current) => current || url);
+    }, [userData]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -150,6 +160,18 @@ export default function AdsPage() {
 
     const toggleProduct = (name: string) => {
         setSelectedProducts(p => p.includes(name) ? p.filter(i => i !== name) : [...p, name]);
+    };
+
+    const generateAdContent = () => {
+        const platformLabel = selectedPlatform === "meta" ? "Facebook and Instagram" : selectedPlatform === "google" ? "Google" : selectedPlatform === "youtube" ? "YouTube" : "TikTok";
+        const storeName = userData?.storeName || "Shoplinea Store";
+        const productLabel = targetType === "products" && selectedProducts.length > 0 ? selectedProducts.slice(0, 2).join(", ") : storeName;
+        const headline = selectedPlatform === "google"
+            ? `${productLabel} | Shoplinea Verified Store`
+            : `${productLabel} buyers are discovering now`;
+        const primaryText = `Shoplinea AI prepared this ${platformLabel} ad for ${productLabel}. Buyers from your ads can visit ${campaignStoreUrl || getStoreSubdomainUrl(userData?.storeSlug)}, browse verified products, checkout securely, and track delivery from their order page.`;
+        setAdContent({ headline, primaryText, callToAction: selectedPlatform === "youtube" ? "Watch & Shop" : "Shop Now" });
+        toast.success("Shoplinea AI ad content generated.");
     };
 
     const generateCampaignName = (platform: string, target: string, products: string[]): string => {
@@ -244,6 +266,11 @@ export default function AdsPage() {
                 startDate, endDate,
                 startTime: scheduleMode === 'later' ? startTime : new Date().toTimeString().slice(0, 5),
                 scheduleMode, status: "reviewing", impressions: 0, clicks: 0, spend: 0,
+                destinationUrl: campaignStoreUrl || getStoreSubdomainUrl(userData?.storeSlug),
+                adContent,
+                aiPrepared: true,
+                publishingMode: "shoplinea_ai_queue",
+                publishingPlatforms: selectedPlatform === "meta" ? ["facebook", "instagram"] : [selectedPlatform],
                 storeDistribution: targetType === "store" ? "all_stores" : "selected_products",
                 isPostpaid: paymentMode === 'later', countryReach: [], createdAt: serverTimestamp()
             });
@@ -890,6 +917,77 @@ export default function AdsPage() {
                                         {label}
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 rounded-xl border border-blue-500/15 bg-blue-500/[0.05] p-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <Label className="text-xs font-medium text-blue-200">Destination URL</Label>
+                                    <p className="mt-1 text-[11px] text-zinc-500">Buyers from your ads will land on this store URL.</p>
+                                </div>
+                                <div className="flex rounded-lg border border-white/[0.08] bg-zinc-950 p-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStoreUrlMode("store");
+                                            setCampaignStoreUrl(getStoreSubdomainUrl(userData?.storeSlug));
+                                        }}
+                                        className={cn("h-8 rounded-md px-3 text-[11px] font-bold", storeUrlMode === "store" ? "bg-blue-600 text-white" : "text-zinc-500")}
+                                    >
+                                        Use my store
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStoreUrlMode("custom")}
+                                        className={cn("h-8 rounded-md px-3 text-[11px] font-bold", storeUrlMode === "custom" ? "bg-blue-600 text-white" : "text-zinc-500")}
+                                    >
+                                        Paste URL
+                                    </button>
+                                </div>
+                            </div>
+                            <Input
+                                value={campaignStoreUrl}
+                                onChange={(event) => setCampaignStoreUrl(event.target.value)}
+                                readOnly={storeUrlMode === "store"}
+                                placeholder="https://yourstore.shoplinea.pro"
+                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white"
+                            />
+                        </div>
+
+                        <div className="space-y-3 rounded-xl border border-violet-500/15 bg-violet-500/[0.05] p-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <Label className="text-xs font-medium text-violet-200">Shoplinea AI Ad Content</Label>
+                                    <p className="mt-1 text-[11px] text-zinc-500">Create platform-ready copy for Facebook, Instagram, TikTok, Google, and YouTube queues.</p>
+                                </div>
+                                <Button type="button" onClick={generateAdContent} className="h-9 rounded-lg bg-violet-600 text-xs font-bold text-white hover:bg-violet-700">
+                                    <Sparkles className="mr-2 h-3.5 w-3.5" />
+                                    Generate
+                                </Button>
+                            </div>
+                            <Input
+                                value={adContent.headline}
+                                onChange={(event) => setAdContent(prev => ({ ...prev, headline: event.target.value }))}
+                                placeholder="Ad headline"
+                                className="h-10 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white"
+                            />
+                            <textarea
+                                value={adContent.primaryText}
+                                onChange={(event) => setAdContent(prev => ({ ...prev, primaryText: event.target.value }))}
+                                placeholder="Primary ad text"
+                                className="min-h-24 w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-violet-500/40"
+                            />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <Input
+                                    value={adContent.callToAction}
+                                    onChange={(event) => setAdContent(prev => ({ ...prev, callToAction: event.target.value }))}
+                                    placeholder="Call to action"
+                                    className="h-10 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white"
+                                />
+                                <div className="flex items-center rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-[11px] font-semibold text-zinc-400">
+                                    Prepared for Shoplinea AI publishing queue
+                                </div>
                             </div>
                         </div>
 
