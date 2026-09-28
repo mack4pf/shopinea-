@@ -51,71 +51,27 @@ function RegisterPageInner() {
     const [loading, setLoading] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [termsModal, setTermsModal] = useState<"terms" | "privacy" | null>(null);
+    const [authMessage, setAuthMessage] = useState("");
 
     const router = useRouter();
     const searchParams = useSearchParams();
     const referralRef = searchParams.get("ref");
 
-    const handleInitialSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!agreedToTerms) {
-            toast.error("Please agree to the terms of service.");
-            return;
-        }
-
-        if (formData.password.length < 6) {
-            toast.error("Password must be at least 6 characters.");
-            return;
-        }
-
-        setSendingCode(true);
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        setGeneratedCode(code);
-
-        try {
-            const response = await fetch('/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'verification',
-                    to: formData.email,
-                    data: { code }
-                })
-            });
-
-            if (response.ok) {
-                toast.success("Verification code sent to your email.");
-                setStep(2);
-            } else {
-                toast.error("Failed to send code. Please check your email.");
-            }
-        } catch (err: any) {
-            toast.error("Network error. Could not send code.");
-        } finally {
-            setSendingCode(false);
-        }
-    };
-
-    const handleVerifyAndRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (userInputCode !== generatedCode) {
-            toast.error("Invalid verification code.");
-            return;
-        }
-
+    const createAccount = async () => {
         setLoading(true);
+        setAuthMessage("");
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+            const userCredential = await createUserWithEmailAndPassword(auth, formData.email.trim(), formData.password);
             const user = userCredential.user;
 
-            await updateProfile(user, { displayName: formData.name });
+            await updateProfile(user, { displayName: formData.name.trim() });
 
             const newReferralCode = (formData.name.split(' ')[0] || 'user').toLowerCase() + Math.random().toString(36).substring(2, 6);
 
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
-                displayName: formData.name,
-                email: formData.email,
+                displayName: formData.name.trim(),
+                email: formData.email.trim(),
                 phoneNumber: formData.phone,
                 country: formData.country,
                 countryCode: formData.countryCode,
@@ -152,11 +108,70 @@ function RegisterPageInner() {
             router.push(`/onboarding/${formData.role}`);
         } catch (err: any) {
             const msg = getAuthErrorMessage(err, "register");
+            setAuthMessage(msg);
             toast.error(msg);
             if (err.code === "auth/email-already-in-use") setStep(1);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleInitialSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAuthMessage("");
+        if (!agreedToTerms) {
+            setAuthMessage("Please agree to the terms of service before creating your account.");
+            toast.error("Please agree to the terms of service.");
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setAuthMessage("Password must be at least 6 characters.");
+            toast.error("Password must be at least 6 characters.");
+            return;
+        }
+
+        setSendingCode(true);
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        setGeneratedCode(code);
+
+        try {
+            const response = await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'verification',
+                    to: formData.email,
+                    data: { code }
+                })
+            });
+
+            if (response.ok) {
+                toast.success("Verification code sent to your email.");
+                setStep(2);
+            } else {
+                setAuthMessage("Email verification is delayed. Creating your account now...");
+                toast.warning("Email verification is delayed. Creating your account now.");
+                await createAccount();
+            }
+        } catch (err: any) {
+            setAuthMessage("Email verification is delayed. Creating your account now...");
+            toast.warning("Email verification is delayed. Creating your account now.");
+            await createAccount();
+        } finally {
+            setSendingCode(false);
+        }
+    };
+
+    const handleVerifyAndRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (userInputCode !== generatedCode) {
+            setAuthMessage("Invalid verification code. Please check the code and try again.");
+            toast.error("Invalid verification code.");
+            return;
+        }
+
+        await createAccount();
     };
 
     return (
@@ -239,6 +254,12 @@ function RegisterPageInner() {
                             </div>
 
                             <form onSubmit={handleInitialSubmit} className="space-y-3">
+                                {authMessage && (
+                                    <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-medium leading-relaxed text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+                                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                        <span>{authMessage}</span>
+                                    </div>
+                                )}
                                 <div className="relative">
                                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-600" />
                                     <Input
@@ -327,10 +348,10 @@ function RegisterPageInner() {
 
                                 <Button
                                     type="submit"
-                                    disabled={sendingCode || !agreedToTerms}
+                                    disabled={sendingCode || loading}
                                     className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.99] gap-2 mt-1"
                                 >
-                                    {sendingCode ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
+                                    {sendingCode || loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
                                 </Button>
                             </form>
 
@@ -358,6 +379,12 @@ function RegisterPageInner() {
                             </div>
 
                             <form onSubmit={handleVerifyAndRegister} className="space-y-5">
+                                {authMessage && (
+                                    <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-medium leading-relaxed text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+                                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                        <span>{authMessage}</span>
+                                    </div>
+                                )}
                                 <Input
                                     autoFocus
                                     value={userInputCode}

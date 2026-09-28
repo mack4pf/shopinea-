@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
@@ -141,6 +142,7 @@ export default function RootLayout({
       </head>
       <body className={plusJakartaSans.className}>
         <AuthProvider>{children}</AuthProvider>
+        <Toaster richColors position="top-center" closeButton />
       </body>
     </html>
   );
