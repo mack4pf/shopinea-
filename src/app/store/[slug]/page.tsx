@@ -101,6 +101,27 @@ const TEMPLATE_STYLES: Record<string, { page: string; hero: string; card: string
         section: "Explore the Range",
         label: "Next-Gen Store",
     },
+    beauty: {
+        page: "bg-[#fff5f8] text-slate-950",
+        hero: "bg-gradient-to-r from-rose-900 via-pink-900 to-fuchsia-950",
+        card: "rounded-[1.75rem]",
+        section: "Beauty Essentials",
+        label: "Beauty Studio",
+    },
+    jewelry: {
+        page: "bg-[#fbf8f1] text-stone-950",
+        hero: "bg-gradient-to-r from-stone-950 via-amber-950 to-neutral-950",
+        card: "rounded-none",
+        section: "Fine Jewelry Edit",
+        label: "Jewelry House",
+    },
+    wellness: {
+        page: "bg-[#f3faf7] text-slate-950",
+        hero: "bg-gradient-to-r from-emerald-950 via-teal-950 to-cyan-950",
+        card: "rounded-3xl",
+        section: "Wellness Collection",
+        label: "Wellness Market",
+    },
 };
 
 const STORE_PRODUCT_GRID: Record<string, string> = {
@@ -413,10 +434,11 @@ export default function StorePage() {
                     </div>
                 </section>
 
-                <section className="grid gap-3 md:grid-cols-4">
+                <section className="grid gap-3 md:grid-cols-5">
                     {[
                         { label: "Verified merchant", value: "Identity reviewed", icon: CheckCircle2 },
-                        { label: "Payment review", value: "Escrow protected", icon: ShieldCheck },
+                        { label: "Secure checkout", value: "Payment protected", icon: ShieldCheck },
+                        { label: "Buyer protection", value: "Order support", icon: ShieldCheck },
                         { label: "Tracked delivery", value: "Order updates", icon: Truck },
                         { label: "Buyer support", value: "Secure assistance", icon: MessageCircle },
                     ].map((item) => (
@@ -526,9 +548,9 @@ export default function StorePage() {
                 {/* Features Footer */}
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-8 py-20 border-t border-slate-200">
                     {[
-                        { title: "Escrow Protection", desc: "Orders are reviewed through Shopinea payment and status workflows before fulfillment continues.", icon: ShieldCheck },
-                        { title: "Verified Sourcing", desc: "Products are managed through Shopinea storefront tools with stock, pricing, and order history visibility.", icon: ShoppingCart },
-                        { title: "Buyer Assistance", desc: "Track your orders from the buyer page and contact support if payment or delivery needs review.", icon: MessageCircle }
+                        { title: "Secure Checkout", desc: "Every order follows Shoplinea payment review, status updates, and protected checkout handling.", icon: ShieldCheck },
+                        { title: "Verified Seller", desc: "Storefronts show active inventory, seller identity signals, tracked orders, and fulfillment history.", icon: CheckCircle2 },
+                        { title: "Tracked Delivery", desc: "Buyers can follow courier, tracking number, estimated delivery, notes, and support from their order page.", icon: Truck }
                     ].map((f, i) => (
                         <div key={i} className="flex flex-col items-center text-center gap-4 p-8 bg-white rounded-3xl border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">
                             <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-2">
@@ -648,7 +670,9 @@ function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount =
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 leading-none mb-1">Price</p>
                         <p className={cn("font-bold tracking-tight text-slate-900", isCompact ? "text-lg" : "text-2xl")}>{formattedPrice}</p>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Verified</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                        {product.lowStock ? "Low stock" : product.bestMargin ? "Best margin" : product.recommendedForAds ? "Ad ready" : "Verified"}
+                    </span>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2">
                     <Button

@@ -177,3 +177,63 @@ export const getAdminCustomEmailHtml = (customBody: string, subjectTitle: string
         <p style="font-size: 13px; color: #6b7280; margin: 0;">This email was sent by the Shoplinea Support Team.</p>
     </div>
 `);
+
+export const getWelcomeEmailHtml = (userName: string) => baseTemplate(`
+    <span class="badge" style="margin-bottom: 16px;">Welcome</span>
+    <h2>Your Shoplinea account is ready</h2>
+    <p>Hello ${userName || "there"},</p>
+    <p>Your account has been created successfully. You can now build stores, add products, track orders, manage ads, and follow payment updates from your dashboard.</p>
+    <a href="https://shoplinea.pro/dashboard" style="color: white" class="button">Open Dashboard</a>
+`);
+
+export const getOrderPlacedEmailHtml = (buyerName: string, productName: string, orderId: string, total: number) => baseTemplate(`
+    <span class="badge" style="background-color: #dcfce7; color: #166534; margin-bottom: 16px;">Order Placed</span>
+    <h2>We received your order</h2>
+    <p>Hello ${buyerName || "there"},</p>
+    <p>Your order for <strong>${productName || "your item"}</strong> has been created and is now in the order workflow.</p>
+    <div class="box">
+        <p><strong>Order:</strong> #${orderId}</p>
+        <p><strong>Total:</strong> $${Number(total || 0).toLocaleString()}</p>
+    </div>
+    <a href="https://shoplinea.pro/buyer-orders" style="color: white" class="button">Track Order</a>
+`);
+
+export const getPaymentStatusEmailHtml = (buyerName: string, productName: string, status: string, note = "") => baseTemplate(`
+    <span class="badge" style="margin-bottom: 16px;">Payment Update</span>
+    <h2>Payment ${status}</h2>
+    <p>Hello ${buyerName || "there"},</p>
+    <p>Your payment for <strong>${productName || "your order"}</strong> is now marked as <strong>${status}</strong>.</p>
+    ${note ? `<div class="box"><p>${note}</p></div>` : ""}
+    <a href="https://shoplinea.pro/buyer-orders" style="color: white" class="button">View Order</a>
+`);
+
+export const getShipmentUpdateEmailHtml = (buyerName: string, productName: string, courier = "", trackingNumber = "", estimatedDelivery = "") => baseTemplate(`
+    <span class="badge" style="background-color: #dbeafe; color: #1d4ed8; margin-bottom: 16px;">Shipment Update</span>
+    <h2>Your order is moving</h2>
+    <p>Hello ${buyerName || "there"},</p>
+    <p>Your order for <strong>${productName || "your item"}</strong> has a new delivery update.</p>
+    <div class="box">
+        ${courier ? `<p><strong>Courier:</strong> ${courier}</p>` : ""}
+        ${trackingNumber ? `<p><strong>Tracking number:</strong> ${trackingNumber}</p>` : ""}
+        ${estimatedDelivery ? `<p><strong>Estimated delivery:</strong> ${estimatedDelivery}</p>` : ""}
+    </div>
+    <a href="https://shoplinea.pro/buyer-orders" style="color: white" class="button">Track Package</a>
+`);
+
+export const getSupportReplyEmailHtml = (userName: string, replySummary: string) => baseTemplate(`
+    <span class="badge" style="background-color: #fce7f3; color: #9d174d; margin-bottom: 16px;">Support Reply</span>
+    <h2>Support has replied</h2>
+    <p>Hello ${userName || "there"},</p>
+    <div class="box"><p>${replySummary || "A support reply is available in your dashboard."}</p></div>
+    <a href="https://shoplinea.pro/dashboard/support" style="color: white" class="button">Open Support</a>
+`);
+
+export const getWithdrawalCodeEmailHtml = (userName: string, code: string) => baseTemplate(`
+    <span class="badge" style="margin-bottom: 16px;">Withdrawal Verification</span>
+    <h2>Your withdrawal code</h2>
+    <p>Hello ${userName || "there"},</p>
+    <p>Use the code below to continue your withdrawal verification.</p>
+    <div class="box" style="text-align: center; border-color: #059669; background-color: #ecfdf5;">
+        <span style="font-size: 38px; font-weight: 800; letter-spacing: 8px; color: #065f46;">${code}</span>
+    </div>
+`);

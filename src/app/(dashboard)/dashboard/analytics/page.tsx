@@ -192,6 +192,13 @@ export default function AnalyticsPage() {
         totalRevenue: 0, totalOrders: 0, totalImpressions: 0,
         totalVisits: 0, visitsToday: 0, conversionRate: 0, avgOrderValue: 0,
         topProducts: [] as any[],
+        topCountry: "No traffic yet",
+        topTrafficSource: "Direct",
+        estimatedProfit: 0,
+        adSpend: 0,
+        yesterdayRevenue: 0,
+        yesterdayOrders: 0,
+        bestStoreProduct: "No product yet",
         categoryDistribution: {} as Record<string, number>,
         recentOrders: [] as any[]
     });
@@ -225,6 +232,16 @@ export default function AnalyticsPage() {
                     const visitsToday = numeric(uData?.dailyStoreVisits?.[todayAnalyticsKey()]);
                     const convRate = getConversionRate(uData, orders.length, visits, impressions);
                     const avgVal = orders.length > 0 ? totalRev / orders.length : 0;
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayKey = yesterday.toISOString().slice(0, 10);
+                    const yesterdayOrders = orders.filter(order => {
+                        const createdAt = order?.createdAt?.toDate ? order.createdAt.toDate() : new Date(order?.createdAt || 0);
+                        return !Number.isNaN(createdAt.getTime()) && createdAt.toISOString().slice(0, 10) === yesterdayKey;
+                    });
+                    const yesterdayRevenue = yesterdayOrders.reduce((sum, order) => sum + numeric(order.resellPrice), 0);
+                    const estimatedProfit = orders.reduce((sum, order) => sum + numeric(order.resellerProfit || (numeric(order.resellPrice) - numeric(order.initialPrice))), 0);
+                    const adSpend = numeric(uData?.adSpend || uData?.adStats?.spent || uData?.adsSpent || uData?.walletStats?.adSpend);
 
                     const productMap: Record<string, { sales: number, revenue: number }> = {};
                     orders.forEach(order => {
@@ -238,16 +255,26 @@ export default function AnalyticsPage() {
                         .sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
                     const catMap: Record<string, number> = {};
+                    const countryMap: Record<string, number> = {};
+                    const sourceMap: Record<string, number> = {};
                     orders.forEach(order => {
                         const cat = safeText(order.category, "General");
                         catMap[cat] = (catMap[cat] || 0) + 1;
+                        const country = safeText(order.customerCountry || order.country, "Unknown");
+                        countryMap[country] = (countryMap[country] || 0) + 1;
+                        const source = safeText(order.trafficSource || order.source || order.adPlatform || order.platform, order.campaignId ? "Ads" : "Direct");
+                        sourceMap[source] = (sourceMap[source] || 0) + 1;
                     });
+                    const topCountry = Object.entries(countryMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "No traffic yet";
+                    const topTrafficSource = Object.entries(sourceMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "Direct";
+                    const bestStoreProduct = topProds[0]?.name || "No product yet";
 
                     setStats({
                         totalRevenue: totalRev, totalOrders: orders.length,
                         totalImpressions: impressions, totalVisits: visits, visitsToday, conversionRate: convRate,
                         avgOrderValue: avgVal,
                         topProducts: topProds, categoryDistribution: catMap,
+                        topCountry, topTrafficSource, estimatedProfit, adSpend, yesterdayRevenue, yesterdayOrders: yesterdayOrders.length, bestStoreProduct,
                         recentOrders: orders.slice(0, 5)
                     });
                 } catch (e) {
@@ -390,6 +417,24 @@ export default function AnalyticsPage() {
                         </div>
                     ))}
                 </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
+                {[
+                    { label: "Best Product", value: stats.bestStoreProduct, sub: "Top revenue item", icon: Package },
+                    { label: "Ad Spend vs Sales", value: `${currency.money(stats.adSpend)} / ${currency.money(stats.totalRevenue)}`, sub: "Spend compared to revenue", icon: Zap },
+                    { label: "Profit Estimate", value: currency.money(stats.estimatedProfit), sub: "Revenue minus supplier cost", icon: DollarSign },
+                    { label: "Top Country", value: stats.topCountry, sub: "Best converting market", icon: Users },
+                    { label: "Traffic Source", value: stats.topTrafficSource, sub: "Leading source", icon: Target },
+                    { label: "Yesterday", value: `${currency.money(stats.yesterdayRevenue)}`, sub: `${stats.yesterdayOrders} orders`, icon: TrendingUp },
+                ].map((item) => (
+                    <div key={item.label} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                        <item.icon className="h-4 w-4 text-blue-300" />
+                        <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">{item.label}</p>
+                        <p className="mt-1 truncate text-sm font-black text-white">{item.value}</p>
+                        <p className="mt-0.5 text-[10px] text-zinc-600">{item.sub}</p>
+                    </div>
+                ))}
             </div>
 
             {storeBreakdown.length > 1 && (

@@ -110,6 +110,24 @@ const allStoreProductsFor = (user: any) => allStoresFor(user).flatMap((store: an
         _selectionId: `${store?.id || "store"}:${product?.id || product?.name || index}`,
     }));
 });
+const formatTimelineDate = (value: any) => {
+    const date = value?.toDate ? value.toDate() : value ? new Date(value) : null;
+    return date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString() : "Recent";
+};
+const buildActivityTimelineFor = (user: any, orders: any[] = []) => {
+    const stores = allStoresFor(user);
+    const products = allStoreProductsFor(user);
+    const timeline = [
+        { title: "Account created", detail: user?.email || user?.displayName || "User joined Shoplinea", date: formatTimelineDate(user?.createdAt), tone: "blue" },
+        ...(user?.plan || user?.planName ? [{ title: "Plan activated", detail: user?.planName || user?.plan, date: formatTimelineDate(user?.subscriptionActivatedAt || user?.updatedAt), tone: "emerald" }] : []),
+        ...(stores.length > 0 ? [{ title: "Store created", detail: `${stores.length} store(s): ${stores.map((store: any) => store.storeName).join(", ")}`, date: formatTimelineDate(user?.updatedAt), tone: "violet" }] : []),
+        ...(products.length > 0 ? [{ title: "Products added", detail: `${products.length} product(s) across stores`, date: formatTimelineDate(user?.updatedAt), tone: "amber" }] : []),
+        ...(Number(user?.walletBalance || user?.adWalletBalance || 0) > 0 ? [{ title: "Payment submitted", detail: `Wallet activity ${money(Number(user?.walletBalance || user?.adWalletBalance || 0))}`, date: formatTimelineDate(user?.updatedAt), tone: "emerald" }] : []),
+        ...(Array.isArray(user?.supportTickets) && user.supportTickets.length > 0 ? [{ title: "Support message", detail: `${user.supportTickets.length} support conversation(s)`, date: formatTimelineDate(user?.lastSupportAt || user?.updatedAt), tone: "rose" }] : []),
+        ...(orders.length > 0 ? [{ title: "Order received", detail: `${orders.length} order(s), latest #${String(orders[0]?.id || "").slice(0, 8)}`, date: formatTimelineDate(orders[0]?.createdAt), tone: "blue" }] : []),
+    ];
+    return timeline.slice(0, 8);
+};
 
 const cityCache: Record<string, string[]> = {};
 async function fetchCitiesForCountry(country: string): Promise<string[]> {
@@ -1472,6 +1490,36 @@ export default function UserMatrixPage() {
                                 >
                                     Auto
                                 </button>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-5 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-blue-300" />
+                                <h3 className="text-sm font-semibold text-white">Activity Timeline</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {buildActivityTimelineFor(selectedUser, userOrders).map((item, index, timeline) => (
+                                    <div key={`${item.title}-${index}`} className="flex gap-3">
+                                        <div className="flex flex-col items-center">
+                                            <span className={cn(
+                                                "h-2.5 w-2.5 rounded-full",
+                                                item.tone === "emerald" ? "bg-emerald-400" :
+                                                item.tone === "violet" ? "bg-violet-400" :
+                                                item.tone === "amber" ? "bg-amber-400" :
+                                                item.tone === "rose" ? "bg-rose-400" : "bg-blue-400"
+                                            )} />
+                                            {index < timeline.length - 1 && <span className="mt-1 h-10 w-px bg-white/[0.08]" />}
+                                        </div>
+                                        <div className="min-w-0 flex-1 pb-2">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <p className="text-xs font-bold text-white">{item.title}</p>
+                                                <span className="shrink-0 text-[10px] text-zinc-600">{item.date}</span>
+                                            </div>
+                                            <p className="mt-0.5 truncate text-[11px] text-zinc-500">{item.detail}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 

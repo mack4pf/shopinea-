@@ -32,6 +32,10 @@ import {
     Star,
     Trash2,
     X,
+    TrendingUp,
+    AlertTriangle,
+    BadgeDollarSign,
+    Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNumber } from "@/lib/currency";
@@ -47,6 +51,11 @@ interface Product {
     sourceProductId?: string;
     sourceUrl?: string;
     isPromoted?: boolean;
+    isVerified?: boolean;
+    isTrending?: boolean;
+    lowStock?: boolean;
+    bestMargin?: boolean;
+    recommendedForAds?: boolean;
     sortOrder?: number;
 }
 
@@ -71,6 +80,13 @@ const emptyProduct = {
     category: "",
     image: "",
 };
+const REVIEW_FLAGS = [
+    { key: "isVerified", label: "Verified", icon: CheckCircle2 },
+    { key: "isTrending", label: "Trending", icon: TrendingUp },
+    { key: "lowStock", label: "Low stock", icon: AlertTriangle },
+    { key: "bestMargin", label: "Best margin", icon: BadgeDollarSign },
+    { key: "recommendedForAds", label: "Ad ready", icon: Megaphone },
+] as const;
 
 export default function AdminProductsPage() {
     const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -199,6 +215,34 @@ export default function AdminProductsPage() {
         }
     };
 
+    const handleToggleReviewFlag = async (id: string, field: typeof REVIEW_FLAGS[number]["key"], currentStatus?: boolean) => {
+        try {
+            const nextStatus = !currentStatus;
+            await updateDoc(doc(db, "products", id), { [field]: nextStatus, reviewedAt: serverTimestamp() });
+            setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: nextStatus } : p)));
+        } catch (error) {
+            console.error("Error updating product review flag:", error);
+            toast.error("Could not update product review flag.");
+        }
+    };
+
+    const handleGenerateProductCopy = () => {
+        const name = newProduct.name.trim() || "Premium product";
+        const category = newProduct.category.trim() || "General";
+        const price = Number(newProduct.price || 0);
+        const suggestedPrice = price > 0 ? Math.ceil(price * 1.65) : 0;
+        const angle = category.toLowerCase().includes("jewelry")
+            ? "gift-ready shine, elegant styling, and everyday wear appeal"
+            : category.toLowerCase().includes("massage") || category.toLowerCase().includes("wellness")
+                ? "daily recovery, comfort, and stress-relief positioning"
+                : "strong perceived value, clean presentation, and broad buyer demand";
+        setNewProduct((prev) => ({
+            ...prev,
+            description: `${name} is a marketplace-ready ${category} product positioned around ${angle}. It is suitable for resellers who want a clear selling story, practical buyer benefits, and enough room to test ad creatives. Suggested resale price: $${suggestedPrice || "set after cost review"}. Ad angle: emphasize trusted sourcing, useful features, fast order tracking, and buyer protection.`,
+        }));
+        toast.success("Product copy, selling angle, ad idea, and suggested resale price generated.");
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm("Delete this product from the marketplace?")) return;
 
@@ -241,6 +285,9 @@ export default function AdminProductsPage() {
                 image,
                 isPromoted: true,
                 isFeatured: true,
+                isVerified: true,
+                recommendedForAds: true,
+                bestMargin: price > 0,
                 catalogVersion: CATALOG_VERSION,
                 sortOrder: maxOrder + 1,
                 createdAt: serverTimestamp(),
@@ -499,6 +546,17 @@ export default function AdminProductsPage() {
                                     </div>
                                 </div>
                                 <Field label="Description" className="sm:col-span-2">
+                                    <div className="mb-2 flex justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={handleGenerateProductCopy}
+                                            className="h-9 rounded-lg border-violet-500/30 bg-violet-500/10 text-xs font-black text-violet-200 hover:bg-violet-500/20"
+                                        >
+                                            <Sparkles className="mr-2 h-3.5 w-3.5" />
+                                            AI Product Writer
+                                        </Button>
+                                    </div>
                                     <Textarea
                                         required
                                         className="min-h-32 rounded-xl border-zinc-800 bg-zinc-950 font-medium"
@@ -654,6 +712,11 @@ export default function AdminProductsPage() {
                                                 <div className="mt-1 flex flex-wrap items-center gap-2">
                                                     <span className="text-sm font-black text-emerald-400">${Number(product.price || 0).toLocaleString()}</span>
                                                     <span className="rounded-full bg-zinc-900 px-2 py-1 text-[11px] font-bold text-zinc-400">{product.category || "Uncategorized"}</span>
+                                                    {REVIEW_FLAGS.filter(flag => (product as any)[flag.key]).map(flag => (
+                                                        <span key={flag.key} className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-black text-emerald-300">
+                                                            {flag.label}
+                                                        </span>
+                                                    ))}
                                                 </div>
                                             </div>
                                             <div className="flex shrink-0 gap-2">
@@ -683,6 +746,28 @@ export default function AdminProductsPage() {
                                             </div>
                                         </div>
                                         <p className="mt-3 line-clamp-2 text-sm font-medium leading-6 text-zinc-500">{product.description}</p>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {REVIEW_FLAGS.map((flag) => {
+                                                const Icon = flag.icon;
+                                                const active = Boolean((product as any)[flag.key]);
+                                                return (
+                                                    <button
+                                                        key={flag.key}
+                                                        type="button"
+                                                        onClick={() => handleToggleReviewFlag(product.id, flag.key, active)}
+                                                        className={cn(
+                                                            "inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-black transition-colors",
+                                                            active
+                                                                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+                                                                : "border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-200"
+                                                        )}
+                                                    >
+                                                        <Icon className="h-3.5 w-3.5" />
+                                                        {flag.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </article>
                             ))}

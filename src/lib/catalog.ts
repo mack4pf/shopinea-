@@ -8,6 +8,11 @@ export const STORE_TEMPLATES = [
     { id: "minimal", name: "Minimal" },
     { id: "boutique", name: "Boutique" },
     { id: "bold", name: "Bold" },
+    { id: "luxury", name: "Luxury" },
+    { id: "beauty", name: "Beauty" },
+    { id: "jewelry", name: "Jewelry" },
+    { id: "wellness", name: "Wellness" },
+    { id: "tech", name: "Tech" },
 ];
 
 export const STORE_LAYOUTS = [

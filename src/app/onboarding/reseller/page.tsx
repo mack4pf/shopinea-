@@ -38,6 +38,11 @@ interface Product {
     image: string;
     isPromoted?: boolean;
     isFeatured?: boolean;
+    isVerified?: boolean;
+    isTrending?: boolean;
+    lowStock?: boolean;
+    bestMargin?: boolean;
+    recommendedForAds?: boolean;
     sortOrder?: number;
     catalogVersion?: number;
     source?: string;
@@ -163,7 +168,7 @@ export default function ResellerOnboarding() {
     const combinedProducts = useMemo(() => dedupeProducts(products), [products]);
 
     const featuredProducts = useMemo(() => {
-        return combinedProducts.filter(p => p.isPromoted).slice(0, 10);
+        return combinedProducts.filter(p => p.isPromoted || p.isTrending || p.isVerified || p.recommendedForAds).slice(0, 10);
     }, [combinedProducts]);
 
     const filteredProducts = combinedProducts.filter(product => {
@@ -401,7 +406,7 @@ export default function ResellerOnboarding() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-                            <h3 className="text-base sm:text-lg font-bold">Trending Recommendations</h3>
+                            <h3 className="text-base sm:text-lg font-bold">Verified & Trending Recommendations</h3>
                         </div>
                         <div className="flex items-center gap-1 sm:gap-2">
                             <button onClick={() => scrollCarousel('left')} className="p-1.5 sm:p-2 bg-zinc-900 border border-white/[0.06] rounded-full hover:bg-zinc-800 transition-colors">
@@ -768,6 +773,19 @@ function dedupeProducts(products: Product[]) {
                      <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-emerald-600 rounded-md text-[8px] sm:text-[9px] font-bold text-white uppercase tracking-wider shadow-lg">
                          {sourceLabel}
                      </span>
+                 </div>
+                 <div className="absolute left-2 top-2 flex max-w-[70%] flex-wrap gap-1 sm:left-3 sm:top-3">
+                    {[
+                        product.isVerified && "Verified",
+                        product.isTrending && "Trending",
+                        product.bestMargin && "Best margin",
+                        product.recommendedForAds && "Ad ready",
+                        product.lowStock && "Low stock",
+                    ].filter(Boolean).slice(0, 3).map((badge) => (
+                        <span key={String(badge)} className="rounded-md bg-white/90 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-slate-900 shadow">
+                            {badge}
+                        </span>
+                    ))}
                  </div>
              </div>
  

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, orderBy, limit, writeBatch, doc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { Bell, ShoppingCart, ArrowUpRight, ShieldAlert, Zap, Circle, Loader2 } from "lucide-react";
+import { Bell, ShoppingCart, ArrowUpRight, ShieldAlert, Zap, Circle, Loader2, CreditCard, Megaphone, Wallet, MessageCircle, PackageSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const safeText = (value: unknown, fallback = "") => {
@@ -56,7 +56,22 @@ export default function NotificationsPage() {
     const getIcon = (type: string) => {
         switch (type) {
             case 'sale': return <ShoppingCart className="w-4 h-4" />;
+            case 'order_update':
+            case 'order_shipped': return <ShoppingCart className="w-4 h-4" />;
+            case 'payment':
+            case 'card_payment':
+            case 'payment_status': return <CreditCard className="w-4 h-4" />;
+            case 'ad':
+            case 'ad_approval': return <Megaphone className="w-4 h-4" />;
+            case 'wallet':
+            case 'deposit':
             case 'payout': return <ArrowUpRight className="w-4 h-4" />;
+            case 'withdrawal':
+            case 'withdrawal_update': return <Wallet className="w-4 h-4" />;
+            case 'support':
+            case 'support_reply': return <MessageCircle className="w-4 h-4" />;
+            case 'product':
+            case 'product_performance': return <PackageSearch className="w-4 h-4" />;
             case 'security': return <ShieldAlert className="w-4 h-4" />;
             default: return <Zap className="w-4 h-4" />;
         }
@@ -65,7 +80,22 @@ export default function NotificationsPage() {
     const getIconStyle = (type: string) => {
         switch (type) {
             case 'sale': return 'bg-emerald-500/10 text-emerald-500';
+            case 'order_update':
+            case 'order_shipped': return 'bg-emerald-500/10 text-emerald-500';
+            case 'payment':
+            case 'card_payment':
+            case 'payment_status': return 'bg-blue-500/10 text-blue-500';
+            case 'ad':
+            case 'ad_approval': return 'bg-violet-500/10 text-violet-500';
+            case 'wallet':
+            case 'deposit':
             case 'payout': return 'bg-blue-500/10 text-blue-500';
+            case 'withdrawal':
+            case 'withdrawal_update': return 'bg-cyan-500/10 text-cyan-500';
+            case 'support':
+            case 'support_reply': return 'bg-fuchsia-500/10 text-fuchsia-500';
+            case 'product':
+            case 'product_performance': return 'bg-amber-500/10 text-amber-500';
             case 'security': return 'bg-red-500/10 text-red-500';
             default: return 'bg-amber-500/10 text-amber-500';
         }
@@ -89,7 +119,7 @@ export default function NotificationsPage() {
 
             {/* Filters */}
             <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-lg p-1 w-fit">
-                {['all', 'sale', 'payout', 'system'].map(tab => (
+                {['all', 'order_update', 'payment', 'ad', 'wallet', 'withdrawal', 'support', 'product', 'system'].map(tab => (
                     <button key={tab} onClick={() => setFilter(tab)}
                         className={cn("px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors",
                             filter === tab ? "bg-white/[0.1] text-white" : "text-zinc-600 hover:text-zinc-300")}>
