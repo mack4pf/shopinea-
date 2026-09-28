@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -78,7 +76,10 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                     setUser(u);
                     setStep(1);
                     fetchBuyerData(u.uid);
-                } else setStep(0);
+                } else {
+                    setUser(null);
+                    setStep(1);
+                }
             });
             return () => unsub();
         }
@@ -575,62 +576,52 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={step === 0 ? "Sign In" : step === 1 ? "Delivery Details" : step === 2 ? "Select Payment" : "Finalize Order"}
-            description={step === 0 ? "Access your account to continue." : step === 1 ? "Where should we ship your order?" : step === 2 ? "How would you like to pay?" : "Review and confirm your order details."}
+            title={step === 1 ? "Delivery Details" : step === 2 ? "Select Payment" : "Finalize Order"}
+            description={step === 1 ? "Guest checkout. No account needed." : step === 2 ? "How would you like to pay?" : "Review and confirm your order details."}
+            panelClassName="sm:max-w-3xl"
         >
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {step === 0 && (
-                    <form onSubmit={handleAuth} className="space-y-6">
-                        <div className="space-y-3">
-                            <div className="relative">
-                                <Mail className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-                                <Input required type="email" placeholder="Email Address" value={authData.email} onChange={e => setAuthData({ ...authData, email: e.target.value })} className="h-12 pl-12 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" />
-                            </div>
-                            <div className="relative">
-                                <Lock className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" />
-                                <Input required type="password" placeholder="Password" value={authData.password} onChange={e => setAuthData({ ...authData, password: e.target.value })} className="h-12 pl-12 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" />
-                            </div>
-                        </div>
-                        <Button type="submit" disabled={loading} className="w-full h-12 rounded-xl bg-blue-600 font-bold shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all">
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : authMode === "register" ? "Create Account" : "Sign In"}
-                        </Button>
-                        <button type="button" onClick={() => setAuthMode(authMode === "login" ? "register" : "login")} className="w-full text-center text-xs font-bold text-zinc-500 hover:text-blue-500 transition-colors uppercase tracking-widest">
-                            {authMode === "login" ? "Needs an account? Sign Up" : "Have an account? Sign In"}
-                        </button>
-                    </form>
-                )}
-
                 {step === 1 && (
                     <div className="space-y-6">
-                        <div className="space-y-4">
+                        <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3 dark:border-white/[0.06] dark:bg-zinc-950/40">
+                            {[
+                                { label: "Delivery", active: true },
+                                { label: "Payment", active: false },
+                                { label: "Confirmation", active: false },
+                            ].map((item, index) => (
+                                <div key={item.label} className="flex items-center gap-3">
+                                    <span className={cn("flex h-8 w-8 items-center justify-center rounded-full text-xs font-black", index === 0 ? "bg-blue-600 text-white" : "bg-white text-slate-500 dark:bg-zinc-900 dark:text-zinc-500")}>{index + 1}</span>
+                                    <span className={cn("text-xs font-bold uppercase tracking-widest", index === 0 ? "text-slate-900 dark:text-white" : "text-slate-400 dark:text-zinc-600")}>{item.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-1.5"><User className="w-3 h-3"/> Full Name</label>
-                                <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="John Doe" />
+                                <label className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><User className="w-3 h-3"/> Full Name</label>
+                                <Input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="h-11 rounded-xl border-slate-200 bg-white font-medium dark:bg-zinc-950/50 dark:border-white/[0.06]" placeholder="John Doe" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Mail className="w-3 h-3"/> Email</label>
+                                <Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="h-11 rounded-xl border-slate-200 bg-white font-medium dark:bg-zinc-950/50 dark:border-white/[0.06]" placeholder="john@example.com" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Phone className="w-3 h-3"/> Phone</label>
+                                <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="h-11 rounded-xl border-slate-200 bg-white font-medium dark:bg-zinc-950/50 dark:border-white/[0.06]" placeholder="+1..." />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Street Address</label>
+                                <Input value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="h-11 rounded-xl border-slate-200 bg-white font-medium dark:bg-zinc-950/50 dark:border-white/[0.06]" placeholder="123 Home St" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Phone className="w-3 h-3"/> Phone</label>
-                                    <Input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="+1..." />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Mail className="w-3 h-3"/> Email</label>
-                                    <Input value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="john@example.com" />
-                                </div>
+                                <Input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="h-11 rounded-xl border-slate-200 bg-white font-medium dark:bg-zinc-950/50 dark:border-white/[0.06]" placeholder="City" />
+                                <Input value={formData.zip} onChange={e => setFormData({ ...formData, zip: e.target.value })} className="h-11 rounded-xl border-slate-200 bg-white font-medium dark:bg-zinc-950/50 dark:border-white/[0.06]" placeholder="Zip Code" />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-1.5"><MapPin className="w-3 h-3"/> Street Address</label>
-                                <Input value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="123 Home St" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="City" />
-                                <Input value={formData.zip} onChange={e => setFormData({ ...formData, zip: e.target.value })} className="h-11 bg-zinc-950/50 border-white/[0.06] rounded-xl font-medium" placeholder="Zip Code" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Globe className="w-3 h-3"/> Country</label>
+                                <label className="text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1.5"><Globe className="w-3 h-3"/> Country</label>
                                 <select
                                     value={formData.country}
                                     onChange={e => setFormData({ ...formData, country: e.target.value })}
-                                    className="w-full h-11 bg-zinc-950/50 border border-white/[0.06] rounded-xl px-4 text-sm font-medium text-white outline-none focus:border-blue-500/50 appearance-none cursor-pointer"
+                                    className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none focus:border-blue-500/50 appearance-none cursor-pointer dark:bg-zinc-950/50 dark:border-white/[0.06] dark:text-white"
                                 >
                                     {COUNTRY_NAMES.map(c => (
                                         <option key={c} value={c} className="bg-zinc-900">{c}</option>

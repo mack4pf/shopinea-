@@ -6,7 +6,7 @@ import { collection, query, where, orderBy, getDocs, limit, doc, getDoc, updateD
 import { onAuthStateChanged } from "firebase/auth";
 import {
     ShoppingCart, Search, Clock, CheckCircle2, Loader2, User,
-    CreditCard, ShieldCheck, PackageCheck, Truck, Lock, AlertCircle, Save
+    CreditCard, ShieldCheck, PackageCheck, Truck, Lock, AlertCircle
 } from "lucide-react";
 
 const safeText = (value: unknown) => String(value || "");
@@ -14,13 +14,6 @@ const safeAmount = (value: unknown) => {
     const next = Number(value || 0);
     return Number.isFinite(next) ? next : 0;
 };
-const fulfillmentStatuses = [
-    { value: "paid_to_site", label: "Processing" },
-    { value: "shipped", label: "Shipped" },
-    { value: "delivered", label: "Delivered" },
-    { value: "refunded", label: "Refunded" },
-];
-
 export default function OrdersPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
@@ -336,7 +329,6 @@ export default function OrdersPage() {
                                 {filteredOrders.map((order, index) => {
                                     const orderId = (order.id || `order-${index}`).toString();
                                     const status = safeText(order.status || "pending");
-                                    const draft = getFulfillmentDraft(order);
                                     return (
                                     <>
                                     <tr key={orderId} className="hover:bg-white/[0.02] transition-colors">
@@ -380,13 +372,9 @@ export default function OrdersPage() {
                                                 </span>
                                             )}
                                             {order.status === 'paid_to_site' && order.isPod && (
-                                                <button
-                                                    onClick={() => handlePaySupplierForPod(order)}
-                                                    disabled={processingId === order.id}
-                                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
-                                                >
-                                                    {processingId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Ship Order'}
-                                                </button>
+                                                <span className="text-xs text-blue-400 flex items-center justify-end gap-1.5">
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing
+                                                </span>
                                             )}
                                             {order.status === 'shipped' && (
                                                 <span className="text-xs text-blue-400 flex items-center justify-end gap-1.5">
@@ -413,41 +401,27 @@ export default function OrdersPage() {
                                     {!['pending_payment', 'payment_pending', 'awaiting_admin_confirmation', 'payment_failed', 'void_no_payment', 'cancelled'].includes(status) && (
                                         <tr key={`${orderId}-fulfillment`} className="bg-zinc-950/40">
                                             <td colSpan={5} className="px-5 pb-5">
-                                                <div className="grid gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 lg:grid-cols-[160px_1fr_1fr_1fr]">
+                                                <div className="grid gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 lg:grid-cols-4">
                                                     <div>
-                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Fulfillment</label>
-                                                        <select
-                                                            value={draft.status}
-                                                            onChange={(event) => updateFulfillmentDraft(orderId, { status: event.target.value })}
-                                                            className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs font-bold text-white outline-none"
-                                                        >
-                                                            {fulfillmentStatuses.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-                                                        </select>
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Supplier fulfillment</label>
+                                                        <p className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-950/60 px-3 py-2.5 text-xs font-bold text-white">{getStatusLabel(status)}</p>
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Courier</label>
-                                                        <input value={draft.courier} onChange={(event) => updateFulfillmentDraft(orderId, { courier: event.target.value })} placeholder="DHL, UPS, FedEx..." className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Supplier courier</label>
+                                                        <p className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-950/60 px-3 py-2.5 text-xs text-zinc-300">{safeText(order.courier || order.deliveryCourier) || "Awaiting supplier update"}</p>
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tracking number</label>
-                                                        <input value={draft.trackingNumber} onChange={(event) => updateFulfillmentDraft(orderId, { trackingNumber: event.target.value })} placeholder="Tracking ID" className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Supplier tracking</label>
+                                                        <p className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-950/60 px-3 py-2.5 text-xs text-zinc-300">{safeText(order.trackingNumber) || "Awaiting tracking number"}</p>
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Estimated delivery</label>
-                                                        <input value={draft.estimatedDelivery} onChange={(event) => updateFulfillmentDraft(orderId, { estimatedDelivery: event.target.value })} placeholder="Sep 30, 2026" className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                        <p className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-950/60 px-3 py-2.5 text-xs text-zinc-300">{safeText(order.estimatedDelivery) || "Awaiting supplier estimate"}</p>
                                                     </div>
-                                                    <div className="lg:col-span-3">
-                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Delivery notes</label>
-                                                        <input value={draft.deliveryNotes} onChange={(event) => updateFulfillmentDraft(orderId, { deliveryNotes: event.target.value })} placeholder="Package picked up, awaiting carrier scan..." className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                    <div className="lg:col-span-4">
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Supplier delivery notes</label>
+                                                        <p className="mt-2 min-h-10 rounded-lg border border-white/[0.06] bg-zinc-950/60 px-3 py-2.5 text-xs text-zinc-300">{safeText(order.deliveryNotes) || "Supplier shipping updates will appear here when fulfillment progresses."}</p>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleSaveFulfillment(order)}
-                                                        disabled={processingId === orderId}
-                                                        className="mt-5 flex h-10 items-center justify-center gap-2 rounded-lg bg-white text-xs font-black text-zinc-950 hover:bg-zinc-200 disabled:opacity-60"
-                                                    >
-                                                        {processingId === orderId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                                                        Save update
-                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

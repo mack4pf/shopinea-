@@ -18,6 +18,8 @@ import {
     MessageCircle,
     ShoppingCart,
     Flame,
+    BadgePercent,
+    HeartHandshake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InquiryModal from "@/components/modals/InquiryModal";
@@ -138,6 +140,7 @@ export default function StorePage() {
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("All");
     const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
     const [productViewsMap, setProductViewsMap] = useState<Record<string, number>>({});
 
@@ -285,12 +288,36 @@ export default function StorePage() {
     const template = TEMPLATE_STYLES[storeUser.storeTemplate || "classic"] || TEMPLATE_STYLES.classic;
     const storeLayout = storeUser.storeLayout || "grid";
     const tagline = storeUser.storeTagline || "Discover high-quality products from verified global suppliers.";
+    const heroTitle = storeUser.storeHeroTitle || `${storeUser.storeName} brings premium, trusted products to your customers.`;
+    const heroSubtitle = storeUser.storeHeroSubtitle || tagline;
+    const primaryCta = storeUser.storePrimaryCta || "Shop Now";
+    const announcement = storeUser.storeAnnouncement || "";
+    const promoText = storeUser.storePromoText || "";
+    const shippingText = storeUser.storeShippingText || "Priority Express Shipping";
+    const returnText = storeUser.storeReturnText || "Order support";
+    const supportText = storeUser.storeSupportText || "Secure assistance";
+    const deliveryEstimate = storeUser.storeDeliveryEstimate || "3-7 business days";
+    const customHeroImage = storeUser.storeHeroImage || "";
+    const showSearch = storeUser.showSearch !== false;
+    const showTopSellers = storeUser.showTopSellers !== false;
+    const showViews = storeUser.showViews !== false;
+    const showSales = storeUser.showSales !== false;
+    const showStock = storeUser.showStock !== false;
+    const showHeroProducts = storeUser.showHeroProducts !== false;
+    const showTrustBadges = storeUser.showTrustBadges !== false;
+    const showCategoryPills = storeUser.showCategoryPills !== false;
+    const showPoweredBy = storeUser.showPoweredBy !== false;
     // Top products for hero: those with an image, up to 4
     const heroProducts = products.filter((p: any) => p?.image).slice(0, 4);
+    const categoryNames = products
+        .map((p: any) => String(p?.category || "").trim())
+        .filter((category: string) => Boolean(category));
+    const categories: string[] = ["All", ...Array.from(new Set<string>(categoryNames)).slice(0, 12)];
     const filteredProducts = products.filter((p: any) => {
         if (!p) return false;
         const productLabel = (p.name || p.productName || "").toString().toLowerCase();
-        return productLabel.includes(searchQuery.toLowerCase());
+        const productCategory = (p.category || "").toString();
+        return productLabel.includes(searchQuery.toLowerCase()) && (selectedCategory === "All" || productCategory === selectedCategory);
     });
 
     // Top sellers: products with the most orders
@@ -312,6 +339,11 @@ export default function StorePage() {
 
     return (
         <div className={cn("min-h-screen selection:bg-emerald-200/70", template.page)}>
+            {announcement && (
+                <div className="bg-slate-950 px-4 py-2 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-white">
+                    {announcement}
+                </div>
+            )}
             {/* Header */}
             <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 py-3">
                 <div className="container mx-auto px-6 h-16 flex items-center justify-between">
@@ -333,6 +365,7 @@ export default function StorePage() {
                         </div>
                     </div>
 
+                    {showSearch && (
                     <div className="hidden md:flex flex-1 max-w-md mx-12">
                         <div className="relative w-full group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-700 transition-colors" />
@@ -345,58 +378,73 @@ export default function StorePage() {
                             />
                         </div>
                     </div>
+                    )}
 
                     <div className="flex items-center gap-3">
-                        {user ? (
-                            <div className="flex items-center gap-2">
-                                <Link href="/buyer-orders">
-                                    <Button variant="ghost" className="rounded-lg h-10 px-4 gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold uppercase tracking-tight">
-                                        <Package className="w-4 h-4" />
-                                        <span className="hidden sm:inline">My Orders</span>
-                                    </Button>
-                                </Link>
-                                <Button
-                                    onClick={() => signOut(auth)}
-                                    variant="ghost"
-                                    className="rounded-lg h-10 w-10 p-0 flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-100 transition-colors"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <Link href="/">
-                                <Button className="rounded-lg font-bold h-10 px-6 brand-gradient text-white hover:opacity-90 transition-all text-xs">
-                                    Sign In
-                                </Button>
-                            </Link>
+                        <Link href="/buyer-orders">
+                            <Button variant="ghost" className="rounded-lg h-10 px-4 gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold uppercase tracking-tight">
+                                <Package className="w-4 h-4" />
+                                <span className="hidden sm:inline">Track Order</span>
+                            </Button>
+                        </Link>
+                        {user && (
+                            <Button
+                                onClick={() => signOut(auth)}
+                                variant="ghost"
+                                className="rounded-lg h-10 w-10 p-0 flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-100 transition-colors"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </Button>
                         )}
+                        <a href="#collection">
+                            <Button className="rounded-lg font-bold h-10 px-5 text-white hover:opacity-90 transition-all text-xs" style={{ backgroundColor: accentColor }}>
+                                Shop
+                            </Button>
+                        </a>
                     </div>
                 </div>
             </header>
 
-            <main className="container mx-auto px-6 py-12 max-w-7xl space-y-24">
+            <main className="container mx-auto px-6 py-10 max-w-7xl space-y-16">
+                {promoText && (
+                    <section className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950 shadow-sm md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+                                <BadgePercent className="h-5 w-5" />
+                            </div>
+                            <p className="text-sm font-bold">{promoText}</p>
+                        </div>
+                        <a href="#collection" className="text-xs font-black uppercase tracking-widest text-amber-700">View deals</a>
+                    </section>
+                )}
                 {/* Hero Banner */}
-                <section className={cn("relative rounded-[2rem] overflow-hidden border border-slate-700/50 min-h-[420px] flex items-center", template.hero)}>
+                <section className={cn("relative rounded-[2rem] overflow-hidden border border-slate-700/50 min-h-[460px] flex items-center", template.hero)}>
                     {/* Background product image collage */}
-                    {heroProducts.length > 0 && (
-                        <div className="absolute inset-0 flex overflow-hidden opacity-25">
-                            {heroProducts.map((p: any, i: number) => (
-                                <div key={i} className="flex-1 relative min-w-0">
-                                    <Image
-                                        src={p.image}
-                                        alt={p.name || "product"}
-                                        fill
-                                        className="object-cover"
-                                    />
+                    {(customHeroImage || heroProducts.length > 0) && (
+                        <div className="absolute inset-0 overflow-hidden opacity-30">
+                            {customHeroImage ? (
+                                <Image src={customHeroImage} alt={`${storeUser.storeName || "Store"} hero`} fill className="object-cover" priority />
+                            ) : (
+                                <div className="flex h-full w-full">
+                                    {heroProducts.map((p: any, i: number) => (
+                                        <div key={i} className="flex-1 relative min-w-0">
+                                            <Image
+                                                src={p.image}
+                                                alt={p.name || "product"}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            )}
                         </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/70 to-slate-900/40 z-[1]" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/75 to-slate-900/35 z-[1]" />
 
                     <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12 w-full px-8 sm:px-16 py-16">
                         {/* Left: Text */}
-                        <div className="flex-1 space-y-6 max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="flex-1 space-y-6 max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/[0.07] rounded-full border border-white/[0.18] text-[10px] font-bold uppercase tracking-widest text-slate-200">
                                 {storeUser.storeLogo && (
                                     <span className="h-5 w-5 overflow-hidden rounded-md bg-white">
@@ -405,26 +453,30 @@ export default function StorePage() {
                                 )}
                                 {template.label}
                             </div>
-                            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1] text-white">
-                                {storeUser.storeName} brings premium, trusted products to your customers.
+                            <h2 className="text-4xl sm:text-6xl font-bold tracking-tight leading-[1.04] text-white">
+                                {heroTitle}
                             </h2>
-                            <p className="text-slate-200/80 font-medium text-lg leading-relaxed">
-                                {tagline}
+                            <p className="text-slate-200/85 font-medium text-lg leading-relaxed">
+                                {heroSubtitle}
                             </p>
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                                 <a href="#collection" className="inline-flex items-center gap-2 px-6 py-3 text-white font-bold rounded-xl transition-colors text-sm shadow-lg"
                                     style={{ backgroundColor: accentColor }}>
-                                    <ShoppingBag className="w-4 h-4" /> Shop Now
+                                    <ShoppingBag className="w-4 h-4" /> {primaryCta}
                                 </a>
                                 <div className="flex items-center gap-1.5 text-slate-300 text-xs font-bold">
                                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                                    Escrow Protected
+                                    Secure checkout
+                                </div>
+                                <div className="flex items-center gap-1.5 text-slate-300 text-xs font-bold">
+                                    <Truck className="w-4 h-4 text-sky-300" />
+                                    {deliveryEstimate}
                                 </div>
                             </div>
                         </div>
 
                         {/* Right: Product Showcase Grid */}
-                        {heroProducts.length > 0 && (
+                        {showHeroProducts && heroProducts.length > 0 && (
                             <div className={`shrink-0 grid gap-3 ${heroProducts.length >= 4 ? 'grid-cols-2' : 'grid-cols-1'}`} style={{ width: heroProducts.length >= 4 ? 340 : 200 }}>
                                 {heroProducts.slice(0, 4).map((p: any, i: number) => (
                                     <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 shadow-2xl group cursor-pointer" onClick={() => setInquiryProduct(p)}>
@@ -446,13 +498,14 @@ export default function StorePage() {
                     </div>
                 </section>
 
+                {showTrustBadges && (
                 <section className="grid gap-3 md:grid-cols-5">
                     {[
                         { label: "Verified merchant", value: "Identity reviewed", icon: CheckCircle2 },
                         { label: "Secure checkout", value: "Payment protected", icon: ShieldCheck },
-                        { label: "Buyer protection", value: "Order support", icon: ShieldCheck },
-                        { label: "Tracked delivery", value: "Order updates", icon: Truck },
-                        { label: "Buyer support", value: "Secure assistance", icon: MessageCircle },
+                        { label: "Buyer protection", value: returnText, icon: HeartHandshake },
+                        { label: "Tracked delivery", value: shippingText, icon: Truck },
+                        { label: "Buyer support", value: supportText, icon: MessageCircle },
                     ].map((item) => (
                         <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
@@ -460,16 +513,36 @@ export default function StorePage() {
                             </div>
                             <div>
                                 <p className="text-sm font-bold text-slate-900">{item.label}</p>
-                                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{item.value}</p>
+                                <p className="line-clamp-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">{item.value}</p>
                             </div>
                         </div>
                     ))}
                 </section>
+                )}
+
+                {showCategoryPills && categories.length > 1 && (
+                    <section className="flex flex-wrap gap-2">
+                        {categories.map((category) => (
+                            <button
+                                key={category}
+                                type="button"
+                                onClick={() => setSelectedCategory(category)}
+                                className={cn(
+                                    "rounded-full border px-4 py-2 text-xs font-black uppercase tracking-widest transition-all",
+                                    selectedCategory === category ? "text-white shadow-lg" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                                )}
+                                style={selectedCategory === category ? { backgroundColor: accentColor, borderColor: accentColor } : undefined}
+                            >
+                                {category}
+                            </button>
+                        ))}
+                    </section>
+                )}
 
                 {/* Products Section */}
                 <div id="collection" className="space-y-12">
                     {/* Top Sellers strip */}
-                    {topSellers.length > 0 && (
+                    {showTopSellers && topSellers.length > 0 && (
                         <div className="space-y-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-400/20 flex items-center justify-center">
@@ -501,12 +574,14 @@ export default function StorePage() {
                                             <p className="text-xs font-bold text-slate-800 line-clamp-1 mb-1">{product.name}</p>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-bold text-slate-900">{currency.money(product.resellPrice || product.price || 0)}</span>
-                                                <span className="flex items-center gap-1 text-[9px] font-bold bg-white/90 border rounded-full px-2 py-0.5"
-                                                    style={{ color: accentColor, borderColor: accentColor + '33' }}>
-                                                    <ShoppingCart className="w-2.5 h-2.5" /> {(orderCounts[product.id] || 0).toLocaleString()} sold
-                                                </span>
+                                                {showSales && (
+                                                    <span className="flex items-center gap-1 text-[9px] font-bold bg-white/90 border rounded-full px-2 py-0.5"
+                                                        style={{ color: accentColor, borderColor: accentColor + '33' }}>
+                                                        <ShoppingCart className="w-2.5 h-2.5" /> {(orderCounts[product.id] || 0).toLocaleString()} sold
+                                                    </span>
+                                                )}
                                             </div>
-                                            {(productViewsMap[product.id] || 0) > 0 && (
+                                            {showViews && (productViewsMap[product.id] || 0) > 0 && (
                                                 <div className="flex items-center gap-1 mt-1.5 text-[9px] text-zinc-400 font-medium">
                                                     <Eye className="w-2.5 h-2.5" /> {(productViewsMap[product.id] || 0).toLocaleString()} views
                                                 </div>
@@ -525,7 +600,7 @@ export default function StorePage() {
                             </p>
                         </div>
                         <div className="flex items-center gap-2 text-zinc-600 text-[10px] font-bold uppercase tracking-[0.1em]">
-                            <Truck className="w-3 h-3" /> Priority Express Shipping
+                            <Truck className="w-3 h-3" /> {shippingText}
                         </div>
                     </div>
 
@@ -549,6 +624,9 @@ export default function StorePage() {
                                     cardRadius={template.card}
                                     layout={storeLayout}
                                     formattedPrice={currency.money(product.resellPrice ?? product.price ?? 0)}
+                                    showViews={showViews}
+                                    showSales={showSales}
+                                    showStock={showStock}
                                     onInquiry={() => { handleProductView(product); setInquiryProduct(product); }}
                                     onBuyNow={() => { handleProductView(product); setCheckoutProduct(product); }}
                                 />
@@ -597,7 +675,15 @@ export default function StorePage() {
 
             <footer className="border-t border-slate-200 p-12 text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
                 <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
-                    <p>&copy; 2026 {storeUser.storeName}. Powered by Shopinea.</p>
+                    <p>&copy; 2026 {storeUser.storeName}. {showPoweredBy ? "Powered by Shopinea." : storeUser.storeFooterNote || "All rights reserved."}</p>
+                    {storeUser.storeFooterNote && showPoweredBy && <p className="max-w-2xl tracking-[0.12em]">{storeUser.storeFooterNote}</p>}
+                    <div className="flex flex-wrap items-center justify-center gap-4 tracking-[0.2em]">
+                        {storeUser.storeEmail && <a href={`mailto:${storeUser.storeEmail}`} className="hover:text-slate-900 transition-colors">Email</a>}
+                        {storeUser.storePhone && <a href={`tel:${storeUser.storePhone}`} className="hover:text-slate-900 transition-colors">Call</a>}
+                        {storeUser.storeInstagram && <a href={storeUser.storeInstagram} target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors">Instagram</a>}
+                        {storeUser.storeTiktok && <a href={storeUser.storeTiktok} target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors">TikTok</a>}
+                        {storeUser.storeWhatsapp && <a href={storeUser.storeWhatsapp} target="_blank" rel="noreferrer" className="hover:text-slate-900 transition-colors">WhatsApp</a>}
+                    </div>
                     <div className="flex flex-wrap items-center justify-center gap-4 tracking-[0.2em]">
                         <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms</Link>
                         <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy</Link>
@@ -610,7 +696,7 @@ export default function StorePage() {
     );
 }
 
-function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount = 0, cardRadius = "rounded-2xl", layout = "grid", formattedPrice }: { product: any; onInquiry: () => void; onBuyNow: () => void; salesCount?: number; viewCount?: number; cardRadius?: string; layout?: string; formattedPrice: string }) {
+function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount = 0, cardRadius = "rounded-2xl", layout = "grid", formattedPrice, showViews = true, showSales = true, showStock = true }: { product: any; onInquiry: () => void; onBuyNow: () => void; salesCount?: number; viewCount?: number; cardRadius?: string; layout?: string; formattedPrice: string; showViews?: boolean; showSales?: boolean; showStock?: boolean }) {
     const [imageLoaded, setImageLoaded] = useState(false);
     const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
     const inStock = stock > 0;
@@ -639,17 +725,19 @@ function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount =
                 
                 {/* Views + Sales badge */}
                 <div className="absolute top-4 left-4 z-10 flex flex-col gap-1.5">
-                    <div className={`px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full border border-slate-200 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${inStock ? 'text-emerald-700' : 'text-rose-700'}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                        {inStock ? `${stock} in stock` : 'Out of stock'}
-                    </div>
-                    {viewCount > 0 && (
+                    {showStock && (
+                        <div className={`px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full border border-slate-200 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${inStock ? 'text-emerald-700' : 'text-rose-700'}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${inStock ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            {inStock ? `${stock} in stock` : 'Out of stock'}
+                        </div>
+                    )}
+                    {showViews && viewCount > 0 && (
                         <div className="px-2.5 py-1 bg-white/90 backdrop-blur-md rounded-full border border-slate-200 text-[9px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                             <Eye className="w-3 h-3 text-emerald-600" />
                             {viewCount.toLocaleString()} views
                         </div>
                     )}
-                    {salesCount > 0 && (
+                    {showSales && salesCount > 0 && (
                         <div className="px-2.5 py-1 bg-amber-500/90 backdrop-blur-md rounded-full text-[9px] font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
                             <Flame className="w-3 h-3" />
                             {salesCount.toLocaleString()} sold

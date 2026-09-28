@@ -39,7 +39,13 @@ export default function SettingsPage() {
 
     const [formData, setFormData] = useState({
         displayName: "", phone: "", country: "United States", countryCode: "US", currency: "USD", currencySymbol: "$",
-        storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid"
+        storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid",
+        storeLogo: "", storeHeroImage: "", storeHeroTitle: "", storeHeroSubtitle: "", storeAnnouncement: "",
+        storePromoText: "", storePrimaryCta: "Shop Now", storeShippingText: "Priority Express Shipping",
+        storeReturnText: "Easy returns", storeSupportText: "Buyer support available", storeDeliveryEstimate: "3-7 business days",
+        storeFooterNote: "", storeEmail: "", storePhone: "", storeAddress: "", storeInstagram: "", storeTiktok: "",
+        storeWhatsapp: "", showSearch: true, showTopSellers: true, showViews: true, showSales: true,
+        showStock: true, showHeroProducts: true, showTrustBadges: true, showCategoryPills: true, showPoweredBy: true
     });
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -61,7 +67,34 @@ export default function SettingsPage() {
                         storeTagline: data.storeTagline || "",
                         themeColor: data.themeColor || "#10b981",
                         storeTemplate: data.storeTemplate || "classic",
-                        storeLayout: data.storeLayout || "grid"
+                        storeLayout: data.storeLayout || "grid",
+                        storeLogo: data.storeLogo || "",
+                        storeHeroImage: data.storeHeroImage || "",
+                        storeHeroTitle: data.storeHeroTitle || "",
+                        storeHeroSubtitle: data.storeHeroSubtitle || "",
+                        storeAnnouncement: data.storeAnnouncement || "",
+                        storePromoText: data.storePromoText || "",
+                        storePrimaryCta: data.storePrimaryCta || "Shop Now",
+                        storeShippingText: data.storeShippingText || "Priority Express Shipping",
+                        storeReturnText: data.storeReturnText || "Easy returns",
+                        storeSupportText: data.storeSupportText || "Buyer support available",
+                        storeDeliveryEstimate: data.storeDeliveryEstimate || "3-7 business days",
+                        storeFooterNote: data.storeFooterNote || "",
+                        storeEmail: data.storeEmail || "",
+                        storePhone: data.storePhone || "",
+                        storeAddress: data.storeAddress || "",
+                        storeInstagram: data.storeInstagram || "",
+                        storeTiktok: data.storeTiktok || "",
+                        storeWhatsapp: data.storeWhatsapp || "",
+                        showSearch: data.showSearch !== false,
+                        showTopSellers: data.showTopSellers !== false,
+                        showViews: data.showViews !== false,
+                        showSales: data.showSales !== false,
+                        showStock: data.showStock !== false,
+                        showHeroProducts: data.showHeroProducts !== false,
+                        showTrustBadges: data.showTrustBadges !== false,
+                        showCategoryPills: data.showCategoryPills !== false,
+                        showPoweredBy: data.showPoweredBy !== false
                     });
                     setKycData(data.identification || {
                         fullName: "", idType: "Government ID",
@@ -92,6 +125,33 @@ export default function SettingsPage() {
                 themeColor: formData.themeColor,
                 storeTemplate: formData.storeTemplate,
                 storeLayout: formData.storeLayout,
+                storeLogo: formData.storeLogo,
+                storeHeroImage: formData.storeHeroImage,
+                storeHeroTitle: formData.storeHeroTitle,
+                storeHeroSubtitle: formData.storeHeroSubtitle,
+                storeAnnouncement: formData.storeAnnouncement,
+                storePromoText: formData.storePromoText,
+                storePrimaryCta: formData.storePrimaryCta,
+                storeShippingText: formData.storeShippingText,
+                storeReturnText: formData.storeReturnText,
+                storeSupportText: formData.storeSupportText,
+                storeDeliveryEstimate: formData.storeDeliveryEstimate,
+                storeFooterNote: formData.storeFooterNote,
+                storeEmail: formData.storeEmail,
+                storePhone: formData.storePhone,
+                storeAddress: formData.storeAddress,
+                storeInstagram: formData.storeInstagram,
+                storeTiktok: formData.storeTiktok,
+                storeWhatsapp: formData.storeWhatsapp,
+                showSearch: formData.showSearch,
+                showTopSellers: formData.showTopSellers,
+                showViews: formData.showViews,
+                showSales: formData.showSales,
+                showStock: formData.showStock,
+                showHeroProducts: formData.showHeroProducts,
+                showTrustBadges: formData.showTrustBadges,
+                showCategoryPills: formData.showCategoryPills,
+                showPoweredBy: formData.showPoweredBy,
             });
             toast.success("Settings saved successfully.");
         } catch (error) {
@@ -374,6 +434,82 @@ export default function SettingsPage() {
                                             <div className="h-11 px-4 bg-white/[0.04] border border-white/[0.08] rounded-lg flex items-center text-xs text-zinc-500 whitespace-nowrap">
                                                 .{SITE_DOMAIN}
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Store Logo</Label>
+                                            <ImageUpload value={formData.storeLogo} onChange={(url) => setFormData({ ...formData, storeLogo: url })} folder="/shoplinea/stores" compact label="Upload logo" helperText="Shown in the storefront header." />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Hero Image</Label>
+                                            <ImageUpload value={formData.storeHeroImage} onChange={(url) => setFormData({ ...formData, storeHeroImage: url })} folder="/shoplinea/stores" compact label="Upload hero image" helperText="Optional storefront banner image." />
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-white">Storefront Content</h4>
+                                            <p className="text-xs text-zinc-500 mt-1">Control the buyer-facing copy across your store.</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <Input value={formData.storeHeroTitle} onChange={(e) => setFormData({ ...formData, storeHeroTitle: e.target.value })} placeholder="Hero headline" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storePrimaryCta} onChange={(e) => setFormData({ ...formData, storePrimaryCta: e.target.value })} placeholder="Primary button text" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeHeroSubtitle} onChange={(e) => setFormData({ ...formData, storeHeroSubtitle: e.target.value })} placeholder="Hero supporting text" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 md:col-span-2" />
+                                            <Input value={formData.storeAnnouncement} onChange={(e) => setFormData({ ...formData, storeAnnouncement: e.target.value })} placeholder="Top announcement bar" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storePromoText} onChange={(e) => setFormData({ ...formData, storePromoText: e.target.value })} placeholder="Promo banner text" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeShippingText} onChange={(e) => setFormData({ ...formData, storeShippingText: e.target.value })} placeholder="Shipping badge text" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeReturnText} onChange={(e) => setFormData({ ...formData, storeReturnText: e.target.value })} placeholder="Buyer protection / returns text" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeSupportText} onChange={(e) => setFormData({ ...formData, storeSupportText: e.target.value })} placeholder="Support badge text" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeDeliveryEstimate} onChange={(e) => setFormData({ ...formData, storeDeliveryEstimate: e.target.value })} placeholder="Delivery estimate" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeFooterNote} onChange={(e) => setFormData({ ...formData, storeFooterNote: e.target.value })} placeholder="Footer note" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 md:col-span-2" />
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-white">Contact & Social</h4>
+                                            <p className="text-xs text-zinc-500 mt-1">Optional public links shown in the store footer.</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <Input value={formData.storeEmail} onChange={(e) => setFormData({ ...formData, storeEmail: e.target.value })} placeholder="Support email" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storePhone} onChange={(e) => setFormData({ ...formData, storePhone: e.target.value })} placeholder="Support phone" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeAddress} onChange={(e) => setFormData({ ...formData, storeAddress: e.target.value })} placeholder="Business address" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 md:col-span-2" />
+                                            <Input value={formData.storeInstagram} onChange={(e) => setFormData({ ...formData, storeInstagram: e.target.value })} placeholder="Instagram URL" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeTiktok} onChange={(e) => setFormData({ ...formData, storeTiktok: e.target.value })} placeholder="TikTok URL" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700" />
+                                            <Input value={formData.storeWhatsapp} onChange={(e) => setFormData({ ...formData, storeWhatsapp: e.target.value })} placeholder="WhatsApp URL" className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 md:col-span-2" />
+                                        </div>
+                                    </div>
+                                    <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-white">Store Display</h4>
+                                            <p className="text-xs text-zinc-500 mt-1">Choose which ecommerce signals appear publicly.</p>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {[
+                                                ["showSearch", "Search bar"],
+                                                ["showTopSellers", "Top sellers"],
+                                                ["showViews", "Product views"],
+                                                ["showSales", "Sales count"],
+                                                ["showStock", "Stock badge"],
+                                                ["showHeroProducts", "Hero products"],
+                                                ["showTrustBadges", "Trust badges"],
+                                                ["showCategoryPills", "Category pills"],
+                                                ["showPoweredBy", "Powered by text"],
+                                            ].map(([key, label]) => (
+                                                <button
+                                                    key={key}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, [key]: !formData[key as keyof typeof formData] })}
+                                                    className={cn(
+                                                        "flex items-center justify-between rounded-xl border p-3 text-left transition-all",
+                                                        formData[key as keyof typeof formData] ? "border-blue-500/40 bg-blue-500/10" : "border-white/[0.08] bg-white/[0.02]"
+                                                    )}
+                                                >
+                                                    <span className="text-xs font-semibold text-white">{label}</span>
+                                                    <span className={cn("h-5 w-9 rounded-full p-0.5 transition-colors", formData[key as keyof typeof formData] ? "bg-blue-500" : "bg-zinc-700")}>
+                                                        <span className={cn("block h-4 w-4 rounded-full bg-white transition-transform", formData[key as keyof typeof formData] ? "translate-x-4" : "translate-x-0")} />
+                                                    </span>
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
