@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
 import { ExternalLink, Loader2, Megaphone, Package, Palette, Plus, Store } from "lucide-react";
+import { getStoreSubdomainUrl } from "@/lib/site";
 
 export default function StoresPage() {
     const [userData, setUserData] = useState<any>(null);
@@ -84,6 +85,7 @@ export default function StoresPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {stores.map((store: any) => {
                     const productCount = store.storeProducts.length;
+                    const storeUrl = getStoreSubdomainUrl(store.storeSlug);
                     return (
                         <article key={store.id} className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5 space-y-4">
                             <div className="flex items-start justify-between gap-4">
@@ -97,6 +99,7 @@ export default function StoresPage() {
                                             {store.primary && <span className="rounded bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-300">Primary</span>}
                                         </div>
                                         <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-500">{store.storeTagline}</p>
+                                        <p className="mt-2 truncate text-[11px] font-medium text-blue-300">{storeUrl.replace("https://", "")}</p>
                                     </div>
                                 </div>
                             </div>
@@ -123,7 +126,7 @@ export default function StoresPage() {
                                 </Link>
                                 <button
                                     type="button"
-                                    onClick={() => window.open(`/store/${store.storeSlug || ""}`, "_blank")}
+                                    onClick={() => window.open(storeUrl, "_blank")}
                                     className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-xs font-bold text-white hover:bg-blue-700"
                                 >
                                     Preview

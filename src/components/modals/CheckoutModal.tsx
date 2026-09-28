@@ -20,6 +20,7 @@ import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, val
 import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
 import { getEnabledCryptoOptions } from "@/lib/payments/crypto";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { getStoreSubdomainUrl } from "@/lib/site";
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -202,6 +203,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                 return;
             }
 
+            const orderStoreSlug = storeSlug || storeUser.storeSlug || activeAdditionalStore?.storeSlug || "";
             const orderData = {
                 productId: product.id,
                 productName,
@@ -213,10 +215,8 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                 resellerId: storeUser.uid,
                 resellerName: resellerData.displayName || storeUser.displayName || storeUser.storeName || "Merchant",
                 storeName: resellerData.storeName || storeUser.storeName || "Store",
-                storeSlug: storeSlug || storeUser.storeSlug || activeAdditionalStore?.storeSlug || "",
-                storeUrl: storeSlug || storeUser.storeSlug || activeAdditionalStore?.storeSlug
-                    ? `/store/${storeSlug || storeUser.storeSlug || activeAdditionalStore?.storeSlug}`
-                    : "",
+                storeSlug: orderStoreSlug,
+                storeUrl: orderStoreSlug ? getStoreSubdomainUrl(orderStoreSlug) : "",
                 customerId: user?.uid || "guest",
                 customerName: formData.name,
                 customerEmail: formData.email,

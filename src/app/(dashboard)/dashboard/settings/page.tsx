@@ -17,6 +17,7 @@ import { Modal } from "@/components/ui/modal";
 import { CountrySelect } from "@/components/ui/country-select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SITE_DOMAIN } from "@/lib/site";
 
 const safeText = (value: unknown, fallback = "") => {
     const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
@@ -40,10 +41,6 @@ export default function SettingsPage() {
         displayName: "", phone: "", country: "United States", countryCode: "US", currency: "USD", currencySymbol: "$",
         storeName: "", storeSlug: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid"
     });
-    const [host, setHost] = useState("");
-
-    useEffect(() => { setHost(window.location.host); }, []);
-
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
@@ -370,10 +367,13 @@ export default function SettingsPage() {
                                         <Label className="text-xs font-medium text-zinc-400">Store URL</Label>
                                         <div className="flex items-center gap-2">
                                             <div className="h-11 px-4 bg-white/[0.04] border border-white/[0.08] rounded-lg flex items-center text-xs text-zinc-500 whitespace-nowrap">
-                                                {host || '...'}/store/
+                                                https://
                                             </div>
                                             <Input value={formData.storeSlug} onChange={(e) => setFormData({ ...formData, storeSlug: e.target.value })}
                                                 className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 flex-1" placeholder="my-store" />
+                                            <div className="h-11 px-4 bg-white/[0.04] border border-white/[0.08] rounded-lg flex items-center text-xs text-zinc-500 whitespace-nowrap">
+                                                .{SITE_DOMAIN}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

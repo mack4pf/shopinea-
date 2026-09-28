@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatNumber, safeNumber } from "@/lib/currency";
+import { getStoreSubdomainUrl } from "@/lib/site";
 
 const statusMap: Record<string, { label: string; tone: string; step: number; paymentLabel: string }> = {
     pending_payment: { label: "Pending payment", tone: "bg-amber-50 text-amber-700 border-amber-200", step: 1, paymentLabel: "Pending" },
@@ -219,7 +220,7 @@ export default function BuyerOrdersPage() {
                         const sellerStore = sellerStores[order.resellerId] || {};
                         const storeSlug = safeText(order.storeSlug || sellerStore.storeSlug);
                         const storeUrl = safeText(order.storeUrl);
-                        const storeHref = storeUrl || (storeSlug ? `/store/${storeSlug}` : "/marketplace");
+                        const storeHref = storeUrl || (storeSlug ? getStoreSubdomainUrl(storeSlug) : "/marketplace");
                         const storeName = safeText(order.storeName || sellerStore.storeName || "Seller store");
                         const productName = safeText(order.productName || "Product");
 

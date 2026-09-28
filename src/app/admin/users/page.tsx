@@ -48,6 +48,7 @@ import { db, auth } from "@/lib/firebase/config";
 import { useState, useEffect } from "react";
 import { SUBSCRIPTION_PLANS, getPlanExpiryDate, getSubscriptionPlan } from "@/lib/plans";
 import { formatNumber, formatPercent } from "@/lib/currency";
+import { getStoreSubdomainUrl } from "@/lib/site";
 
 const ADMIN_PAYMENT_PLANS = SUBSCRIPTION_PLANS;
 
@@ -1290,7 +1291,7 @@ export default function UserMatrixPage() {
                                     { label: "Currency", value: selectedUser.currency ? `${selectedUser.currencySymbol || ""} ${selectedUser.currency}` : "—" },
                                     { label: "Role", value: selectedUser.role ? selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1) : "—" },
                                     { label: "Store Name", value: selectedUser.storeName || "—" },
-                                    { label: "Store URL", value: selectedUser.storeSlug ? `/store/${selectedUser.storeSlug}` : "—" },
+                                    { label: "Store URL", value: selectedUser.storeSlug ? getStoreSubdomainUrl(selectedUser.storeSlug) : "—" },
                                     { label: "KYC Status", value: selectedUser.kycStatus ? selectedUser.kycStatus.charAt(0).toUpperCase() + selectedUser.kycStatus.slice(1) : "Unverified" },
                                     { label: "Referral Code", value: selectedUser.referralCode || "—" },
                                     { label: "Referred By", value: selectedUser.referredBy || "—" },
@@ -1356,7 +1357,7 @@ export default function UserMatrixPage() {
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-bold text-white truncate">{store.storeName}</p>
-                                                    <p className="text-[10px] text-zinc-500 truncate">{store.storeSlug ? `/store/${store.storeSlug}` : "No store URL"}</p>
+                                                    <p className="text-[10px] text-zinc-500 truncate">{store.storeSlug ? getStoreSubdomainUrl(store.storeSlug) : "No store URL"}</p>
                                                 </div>
                                                 <div className="text-right shrink-0">
                                                     <p className="text-xs font-bold text-emerald-200">{products.length} products</p>

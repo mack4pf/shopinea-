@@ -16,6 +16,7 @@ import { getDefaultStock, STORE_LAYOUTS, STORE_TEMPLATES, STORE_THEME_COLORS } f
 import { Modal } from "@/components/ui/modal";
 import { useCurrency } from "@/hooks/useCurrency";
 import { safeNumber } from "@/lib/currency";
+import { getStoreSubdomainUrl } from "@/lib/site";
 
 const slugify = (value: unknown) => String(value || "store")
     .toLowerCase()
@@ -408,7 +409,7 @@ export default function ProductsPage() {
                         </button>
                     )}
                     <button
-                        onClick={() => window.open(`${window.location.origin}/store/${activeStore?.storeSlug || userData?.storeSlug || ''}`, '_blank')}
+                        onClick={() => window.open(getStoreSubdomainUrl(activeStore?.storeSlug || userData?.storeSlug), '_blank')}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
                     >
                         <ExternalLink className="w-4 h-4" />
@@ -685,7 +686,7 @@ export default function ProductsPage() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => window.open(`/store/${store.storeSlug || ""}`, "_blank")}
+                                            onClick={() => window.open(getStoreSubdomainUrl(store.storeSlug), "_blank")}
                                             className="h-8 w-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-400 hover:text-white flex items-center justify-center"
                                             aria-label={`Open ${store.storeName || "store"}`}
                                         >
@@ -765,7 +766,7 @@ export default function ProductsPage() {
                                     </div>
                                     <div className="absolute top-3 right-3">
                                         <button
-                                            onClick={() => copyToClipboard(`${window.location.origin}/store/${activeStore?.storeSlug || userData?.storeSlug}/product/${productId}`)}
+                                            onClick={() => copyToClipboard(`${getStoreSubdomainUrl(activeStore?.storeSlug || userData?.storeSlug)}/product/${productId}`)}
                                             className="w-8 h-8 bg-black/40 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
                                         >
                                             <Copy className="w-3.5 h-3.5" />
@@ -817,7 +818,7 @@ export default function ProductsPage() {
                                             <Megaphone className="w-3.5 h-3.5" /> Promote
                                         </button>
                                         <button
-                                            onClick={() => window.open(`/store/${activeStore?.storeSlug || userData?.storeSlug}`, '_blank')}
+                                            onClick={() => window.open(getStoreSubdomainUrl(activeStore?.storeSlug || userData?.storeSlug), '_blank')}
                                             className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white/[0.04] text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors"
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Preview

@@ -21,3 +21,8 @@ export const SEO_KEYWORDS = [
     "commerce infrastructure",
     "product sourcing platform",
 ];
+
+export function getStoreSubdomainUrl(storeSlug?: string | null) {
+    const slug = String(storeSlug || "").trim().toLowerCase();
+    return slug ? `https://${slug}.${SITE_DOMAIN}` : SITE_URL;
+}
