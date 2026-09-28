@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
-const VERIFIED_MAIL_DOMAIN = process.env.RESEND_MAIL_DOMAIN || 'shopinea.shop';
+const VERIFIED_MAIL_DOMAIN = process.env.RESEND_MAIL_DOMAIN || 'shoplinea.shop';
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || `support@${VERIFIED_MAIL_DOMAIN}`;
 const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || `support@${VERIFIED_MAIL_DOMAIN}`;
 const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Shopinea Support';
@@ -10,7 +10,10 @@ const resend = new Resend(RESEND_API_KEY);
 
 function normalizeFromAddress(value?: string) {
     const fromValue = value || defaultFrom;
-    return fromValue.replace(/@shoplinea\.pro\b/gi, `@${VERIFIED_MAIL_DOMAIN}`);
+    return fromValue
+        .replace(/@shoplinea\.pro\b/gi, `@${VERIFIED_MAIL_DOMAIN}`)
+        .replace(/@shopinea\.pro\b/gi, `@${VERIFIED_MAIL_DOMAIN}`)
+        .replace(/@shopinea\.shop\b/gi, `@${VERIFIED_MAIL_DOMAIN}`);
 }
 
 export async function sendEmail({

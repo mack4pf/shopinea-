@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createUserWithEmailAndPassword, fetchSignInMethodsForEmail, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -18,7 +18,6 @@ import {
     User,
     Phone,
     AlertCircle,
-    ChevronLeft,
     CreditCard,
     ArrowRight,
     Check,
@@ -31,7 +30,6 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 function RegisterPageInner() {
-    const [step, setStep] = useState<"details" | "verify">("details");
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -45,9 +43,6 @@ function RegisterPageInner() {
     });
 
     const [loading, setLoading] = useState(false);
-    const [sendingCode, setSendingCode] = useState(false);
-    const [userInputCode, setUserInputCode] = useState("");
-    const [verification, setVerification] = useState({ code: "", email: "", expiresAt: 0 });
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [termsModal, setTermsModal] = useState<"terms" | "privacy" | null>(null);
     const [authMessage, setAuthMessage] = useState("");
@@ -82,55 +77,6 @@ function RegisterPageInner() {
             console.error("Admin signup email failed:", error);
         } finally {
             window.clearTimeout(timeout);
-        }
-    };
-
-    const sendVerificationCode = async () => {
-        setSendingCode(true);
-        setAuthMessage("");
-
-        try {
-            const email = formData.email.trim().toLowerCase();
-            const methods = await fetchSignInMethodsForEmail(auth, email);
-
-            if (methods.length > 0) {
-                const msg = "This email is already registered. Please sign in instead, or use a different email.";
-                setAuthMessage(msg);
-                toast.error(msg);
-                return;
-            }
-
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            const response = await fetch('/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'verification',
-                    to: email,
-                    data: { code }
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error("Verification email could not be sent.");
-            }
-
-            setVerification({
-                code,
-                email,
-                expiresAt: Date.now() + 10 * 60 * 1000,
-            });
-            setUserInputCode("");
-            setStep("verify");
-            toast.success("Verification code sent to your email.");
-        } catch (err: any) {
-            const msg = err?.code
-                ? getAuthErrorMessage(err, "register")
-                : "We could not send the verification code. Please check your email address and try again.";
-            setAuthMessage(msg);
-            toast.error(msg);
-        } finally {
-            setSendingCode(false);
         }
     };
 
@@ -203,38 +149,6 @@ function RegisterPageInner() {
             return;
         }
 
-        await sendVerificationCode();
-    };
-
-    const handleVerifyAndRegister = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setAuthMessage("");
-
-        const email = formData.email.trim().toLowerCase();
-        const code = userInputCode.trim();
-
-        if (!verification.code || verification.email !== email) {
-            const msg = "Please request a new verification code for this email address.";
-            setAuthMessage(msg);
-            toast.error(msg);
-            setStep("details");
-            return;
-        }
-
-        if (Date.now() > verification.expiresAt) {
-            const msg = "This verification code has expired. Please request a new code.";
-            setAuthMessage(msg);
-            toast.error(msg);
-            return;
-        }
-
-        if (code.length !== 6 || code !== verification.code) {
-            const msg = "Incorrect verification code. Please check your email and try again.";
-            setAuthMessage(msg);
-            toast.error(msg);
-            return;
-        }
-
         await createAccount();
     };
 
@@ -284,7 +198,6 @@ function RegisterPageInner() {
                 </div>
 
                 <div className="w-full max-w-[440px]">
-                    {step === "details" ? (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-400">
                             <div>
                                 <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Create your account</h1>
@@ -412,10 +325,10 @@ function RegisterPageInner() {
 
                                 <Button
                                     type="submit"
-                                    disabled={sendingCode || loading}
+                                    disabled={loading}
                                     className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.99] gap-2 mt-1"
                                 >
-                                    {sendingCode || loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
                                 </Button>
                             </form>
 
@@ -424,73 +337,6 @@ function RegisterPageInner() {
                                 <Link href="/login" className="text-slate-950 dark:text-white hover:text-sky-600 dark:hover:text-blue-400 transition-colors font-medium">Sign in</Link>
                             </p>
                         </div>
-                    ) : (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-400">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setAuthMessage("");
-                                    setStep("details");
-                                }}
-                                className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-zinc-500 hover:text-slate-950 dark:hover:text-white transition-colors group"
-                            >
-                                <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" /> Back to details
-                            </button>
-
-                            <div className="text-center space-y-4">
-                                <div className="w-16 h-16 bg-sky-500/10 rounded-2xl flex items-center justify-center mx-auto border border-sky-500/20">
-                                    <Mail className="w-7 h-7 text-sky-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-950 dark:text-white">Check your email</h2>
-                                    <p className="text-sm text-slate-500 dark:text-zinc-500 mt-1.5 max-w-[300px] mx-auto">
-                                        Enter the 6-digit code sent to <span className="text-slate-950 dark:text-white font-medium">{verification.email}</span>.
-                                    </p>
-                                    <p className="text-xs text-slate-400 dark:text-zinc-600 mt-2">The code expires after 10 minutes.</p>
-                                </div>
-                            </div>
-
-                            <form onSubmit={handleVerifyAndRegister} className="space-y-5">
-                                {authMessage && (
-                                    <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-medium leading-relaxed text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-                                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                                        <span>{authMessage}</span>
-                                    </div>
-                                )}
-
-                                <Input
-                                    autoFocus
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    value={userInputCode}
-                                    onChange={e => setUserInputCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                                    placeholder="000000"
-                                    className="h-14 text-center text-3xl font-bold tracking-[0.25em] rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.08] text-slate-950 dark:text-white placeholder:text-slate-300 dark:placeholder:text-zinc-800 focus:border-blue-500/50 focus:ring-0 transition-all"
-                                    maxLength={6}
-                                />
-
-                                <p className="text-center text-xs text-slate-400 dark:text-zinc-600">
-                                    Didn't receive it?{" "}
-                                    <button
-                                        type="button"
-                                        onClick={sendVerificationCode}
-                                        disabled={sendingCode || loading}
-                                        className="text-sky-600 dark:text-blue-400 hover:underline font-medium disabled:opacity-50 disabled:no-underline"
-                                    >
-                                        {sendingCode ? "Sending..." : "Send a new code"}
-                                    </button>
-                                </p>
-
-                                <Button
-                                    type="submit"
-                                    disabled={loading || userInputCode.trim().length < 6}
-                                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all active:scale-[0.99]"
-                                >
-                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Create Account"}
-                                </Button>
-                            </form>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
