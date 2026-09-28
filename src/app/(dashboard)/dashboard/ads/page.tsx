@@ -269,7 +269,7 @@ export default function AdsPage() {
                 destinationUrl: campaignStoreUrl || getStoreSubdomainUrl(userData?.storeSlug),
                 adContent,
                 aiPrepared: true,
-                publishingMode: "shoplinea_ai_queue",
+                publishingMode: "shoplinea_ai_launch_workflow",
                 publishingPlatforms: selectedPlatform === "meta" ? ["facebook", "instagram"] : [selectedPlatform],
                 storeDistribution: targetType === "store" ? "all_stores" : "selected_products",
                 isPostpaid: paymentMode === 'later', countryReach: [], createdAt: serverTimestamp()
@@ -986,7 +986,7 @@ export default function AdsPage() {
                                     className="h-10 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white"
                                 />
                                 <div className="flex items-center rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-[11px] font-semibold text-zinc-400">
-                                    Prepared for Shoplinea AI publishing queue
+                                    Prepared for Shoplinea AI launch workflow
                                 </div>
                             </div>
                         </div>

@@ -7,7 +7,7 @@ export const BILLING_EMAIL = `billing@${SITE_DOMAIN}`;
 export const PAYMENTS_EMAIL = `payments@${SITE_DOMAIN}`;
 
 export const SITE_DESCRIPTION =
-    "Shoplinea is an AI-powered commerce platform for resellers, suppliers, storefronts, product sourcing, Shoplinea AI ad creation, buyer traffic from ads, wallet funding, payments, fulfillment tracking, and marketplace growth.";
+    "Shoplinea is an AI-powered commerce platform for resellers, suppliers, storefronts, product sourcing, Shoplinea AI ad creation, buyer traffic from ads, wallet funding, payments, fulfillment tracking, and marketplace growth tools.";
 
 export const SEO_KEYWORDS = [
     "Shoplinea",
@@ -27,7 +27,7 @@ export const SEO_KEYWORDS = [
     "Google shopping ads",
     "YouTube ecommerce ads",
     "buyer traffic from ads",
-    "store growth automation",
+    "store growth tools",
     "order fulfillment center",
 ];
 
