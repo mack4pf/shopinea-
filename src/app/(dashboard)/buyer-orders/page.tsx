@@ -33,9 +33,11 @@ const statusMap: Record<string, { label: string; tone: string; step: number; pay
     payment_failed: { label: "Payment failed", tone: "bg-rose-50 text-rose-700 border-rose-200", step: 1, paymentLabel: "Failed" },
     cancelled: { label: "Cancelled", tone: "bg-rose-50 text-rose-700 border-rose-200", step: 1, paymentLabel: "Cancelled" },
     paid_to_site: { label: "Processing", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 2, paymentLabel: "Paid" },
+    processing: { label: "Processing", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 2, paymentLabel: "Paid" },
     completed: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4, paymentLabel: "Paid" },
     delivered: { label: "Delivered", tone: "bg-emerald-50 text-emerald-700 border-emerald-200", step: 4, paymentLabel: "Paid" },
     shipped: { label: "On the way", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 3, paymentLabel: "Paid" },
+    refunded: { label: "Refunded", tone: "bg-slate-50 text-slate-700 border-slate-200", step: 4, paymentLabel: "Refunded" },
     awaiting_seller_fulfillment: { label: "Processing", tone: "bg-blue-50 text-blue-700 border-blue-200", step: 2, paymentLabel: "Pay on delivery" },
 };
 
@@ -114,7 +116,7 @@ export default function BuyerOrdersPage() {
 
     const totalSpent = orders.reduce((sum, order) => sum + safeNumber(order.resellPrice), 0);
     const pendingPaymentCount = orders.filter(order => ["pending_payment", "payment_pending", "awaiting_admin_confirmation"].includes(order.status)).length;
-    const processingCount = orders.filter(order => ["paid_to_site", "awaiting_seller_fulfillment", "shipped"].includes(order.status)).length;
+    const processingCount = orders.filter(order => ["paid_to_site", "processing", "awaiting_seller_fulfillment", "shipped"].includes(order.status)).length;
     const completedCount = orders.filter(order => ["completed", "delivered"].includes(order.status)).length;
     const failedCount = orders.filter(order => ["payment_failed", "void_no_payment", "cancelled"].includes(order.status)).length;
 
@@ -280,13 +282,27 @@ export default function BuyerOrdersPage() {
                                             </div>
                                             <div className="rounded-lg bg-slate-50 p-4">
                                                 <Truck className="h-4 w-4 text-slate-400" />
-                                                <p className="mt-2 text-xs font-bold text-slate-400">Delivery</p>
-                                                <p className="mt-0.5 text-sm font-black text-slate-900">Standard shipping</p>
+                                                <p className="mt-2 text-xs font-bold text-slate-400">Courier</p>
+                                                <p className="mt-0.5 text-sm font-black text-slate-900">{order.courier || "Standard shipping"}</p>
                                             </div>
                                             <div className="rounded-lg bg-slate-50 p-4">
                                                 <CheckCircle2 className="h-4 w-4 text-slate-400" />
                                                 <p className="mt-2 text-xs font-bold text-slate-400">Payment</p>
                                                 <p className="mt-0.5 text-sm font-black text-slate-900">{status.paymentLabel}</p>
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-3 sm:grid-cols-3">
+                                            <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Tracking number</p>
+                                                <p className="mt-1 break-all text-sm font-black text-slate-950">{order.trackingNumber || "Preparing tracking"}</p>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Estimated delivery</p>
+                                                <p className="mt-1 text-sm font-black text-slate-950">{order.estimatedDelivery || "Updating soon"}</p>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Latest update</p>
+                                                <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-600">{order.deliveryNotes || status.label}</p>
                                             </div>
                                         </div>
                                         {order.cancellationReason && (
@@ -312,7 +328,7 @@ export default function BuyerOrdersPage() {
                                             disabled={["pending_payment", "payment_pending", "payment_failed", "void_no_payment", "cancelled"].includes(orderStatus)}
                                             className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
                                         >
-                                            {["pending_payment", "payment_pending"].includes(orderStatus) ? "Waiting for payment" : orderStatus === "void_no_payment" ? "Order voided" : "Track package"}
+                                            {["pending_payment", "payment_pending"].includes(orderStatus) ? "Waiting for payment" : orderStatus === "void_no_payment" ? "Order voided" : order.trackingNumber ? `Track ${order.trackingNumber}` : "Track package"}
                                         </button>
                                     </div>
                                 </div>

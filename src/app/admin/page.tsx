@@ -112,6 +112,7 @@ function StatusBadge({ status }: { status: string }) {
         void_no_payment: "bg-red-500/10 text-red-400 border-red-500/20",
         payment_failed: "bg-red-500/10 text-red-400 border-red-500/20",
         cancelled: "bg-red-500/10 text-red-400 border-red-500/20",
+        refunded: "bg-zinc-500/10 text-zinc-300 border-zinc-500/20",
     };
     const labels: Record<string, string> = {
         pending_payment: "Pending payment",
@@ -121,6 +122,7 @@ function StatusBadge({ status }: { status: string }) {
         awaiting_seller_fulfillment: "Processing",
         void_no_payment: "Void - no payment",
         payment_failed: "Payment failed",
+        refunded: "Refunded",
     };
     return (
         <span className={cn("inline-flex items-center px-2 py-0.5 rounded-md border text-[11px] font-medium capitalize", map[status] || "bg-zinc-800 text-zinc-400 border-zinc-700")}>
@@ -294,6 +296,26 @@ export default function AdminDashboard() {
             fetchData(true);
         } catch {
             toast.error("Failed to void this order.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleUpdateOrderFulfillment = async (order: any, status: string) => {
+        setProcessingId(order.id);
+        try {
+            await updateDoc(doc(db, "orders", order.id), {
+                status,
+                fulfillmentStatus: status,
+                ...(status === "shipped" ? { shippedAt: serverTimestamp() } : {}),
+                ...(status === "delivered" ? { deliveredAt: serverTimestamp() } : {}),
+                ...(status === "refunded" ? { refundedAt: serverTimestamp(), paymentStatus: "refunded" } : {}),
+                updatedAt: serverTimestamp(),
+            });
+            toast.success(`Order moved to ${status.replace(/_/g, " ")}.`);
+            fetchData(true);
+        } catch {
+            toast.error("Failed to update order.");
         } finally {
             setProcessingId(null);
         }
@@ -816,13 +838,30 @@ export default function AdminDashboard() {
                                             ) : ["payment_failed", "void_no_payment"].includes(o.status) ? (
                                                 <span className="text-xs text-red-400">Voided</span>
                                             ) : (
-                                                <button
-                                                    onClick={() => handleCancelOrderPayment(o)}
-                                                    disabled={processingId === o.id || ["delivered", "cancelled", "void_no_payment"].includes(o.status)}
-                                                    className="h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.04] hover:border-red-500/25 hover:text-red-300 disabled:opacity-40 text-zinc-400 text-xs font-bold transition-colors"
-                                                >
-                                                    Void
-                                                </button>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    {[
+                                                        ["paid_to_site", "Processing"],
+                                                        ["shipped", "Shipped"],
+                                                        ["delivered", "Delivered"],
+                                                        ["refunded", "Refunded"],
+                                                    ].map(([nextStatus, label]) => (
+                                                        <button
+                                                            key={nextStatus}
+                                                            onClick={() => handleUpdateOrderFulfillment(o, nextStatus)}
+                                                            disabled={processingId === o.id || o.status === nextStatus}
+                                                            className="h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 text-zinc-300 text-xs font-bold transition-colors"
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    ))}
+                                                    <button
+                                                        onClick={() => handleCancelOrderPayment(o)}
+                                                        disabled={processingId === o.id || ["delivered", "cancelled", "void_no_payment", "refunded"].includes(o.status)}
+                                                        className="h-8 px-3 rounded-lg border border-white/[0.08] bg-white/[0.04] hover:border-red-500/25 hover:text-red-300 disabled:opacity-40 text-zinc-400 text-xs font-bold transition-colors"
+                                                    >
+                                                        Void
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>

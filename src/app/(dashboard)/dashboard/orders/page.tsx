@@ -6,7 +6,7 @@ import { collection, query, where, orderBy, getDocs, limit, doc, getDoc, updateD
 import { onAuthStateChanged } from "firebase/auth";
 import {
     ShoppingCart, Search, Clock, CheckCircle2, Loader2, User,
-    CreditCard, ShieldCheck, PackageCheck, Truck, Lock, AlertCircle
+    CreditCard, ShieldCheck, PackageCheck, Truck, Lock, AlertCircle, Save
 } from "lucide-react";
 
 const safeText = (value: unknown) => String(value || "");
@@ -14,6 +14,12 @@ const safeAmount = (value: unknown) => {
     const next = Number(value || 0);
     return Number.isFinite(next) ? next : 0;
 };
+const fulfillmentStatuses = [
+    { value: "paid_to_site", label: "Processing" },
+    { value: "shipped", label: "Shipped" },
+    { value: "delivered", label: "Delivered" },
+    { value: "refunded", label: "Refunded" },
+];
 
 export default function OrdersPage() {
     const [user, setUser] = useState<any>(null);
@@ -23,6 +29,7 @@ export default function OrdersPage() {
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [fulfillmentDrafts, setFulfillmentDrafts] = useState<Record<string, any>>({});
 
     const getCurrencySymbol = (code: string = "USD") => {
         switch (code) {
@@ -83,6 +90,7 @@ export default function OrdersPage() {
 
             await updateDoc(orderRef, {
                 status: "shipped",
+                fulfillmentStatus: "shipped",
                 fulfilledAt: serverTimestamp()
             });
 
@@ -128,6 +136,7 @@ export default function OrdersPage() {
             case 'delivered': return 'bg-emerald-500/10 text-emerald-400';
             case 'shipped': return 'bg-blue-500/10 text-blue-400';
             case 'paid_to_site': return 'bg-violet-500/10 text-violet-400';
+            case 'refunded': return 'bg-zinc-500/10 text-zinc-300';
             case 'pending_payment':
             case 'payment_pending':
             case 'awaiting_admin_confirmation': return 'bg-amber-500/10 text-amber-400';
@@ -135,6 +144,85 @@ export default function OrdersPage() {
             case 'void_no_payment':
             case 'cancelled': return 'bg-rose-500/10 text-rose-400';
             default: return 'bg-zinc-500/10 text-zinc-400';
+        }
+    };
+
+    const getFulfillmentDraft = (order: any) => {
+        const orderId = safeText(order.id);
+        return fulfillmentDrafts[orderId] || {
+            status: order.status || "paid_to_site",
+            courier: order.courier || order.deliveryCourier || "",
+            trackingNumber: order.trackingNumber || "",
+            estimatedDelivery: order.estimatedDelivery || "",
+            deliveryNotes: order.deliveryNotes || "",
+        };
+    };
+
+    const updateFulfillmentDraft = (orderId: string, patch: any) => {
+        setFulfillmentDrafts(prev => ({
+            ...prev,
+            [orderId]: { ...(prev[orderId] || {}), ...patch },
+        }));
+    };
+
+    const handleSaveFulfillment = async (order: any) => {
+        const orderId = safeText(order.id);
+        const draft = getFulfillmentDraft(order);
+        const nextStatus = draft.status || order.status || "paid_to_site";
+        setProcessingId(orderId);
+        try {
+            await updateDoc(doc(db, "orders", orderId), {
+                status: nextStatus,
+                fulfillmentStatus: nextStatus,
+                courier: safeText(draft.courier).trim(),
+                trackingNumber: safeText(draft.trackingNumber).trim(),
+                estimatedDelivery: safeText(draft.estimatedDelivery).trim(),
+                deliveryNotes: safeText(draft.deliveryNotes).trim(),
+                ...(nextStatus === "shipped" ? { shippedAt: serverTimestamp() } : {}),
+                ...(nextStatus === "delivered" ? { deliveredAt: serverTimestamp() } : {}),
+                ...(nextStatus === "refunded" ? { refundedAt: serverTimestamp(), paymentStatus: "refunded" } : {}),
+                updatedAt: serverTimestamp(),
+            });
+
+            if (order.customerId) {
+                await addDoc(collection(db, "notifications"), {
+                    userId: order.customerId,
+                    type: "order_update",
+                    title: "Order status updated",
+                    message: `Order #${orderId.slice(0, 8)} is now ${getStatusLabel(nextStatus)}.`,
+                    orderId,
+                    read: false,
+                    createdAt: serverTimestamp(),
+                });
+            }
+
+            if (order.customerEmail) {
+                await fetch("/api/send-email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        type: "custom",
+                        to: order.customerEmail,
+                        data: {
+                            subject: `Order #${orderId.slice(0, 8)} update`,
+                            html: `<p>Hello ${order.customerName || "there"},</p>
+                                <p>Your order for <strong>${order.productName || "your item"}</strong> is now <strong>${getStatusLabel(nextStatus)}</strong>.</p>
+                                ${draft.courier ? `<p><strong>Courier:</strong> ${draft.courier}</p>` : ""}
+                                ${draft.trackingNumber ? `<p><strong>Tracking number:</strong> ${draft.trackingNumber}</p>` : ""}
+                                ${draft.estimatedDelivery ? `<p><strong>Estimated delivery:</strong> ${draft.estimatedDelivery}</p>` : ""}
+                                ${draft.deliveryNotes ? `<p><strong>Delivery note:</strong> ${draft.deliveryNotes}</p>` : ""}
+                                <p>You can check your order page for the latest tracking details.</p>`
+                        }
+                    }),
+                });
+            }
+
+            await fetchOrders(user.uid);
+        } catch (err) {
+            console.error(err);
+            alert("Could not save fulfillment update.");
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -149,6 +237,7 @@ export default function OrdersPage() {
             case 'awaiting_seller_fulfillment': return 'Processing';
             case 'shipped': return 'Shipped';
             case 'delivered': return 'Delivered';
+            case 'refunded': return 'Refunded';
             default: return (status || "pending").replace(/_/g, ' ');
         }
     };
@@ -165,6 +254,7 @@ export default function OrdersPage() {
         { key: 'paid_to_site', label: 'Processing' },
         { key: 'shipped', label: 'Shipped' },
         { key: 'delivered', label: 'Delivered' },
+        { key: 'refunded', label: 'Refunded' },
     ];
 
     return (
@@ -246,7 +336,9 @@ export default function OrdersPage() {
                                 {filteredOrders.map((order, index) => {
                                     const orderId = (order.id || `order-${index}`).toString();
                                     const status = safeText(order.status || "pending");
+                                    const draft = getFulfillmentDraft(order);
                                     return (
+                                    <>
                                     <tr key={orderId} className="hover:bg-white/[0.02] transition-colors">
                                         <td className="py-4 px-5">
                                             <div className="flex items-center gap-3">
@@ -306,6 +398,11 @@ export default function OrdersPage() {
                                                     <PackageCheck className="w-3.5 h-3.5" /> Complete
                                                 </span>
                                             )}
+                                            {order.status === 'refunded' && (
+                                                <span className="text-xs text-zinc-400 flex items-center justify-end gap-1.5">
+                                                    <AlertCircle className="w-3.5 h-3.5" /> Refunded
+                                                </span>
+                                            )}
                                             {['payment_failed', 'void_no_payment', 'cancelled'].includes(order.status) && (
                                                 <span className="text-xs text-rose-400 flex items-center justify-end gap-1.5">
                                                     <AlertCircle className="w-3.5 h-3.5" /> Voided
@@ -313,6 +410,49 @@ export default function OrdersPage() {
                                             )}
                                         </td>
                                     </tr>
+                                    {!['pending_payment', 'payment_pending', 'awaiting_admin_confirmation', 'payment_failed', 'void_no_payment', 'cancelled'].includes(status) && (
+                                        <tr key={`${orderId}-fulfillment`} className="bg-zinc-950/40">
+                                            <td colSpan={5} className="px-5 pb-5">
+                                                <div className="grid gap-3 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 lg:grid-cols-[160px_1fr_1fr_1fr]">
+                                                    <div>
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Fulfillment</label>
+                                                        <select
+                                                            value={draft.status}
+                                                            onChange={(event) => updateFulfillmentDraft(orderId, { status: event.target.value })}
+                                                            className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs font-bold text-white outline-none"
+                                                        >
+                                                            {fulfillmentStatuses.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Courier</label>
+                                                        <input value={draft.courier} onChange={(event) => updateFulfillmentDraft(orderId, { courier: event.target.value })} placeholder="DHL, UPS, FedEx..." className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Tracking number</label>
+                                                        <input value={draft.trackingNumber} onChange={(event) => updateFulfillmentDraft(orderId, { trackingNumber: event.target.value })} placeholder="Tracking ID" className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Estimated delivery</label>
+                                                        <input value={draft.estimatedDelivery} onChange={(event) => updateFulfillmentDraft(orderId, { estimatedDelivery: event.target.value })} placeholder="Sep 30, 2026" className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                    </div>
+                                                    <div className="lg:col-span-3">
+                                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Delivery notes</label>
+                                                        <input value={draft.deliveryNotes} onChange={(event) => updateFulfillmentDraft(orderId, { deliveryNotes: event.target.value })} placeholder="Package picked up, awaiting carrier scan..." className="mt-2 h-10 w-full rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-xs text-white outline-none placeholder:text-zinc-700" />
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleSaveFulfillment(order)}
+                                                        disabled={processingId === orderId}
+                                                        className="mt-5 flex h-10 items-center justify-center gap-2 rounded-lg bg-white text-xs font-black text-zinc-950 hover:bg-zinc-200 disabled:opacity-60"
+                                                    >
+                                                        {processingId === orderId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                                                        Save update
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </>
                                 )})}
                             </tbody>
                         </table>
