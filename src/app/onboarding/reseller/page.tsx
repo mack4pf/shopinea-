@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useCurrency } from "@/hooks/useCurrency";
 import { formatNumber, safeNumber } from "@/lib/currency";
+import { SITE_DOMAIN } from "@/lib/site";
 
 interface Product {
     id: string;
@@ -48,6 +49,27 @@ const FREE_PLAN_LIMIT = 20;
 const ONBOARDING_PRODUCT_PAGE_SIZE = 120;
 const getRandomStock = () => Math.floor(Math.random() * 41) + 10;
 const textValue = (value: unknown) => String(value ?? "").toLowerCase();
+const slugifyStoreName = (value: unknown) => String(value || "store")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50) || "store";
+
+const getAvailableStoreSlug = async (name: string, uid: string, currentSlug = "") => {
+    const base = slugifyStoreName(name);
+    for (let index = 1; index <= 30; index += 1) {
+        const candidate = index === 1 ? base : `${base}-${index}`;
+        const primarySnapshot = await getDocs(query(collection(db, "users"), where("storeSlug", "==", candidate), limit(3)));
+        const primaryConflict = primarySnapshot.docs.some((storeDoc) => storeDoc.id !== uid || candidate !== currentSlug);
+        if (primaryConflict) continue;
+
+        const additionalSnapshot = await getDocs(query(collection(db, "users"), where("additionalStoreSlugs", "array-contains", candidate), limit(3)));
+        const additionalConflict = additionalSnapshot.docs.some((storeDoc) => storeDoc.id !== uid || candidate !== currentSlug);
+        if (!additionalConflict) return candidate;
+    }
+    return `${base}-${uid.slice(0, 5).toLowerCase()}`;
+};
 
 export default function ResellerOnboarding() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -62,6 +84,7 @@ export default function ResellerOnboarding() {
     const [submitting, setSubmitting] = useState(false);
     const [launchSuccess, setLaunchSuccess] = useState(false);
     const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
+    const [storeNameDraft, setStoreNameDraft] = useState("");
     const [targetStoreId] = useState(() => {
         if (typeof window === "undefined") return "primary";
         return new URLSearchParams(window.location.search).get("storeId") || "primary";
@@ -90,6 +113,7 @@ export default function ResellerOnboarding() {
                             : additionalStores.find((store: any) => store.id === targetStoreId);
                         const existingProducts = Array.isArray(targetStore?.storeProducts) ? targetStore.storeProducts : [];
                         setExistingProductIds(new Set(existingProducts.map((p: any) => p.id)));
+                        setStoreNameDraft(targetStore?.storeName || data.storeName || `${u.displayName || "My"} Store`);
                     }
                 } catch (err) { console.error(err); }
             }
@@ -182,14 +206,25 @@ export default function ResellerOnboarding() {
 
     const handleComplete = async () => {
         const isAddMode = userData?.onboardingCompleted;
+        const finalStoreName = storeNameDraft.trim();
         if (!isAddMode && selectedProducts.length < 3) {
             toast.error("Please select at least 3 products to start your store.");
+            return;
+        }
+        if (finalStoreName.length < 2) {
+            toast.error("Enter a store name before launching.");
             return;
         }
 
         setSubmitting(true);
         try {
             if (user) {
+                const additionalStores = Array.isArray(userData?.additionalStores) ? userData.additionalStores : [];
+                const targetStore = targetStoreId === "primary"
+                    ? userData
+                    : additionalStores.find((store: any) => store.id === targetStoreId);
+                const currentTargetSlug = targetStore?.storeSlug || "";
+                const nextStoreSlug = await getAvailableStoreSlug(finalStoreName, user.uid, currentTargetSlug);
                 const productMap = new Map(combinedProducts.map(p => [p.id, p]));
                 const formattedProducts = selectedProducts.map(p => ({
                     id: p.id,
@@ -208,7 +243,6 @@ export default function ResellerOnboarding() {
                 const updates: any = {};
                 if (isAddMode) {
                     if (targetStoreId !== "primary") {
-                        const additionalStores = Array.isArray(userData.additionalStores) ? userData.additionalStores : [];
                         const targetStoreExists = additionalStores.some((store: any) => store.id === targetStoreId);
                         if (!targetStoreExists) {
                             toast.error("Store not found. Please choose the store again.");
@@ -218,8 +252,11 @@ export default function ResellerOnboarding() {
                         const nextStores = additionalStores.map((store: any) => {
                             if (store.id !== targetStoreId) return store;
                             const currentProducts = Array.isArray(store.storeProducts) ? store.storeProducts : [];
+                            const canUpdateSlug = currentProducts.length === 0 || !store.storeSlug;
                             return {
                                 ...store,
+                                storeName: finalStoreName,
+                                storeSlug: canUpdateSlug ? nextStoreSlug : store.storeSlug,
                                 storeProducts: [...currentProducts, ...formattedProducts],
                                 updatedAt: new Date().toISOString(),
                             };
@@ -229,14 +266,18 @@ export default function ResellerOnboarding() {
                         updates.updatedAt = new Date().toISOString();
                     } else {
                         const currentProducts = userData.storeProducts || [];
+                        updates.storeName = finalStoreName;
+                        if (!userData.storeSlug || currentProducts.length === 0) {
+                            updates.storeSlug = nextStoreSlug;
+                        }
                         updates.storeProducts = [...currentProducts, ...formattedProducts];
                         updates.updatedAt = new Date().toISOString();
                     }
                 } else {
                     updates.storeProducts = formattedProducts;
                     updates.onboardingCompleted = true;
-                    updates.storeName = `${user.displayName || 'My'}'s Store`;
-                    updates.storeSlug = (user.displayName || 'store').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + user.uid.slice(0, 5);
+                    updates.storeName = finalStoreName;
+                    updates.storeSlug = nextStoreSlug;
                     updates.storeTagline = "Premium sourced products, fast shipping.";
                     updates.themeColor = "#10b981";
                     updates.storeTemplate = "classic";
@@ -266,7 +307,9 @@ export default function ResellerOnboarding() {
     const targetStore = targetStoreId === "primary"
         ? userData
         : additionalStores.find((store: any) => store.id === targetStoreId);
-    const targetStoreName = targetStore?.storeName || userData?.storeName || "your store";
+    const targetStoreName = storeNameDraft.trim() || targetStore?.storeName || userData?.storeName || "your store";
+    const storeSlugPreview = slugifyStoreName(targetStoreName);
+    const canSubmit = selectedProducts.length >= 3 && storeNameDraft.trim().length >= 2 && !submitting;
 
     return (
         <div className="min-h-screen bg-[#09090b] text-white selection:bg-blue-500/30 pb-28 sm:pb-20">
@@ -307,10 +350,10 @@ export default function ResellerOnboarding() {
                         </div>
                         <Button
                             onClick={handleComplete}
-                            disabled={selectedProducts.length < 3 || submitting}
+                            disabled={!canSubmit}
                             className={cn(
                                 "hidden sm:flex h-10 sm:h-11 px-4 sm:px-6 rounded-xl font-semibold text-sm transition-all shadow-xl",
-                                (selectedProducts.length >= 3)
+                                canSubmit
                                 ? "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/10"
                                 : "bg-zinc-800 text-zinc-500 border border-white/[0.04]"
                             )}
@@ -337,6 +380,20 @@ export default function ResellerOnboarding() {
                     <p className="text-zinc-500 mt-2 sm:mt-4 text-sm sm:text-base leading-relaxed font-medium">
                         Search, tap products, adjust the selling price, and add them to {targetStoreName}.
                     </p>
+                    <div className="mt-5 grid gap-3 rounded-2xl border border-white/[0.06] bg-zinc-950/70 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Store name</label>
+                            <input
+                                value={storeNameDraft}
+                                onChange={(event) => setStoreNameDraft(event.target.value)}
+                                placeholder="e.g. Nova Beauty Store"
+                                className="h-11 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-4 text-sm font-semibold text-white outline-none transition-all placeholder:text-zinc-700 focus:border-blue-500/50"
+                            />
+                        </div>
+                        <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-xs font-bold text-blue-200">
+                            {storeSlugPreview}.{SITE_DOMAIN}
+                        </div>
+                    </div>
                 </section>
 
                 {/* Featured Carousel */}
@@ -615,10 +672,10 @@ export default function ResellerOnboarding() {
                     </div>
                     <Button
                         onClick={handleComplete}
-                        disabled={selectedProducts.length < 3 || submitting}
+                        disabled={!canSubmit}
                         className={cn(
                             "h-11 min-w-36 rounded-xl font-semibold text-sm transition-all",
-                            selectedProducts.length >= 3
+                            canSubmit
                                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                                 : "bg-zinc-800 text-zinc-500 border border-white/[0.04]"
                         )}
