@@ -411,7 +411,7 @@ function RegisterPageInner() {
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">12. Contact</h3>
-                                    <p>For questions about these terms, contact us at <span className="text-blue-400">support@shoplinea.pro</span>.</p>
+                                    <p>For questions about these terms, contact us at <span className="text-blue-400">support@shoplinea.shop</span>.</p>
                                 </section>
                             </>
                         ) : (
@@ -447,7 +447,7 @@ function RegisterPageInner() {
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">8. Contact</h3>
-                                    <p>For privacy inquiries, contact our Data Protection Officer at <span className="text-blue-400">privacy@shoplinea.pro</span>.</p>
+                                    <p>For privacy inquiries, contact our Data Protection Officer at <span className="text-blue-400">privacy@shoplinea.shop</span>.</p>
                                 </section>
                             </>
                         )}

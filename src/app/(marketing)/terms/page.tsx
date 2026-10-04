@@ -17,7 +17,7 @@ const terms = [
     ["Legitimacy and Public Statements", "Shopinea operates as a legitimate commercial platform. Users agree not to publish false, misleading, defamatory, or bad-faith claims and should contact support for dispute review."],
     ["Termination", "Shopinea may suspend or terminate accounts that violate these terms, create risk, or engage in fraudulent or abusive conduct."],
     ["Changes", "We may update these terms. Continued use after updates means you accept the revised terms."],
-    ["Contact", "For questions, contact support@shoplinea.pro."],
+    ["Contact", "For questions, contact support@shoplinea.shop."],
 ];
 
 export default function TermsPage() {

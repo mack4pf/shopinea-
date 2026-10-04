@@ -25,7 +25,7 @@ export default function SupportPage() {
                 <div className="grid gap-4 md:grid-cols-3">
                     {[
                         { icon: MessageSquare, title: "Dashboard support", text: "Logged-in users can open support from the dashboard for account-specific help." },
-                        { icon: Mail, title: "Email support", text: "For general platform questions, contact support@shoplinea.pro with your account email and reference ID." },
+                        { icon: Mail, title: "Email support", text: "For general platform questions, contact support@shoplinea.shop with your account email and reference ID." },
                         { icon: Timer, title: "Review windows", text: "Manual payment, withdrawal, and custom-store reviews may require extra verification before completion." },
                     ].map((item) => (
                         <div key={item.title} className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6">

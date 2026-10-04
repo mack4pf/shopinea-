@@ -152,8 +152,8 @@ export const getPurchaseDetailsEmailHtml = (storeName: string, buyerName: string
 export const getDepositDetailsEmailHtml = (userName: string, amount: number, method: string) => {
     const addresses = {
         crypto: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F (USDT BEP20/ERC20)",
-        paypal: "payments@shoplinea.pro",
-        card: "payments@shoplinea.pro"
+        paypal: "payments@shoplinea.shop",
+        card: "payments@shoplinea.shop"
     };
     
     return baseTemplate(`

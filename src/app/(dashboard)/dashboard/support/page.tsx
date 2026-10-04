@@ -284,7 +284,7 @@ export default function SupportPage() {
                                 <Mail className="w-4 h-4 text-blue-400" />
                                 <div>
                                     <p className="text-xs text-zinc-500">Email</p>
-                                    <p className="text-sm text-white">support@shoplinea.pro</p>
+                                    <p className="text-sm text-white">support@shoplinea.shop</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-lg">

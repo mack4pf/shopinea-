@@ -202,7 +202,7 @@ export default function EscrowOpsPage() {
                         body: JSON.stringify({
                             type: "custom",
                             to: userDoc.data().email,
-                            from: "Shoplinea Finance <billing@shoplinea.pro>",
+                            from: "Shoplinea Finance <billing@shoplinea.shop>",
                             data: {
                                 subject: "Withdrawal Successful",
                                 html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
@@ -254,7 +254,7 @@ export default function EscrowOpsPage() {
                     body: JSON.stringify({
                         type: "custom",
                         to: userDoc.data().email,
-                        from: "Shoplinea Security <support@shoplinea.pro>",
+                        from: "Shoplinea Security <support@shoplinea.shop>",
                         data: {
                             subject: "Important: Withdrawal Request Declined",
                             html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb;">
