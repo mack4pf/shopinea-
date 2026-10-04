@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Users, Target, Heart, Zap, Globe, Shield } from "lucide-react";
+import { LivePlatformStats } from "@/components/marketing/LivePlatformStats";
 
 export default function AboutUsPage() {
     return (
@@ -32,19 +33,7 @@ export default function AboutUsPage() {
             {/* Stats */}
             <section className="border-y border-white/[0.06] py-12">
                 <div className="container px-6 max-w-6xl mx-auto">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                        {[
-                            { label: "Active Resellers", value: "12,000+" },
-                            { label: "Countries Served", value: "80+" },
-                            { label: "Products Available", value: "50,000+" },
-                            { label: "Orders Fulfilled", value: "2M+" },
-                        ].map((stat, i) => (
-                            <div key={i} className="text-center">
-                                <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
-                                <p className="text-sm text-zinc-500">{stat.label}</p>
-                            </div>
-                        ))}
-                    </div>
+                    <LivePlatformStats variant="about" />
                 </div>
             </section>
 

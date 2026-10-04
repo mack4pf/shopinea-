@@ -170,7 +170,7 @@ function RegisterPageInner() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         {[
-                            { label: "Products", value: "50K+" },
+                            { label: "Catalog", value: "Live" },
                             { label: "Merchants", value: "12K+" },
                             { label: "Countries", value: "40+" },
                             { label: "Uptime", value: "99.9%" },

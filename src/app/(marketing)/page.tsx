@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Globe, ShieldCheck, Zap, TrendingUp, Bot, Package, Rocket, Users, Star, Check, ChevronRight } from "lucide-react";
 import { ReviewsSection } from "@/components/marketing/ReviewsSection";
-import { ShopineaLogo } from "@/components/shared/ShopineaLogo";
+import { LivePlatformStats } from "@/components/marketing/LivePlatformStats";
 
 export default function Home() {
   return (
@@ -71,11 +71,11 @@ export default function Home() {
                 >{seed[0]}</div>
               ))}
             </div>
-            <span><strong className="text-white font-bold">32,000+</strong> merchants already earning</span>
+            <span><strong className="text-white font-bold">Verified</strong> merchant workflows</span>
             <span className="hidden sm:block w-px h-4 bg-white/10" />
             <span className="flex items-center gap-1.5">
               {[1,2,3,4,5].map(s => <Star key={s} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />)}
-              <strong className="text-white">4.9</strong>/5 avg rating
+              <strong className="text-white">Approved</strong> review records
             </span>
           </div>
 
@@ -94,9 +94,9 @@ export default function Home() {
               <div className="p-6 grid grid-cols-3 lg:grid-cols-6 gap-4">
                 {/* Stat cards */}
                 {[
-                  { label: "Total Revenue", val: "$48,320", color: "from-purple-600/30 to-indigo-600/30", border: "border-purple-500/20" },
-                  { label: "Active Orders", val: "1,284", color: "from-cyan-600/20 to-blue-600/20", border: "border-cyan-500/20" },
-                  { label: "AI Wins Today", val: "17 🔥", color: "from-fuchsia-600/20 to-pink-600/20", border: "border-fuchsia-500/20" },
+                  { label: "Sales Records", val: "Tracked", color: "from-purple-600/30 to-indigo-600/30", border: "border-purple-500/20" },
+                  { label: "Order Status", val: "Live", color: "from-cyan-600/20 to-blue-600/20", border: "border-cyan-500/20" },
+                  { label: "Product Signals", val: "Reviewed", color: "from-fuchsia-600/20 to-pink-600/20", border: "border-fuchsia-500/20" },
                 ].map((card, i) => (
                   <div key={i} className={`col-span-3 lg:col-span-2 rounded-xl border ${card.border} bg-gradient-to-br ${card.color} p-4`}>
                     <p className="text-[11px] text-zinc-500 font-semibold uppercase tracking-widest mb-1">{card.label}</p>
@@ -109,8 +109,8 @@ export default function Home() {
                 {/* Chart area mock */}
                 <div className="col-span-3 lg:col-span-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                   <div className="flex justify-between items-center mb-4">
-                    <p className="text-xs text-zinc-400 font-semibold">Revenue over time</p>
-                    <span className="text-[10px] px-2 py-1 rounded-md bg-purple-500/20 text-purple-400 font-bold">+38% this week</span>
+                    <p className="text-xs text-zinc-400 font-semibold">Sales activity over time</p>
+                    <span className="text-[10px] px-2 py-1 rounded-md bg-purple-500/20 text-purple-400 font-bold">Live analytics</span>
                   </div>
                   <svg viewBox="0 0 400 80" className="w-full h-16" preserveAspectRatio="none">
                     <defs>
@@ -194,7 +194,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               { icon: Bot, title: "AI Product Research", desc: "Real-time trend analysis and profit scoring powered by machine learning. Find winning products before your competitors.", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-              { icon: Globe, title: "Global Supplier Network", desc: "Access 50,000+ verified suppliers across 40+ countries. Diverse products, competitive prices, fast shipping.", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },
+              { icon: Globe, title: "Supplier Network", desc: "Access approved supplier and product records from the platform catalog. Diverse products, competitive prices, and fulfillment workflows.", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },
               { icon: Zap, title: "One-Click Import", desc: "Browse the marketplace, click import, and your store is stocked instantly. Product details, photos, and pricing synced automatically.", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/20" },
               { icon: ShieldCheck, title: "Escrow Protection", desc: "Every transaction is secured through our encrypted escrow system. Your money is protected until delivery is confirmed.", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
               { icon: TrendingUp, title: "Smart Analytics", desc: "Deep sales insights, customer behavior patterns, and conversion optimization tips — all in one beautiful dashboard.", color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
@@ -218,19 +218,7 @@ export default function Home() {
           <div className="absolute right-0 top-0 w-[600px] h-[400px] bg-purple-700/8 rounded-full blur-[130px]" />
         </div>
         <div className="container px-6 max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { value: "32K+", label: "Active Merchants", color: "from-purple-400 to-fuchsia-400" },
-              { value: "$4.2M", label: "Paid Out Monthly", color: "from-cyan-400 to-blue-400" },
-              { value: "50K+", label: "Products in Catalog", color: "from-indigo-400 to-purple-400" },
-              { value: "99.7%", label: "Fulfillment Rate", color: "from-emerald-400 to-teal-400" },
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center text-center p-8 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:border-white/[0.10] transition-all">
-                <span className={`text-5xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r ${stat.color} mb-3`}>{stat.value}</span>
-                <span className="text-zinc-500 text-sm font-semibold">{stat.label}</span>
-              </div>
-            ))}
-          </div>
+          <LivePlatformStats />
         </div>
       </section>
 
@@ -318,7 +306,7 @@ export default function Home() {
             </span>
           </h2>
           <p className="text-lg text-zinc-400 font-medium max-w-xl mb-12 leading-relaxed">
-            Join 32,000+ merchants who are already building profitable online businesses with Shopinea&apos;s AI-powered platform.
+            Join merchants building real stores with Shopinea&apos;s AI-powered commerce platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Link href="/register">

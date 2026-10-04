@@ -28,7 +28,7 @@ export default function ResellersPage() {
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-white to-blue-400">inventory.</span>
                             </h1>
                             <p className="text-lg font-medium text-zinc-500 max-w-xl leading-relaxed">
-                                Join our network of over 12,000 professional resellers. Work from anywhere, define your margins, and let our global logistics handle the rest.
+                                Join a platform built for professional resellers. Work from anywhere, define your margins, and use Shopinea tools to manage products, orders, analytics, and fulfillment workflows.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <Link href="/register">
