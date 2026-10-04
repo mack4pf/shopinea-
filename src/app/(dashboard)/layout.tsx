@@ -6,7 +6,7 @@ import {
     LayoutDashboard, Wallet, Package, ShoppingCart, BarChart3,
     Users, Megaphone, UserCircle, CreditCard, Bell, Settings,
     HelpCircle, LogOut, Menu, X, User as UserIcon, Search,
-    ChevronRight, History, MessageSquare, Zap, Crown, AlertTriangle, Home, Heart, Headphones, Store
+    ChevronRight, History, MessageSquare, Zap, Crown, AlertTriangle, Home, Heart, Headphones, Store, Star
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
@@ -33,6 +33,7 @@ const getNavItems = (role?: string) => {
             { name: "Marketplace", href: "/marketplace", icon: LayoutDashboard },
             { name: "My Orders", href: "/buyer-orders", icon: ShoppingCart },
             { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+            { name: "Reviews", href: "/dashboard/reviews", icon: Star },
             { name: "Support", href: "/dashboard/support", icon: HelpCircle },
         ];
     }
@@ -49,6 +50,7 @@ const getNavItems = (role?: string) => {
         { name: "Ads", href: "/dashboard/ads", icon: Megaphone },
         { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
         { name: "Referrals", href: "/dashboard/referrals", icon: Users },
+        { name: "Reviews", href: "/dashboard/reviews", icon: Star },
         { name: "Support", href: "/dashboard/support", icon: HelpCircle },
         { name: "Settings", href: "/dashboard/settings", icon: Settings },
     ];

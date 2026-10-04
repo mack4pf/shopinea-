@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, limit, query, where } from "firebase/firestore";
 import { Star, ShieldCheck } from "lucide-react";
 import { db } from "@/lib/firebase/config";
 
@@ -13,6 +13,7 @@ type Review = {
     text: string;
     verified?: boolean;
     storeName?: string;
+    createdAt?: any;
 };
 
 const safeText = (value: unknown, fallback = "") => {
@@ -36,12 +37,7 @@ export function ReviewsSection() {
 
         async function loadReviews() {
             try {
-                const reviewsQuery = query(
-                    collection(db, "reviews"),
-                    where("approved", "==", true),
-                    orderBy("createdAt", "desc"),
-                    limit(24)
-                );
+                const reviewsQuery = query(collection(db, "reviews"), where("approved", "==", true), limit(50));
                 const snap = await getDocs(reviewsQuery);
                 const nextReviews = snap.docs
                     .map(doc => {
@@ -57,9 +53,16 @@ export function ReviewsSection() {
                             text,
                             verified: data.verified !== false,
                             storeName: safeText(data.storeName),
+                            createdAt: data.createdAt,
                         } satisfies Review;
                     })
-                    .filter(Boolean) as Review[];
+                    .filter(Boolean)
+                    .sort((a: any, b: any) => {
+                        const aTime = typeof a.createdAt?.toDate === "function" ? a.createdAt.toDate().getTime() : 0;
+                        const bTime = typeof b.createdAt?.toDate === "function" ? b.createdAt.toDate().getTime() : 0;
+                        return bTime - aTime;
+                    })
+                    .slice(0, 24) as Review[];
 
                 if (mounted) setReviews(nextReviews);
             } catch (error) {

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
     Shield, LayoutDashboard, Package, Users, LogOut,
-    ShieldCheck, Megaphone, Wallet, Menu, X, ChevronRight, Truck, CreditCard, MessageSquare
+    ShieldCheck, Megaphone, Wallet, Menu, X, ChevronRight, Truck, CreditCard, MessageSquare, Star
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
@@ -17,6 +17,7 @@ const adminNav = [
     { name: "Ads",           href: "/admin/ads",         icon: Megaphone },
     { name: "Products",      href: "/admin/products",    icon: Package },
     { name: "Support Chat",  href: "/admin/support",     icon: MessageSquare },
+    { name: "Reviews",       href: "/admin/reviews",     icon: Star },
     { name: "Gateways",      href: "/admin/gateways",    icon: Wallet },
     { name: "Card Payments", href: "/admin/card-payments", icon: CreditCard },
 ];
