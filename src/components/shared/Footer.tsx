@@ -15,6 +15,15 @@ const resourceLinks = [
     { label: "Selling Guides", href: "/guides" },
     { label: "Support Center", href: "/support" },
     { label: "Trust & Safety", href: "/trust" },
+    { label: "Transparency", href: "/transparency" },
+];
+
+const policyLinks = [
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
+    { label: "Refund Policy", href: "/refund" },
+    { label: "Shipping", href: "/shipping" },
+    { label: "AML / KYC", href: "/aml-kyc" },
 ];
 
 export function Footer() {
@@ -73,13 +82,20 @@ export function Footer() {
                             <div className="p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl space-y-3">
                                 <div className="flex items-center gap-2">
                                     <ShieldCheck className="w-4 h-4 text-zinc-600" />
-                                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">PCI Level 1 Compliance</span>
+                                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Secure Checkout Workflows</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Globe className="w-4 h-4 text-zinc-600" />
-                                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Global Escrow Nodes</span>
+                                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Payment Review Workflows</span>
                                 </div>
                             </div>
+                            <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] font-bold uppercase tracking-widest text-zinc-600">
+                                {policyLinks.map(link => (
+                                    <li key={link.href}>
+                                        <Link href={link.href} className="hover:text-white transition-colors">{link.label}</Link>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -88,9 +104,10 @@ export function Footer() {
                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">
                         &copy; {new Date().getFullYear()} Shopinea. All rights reserved.
                     </p>
-                    <div className="flex gap-8">
-                        <Link href="/privacy" className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest hover:text-white transition-colors">Privacy Policy</Link>
-                        <Link href="/terms" className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest hover:text-white transition-colors">Terms of Service</Link>
+                    <div className="flex flex-wrap justify-center gap-5">
+                        {policyLinks.slice(0, 3).map(link => (
+                            <Link key={link.href} href={link.href} className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest hover:text-white transition-colors">{link.label}</Link>
+                        ))}
                     </div>
                 </div>
             </div>

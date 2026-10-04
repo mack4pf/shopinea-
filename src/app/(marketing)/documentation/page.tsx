@@ -14,6 +14,10 @@ const sections = [
     { title: "Escrow workflow", icon: ShieldCheck, text: "Customer payments and merchant payouts are reviewed for order accuracy, payment confirmation, and compliance before settlement." },
     { title: "Fulfillment", icon: Truck, text: "Follow order movement from purchase through processing, shipment, and delivery confirmation." },
     { title: "Sales license review", icon: ShieldCheck, text: "Resellers can submit sales-license and business-compliance details from verification settings when their country requires operating approval." },
+    { title: "How sellers get paid", icon: CreditCard, text: "Sellers request withdrawals from their dashboard after eligible order, wallet, compliance, and payout-route checks are completed." },
+    { title: "How buyers receive orders", icon: Truck, text: "Buyer orders can include product details, seller/store information, payment status, tracking details, courier notes, and delivery status." },
+    { title: "Ads wallet", icon: CreditCard, text: "Merchants can fund ads wallet records and track campaign activity from the dashboard while support reviews payment status when required." },
+    { title: "Verification failures", icon: ShieldCheck, text: "If verification cannot be approved, users may be asked to correct details, upload clearer documents, contact support, or complete sales-license review." },
 ];
 
 export default function DocumentationPage() {

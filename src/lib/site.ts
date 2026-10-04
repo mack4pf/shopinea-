@@ -5,6 +5,7 @@ export const SUPPORT_EMAIL = `support@${SITE_DOMAIN}`;
 export const PRIVACY_EMAIL = `privacy@${SITE_DOMAIN}`;
 export const BILLING_EMAIL = `billing@${SITE_DOMAIN}`;
 export const PAYMENTS_EMAIL = `payments@${SITE_DOMAIN}`;
+export const LEGAL_EMAIL = `legal@${SITE_DOMAIN}`;
 
 export const SITE_DESCRIPTION =
     "Shoplinea is an AI-powered e-commerce platform for resellers, suppliers, storefronts, product sourcing, AI ad creation, buyer traffic from ads, wallet funding, payments, fulfillment tracking, and marketplace growth tools. Shoplinea helps merchants run the whole store from one app instead of juggling many disconnected tools.";

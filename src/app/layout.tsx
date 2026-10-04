@@ -4,7 +4,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { FormillaWidget } from "@/components/shared/FormillaWidget";
-import { SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
+import { BILLING_EMAIL, LEGAL_EMAIL, PAYMENTS_EMAIL, SEO_KEYWORDS, SITE_DESCRIPTION, SITE_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/site";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
@@ -89,6 +89,12 @@ export default function RootLayout({
     url: SITE_URL,
     logo: `${SITE_URL}/images/sholinealogo2.png`,
     email: SUPPORT_EMAIL,
+    contactPoint: [
+      { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, areaServed: "Worldwide", availableLanguage: ["en"] },
+      { "@type": "ContactPoint", contactType: "legal", email: LEGAL_EMAIL, areaServed: "Worldwide", availableLanguage: ["en"] },
+      { "@type": "ContactPoint", contactType: "billing support", email: BILLING_EMAIL, areaServed: "Worldwide", availableLanguage: ["en"] },
+      { "@type": "ContactPoint", contactType: "payments support", email: PAYMENTS_EMAIL, areaServed: "Worldwide", availableLanguage: ["en"] },
+    ],
     sameAs: [SITE_URL],
   };
   const softwareJsonLd = {

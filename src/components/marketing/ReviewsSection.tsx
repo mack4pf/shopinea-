@@ -28,6 +28,12 @@ const maskEmail = (email?: string) => {
     return `${name.slice(0, 2)}***@${domain}`;
 };
 
+const formatReviewDate = (value: any) => {
+    const date = typeof value?.toDate === "function" ? value.toDate() : value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("en", { month: "short", year: "numeric" }).format(date);
+};
+
 export function ReviewsSection() {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
@@ -140,20 +146,25 @@ export function ReviewsSection() {
                                         {review.role}
                                     </span>
                                 </div>
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+                                        {formatReviewDate(review.createdAt) || "Approved review"}
+                                    </span>
+                                    {review.verified && (
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-emerald-300">
+                                            <ShieldCheck className="h-3 w-3" /> Verified
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex mb-3 gap-0.5">
                                     {Array.from({ length: 5 }).map((_, starIndex) => (
                                         <Star
                                             key={starIndex}
                                             className={`w-3.5 h-3.5 ${starIndex < review.rating ? "text-yellow-400 fill-yellow-400" : "text-zinc-700"}`}
                                         />
-                                    ))}
+                                ))}
                                 </div>
                                 <p className="text-sm text-zinc-400 leading-relaxed">&quot;{review.text}&quot;</p>
-                                {review.verified && (
-                                    <p className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
-                                        <ShieldCheck className="h-3 w-3" /> Verified account
-                                    </p>
-                                )}
                             </div>
                         ))}
                     </div>
