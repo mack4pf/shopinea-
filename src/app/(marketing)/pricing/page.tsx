@@ -75,7 +75,7 @@ export default function PricingPage() {
                         <span className="text-zinc-500">pricing for every stage.</span>
                     </h1>
                     <p className="text-lg font-medium text-zinc-500 max-w-2xl mx-auto">
-                        Choose the plan that fits your operation. Scale and Enterprise are yearly plans with custom-store and domain support.
+                        Choose the plan that fits your operation. All plans are billed yearly, with monthly equivalent pricing shown for clarity.
                     </p>
                 </div>
 
@@ -114,6 +114,9 @@ export default function PricingPage() {
                                     <span className="text-4xl font-bold text-white tracking-tighter">${plan.price.toLocaleString()}</span>
                                     <span className="text-sm font-bold text-zinc-600 uppercase tracking-widest">{plan.billingLabel}</span>
                                 </div>
+                                <p className="text-xs font-semibold text-zinc-500">
+                                    ${Number(plan.monthlyEquivalent || Math.round(plan.price / 12)).toLocaleString()}/month equivalent. Paid yearly.
+                                </p>
 
                                 <div className="space-y-4">
                                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">What's included</p>

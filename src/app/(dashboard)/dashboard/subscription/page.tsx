@@ -50,7 +50,7 @@ export default function SubscriptionPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Subscription</h1>
-                    <p className="text-sm text-zinc-500 mt-1">Choose a plan that fits your business needs.</p>
+                    <p className="text-sm text-zinc-500 mt-1">Choose a yearly plan that fits your business needs.</p>
                 </div>
                 <div className="px-4 py-2.5 bg-white/[0.04] border border-white/[0.06] rounded-lg">
                     <p className="text-xs text-zinc-500">Current Plan</p>
@@ -79,6 +79,9 @@ export default function SubscriptionPage() {
                                 <span className="text-3xl font-bold text-white">${formatNumber(plan.price)}</span>
                                 <span className="text-xs text-zinc-500">{plan.billingLabel}</span>
                             </div>
+                            <p className="mb-5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-400">
+                                ${formatNumber(plan.monthlyEquivalent || Math.round(plan.price / 12))}/month equivalent. Paid yearly.
+                            </p>
                             <div className="space-y-3 flex-1 mb-6">
                                 {plan.features.map((f, i) => (
                                     <div key={i} className="flex items-center gap-2.5">
@@ -104,7 +107,7 @@ export default function SubscriptionPage() {
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex items-center justify-between">
                     <div>
                         <p className="text-sm font-medium text-zinc-300">Billing Cycle</p>
-                        <p className="text-xs text-zinc-500 mt-0.5">Scale and Enterprise are yearly plans. Monthly plans renew every 30 days.</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">All paid plans are billed yearly. Monthly amounts are shown only as an equivalent breakdown.</p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-zinc-500">Next renewal</p>

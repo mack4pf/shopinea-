@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Globe, ShieldCheck, Zap, TrendingUp, Bot, Package, Rocket, Users, Star, Check, ChevronRight } from "lucide-react";
 import { ReviewsSection } from "@/components/marketing/ReviewsSection";
 import { LivePlatformStats } from "@/components/marketing/LivePlatformStats";
+import { SUBSCRIPTION_PLANS } from "@/lib/plans";
 
 export default function Home() {
   return (
@@ -238,18 +239,15 @@ export default function Home() {
               <Sparkles className="w-3 h-3" /> Flexible Plans
             </div>
             <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-5">Simple, honest <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">pricing.</span></h2>
-            <p className="text-zinc-500 text-lg max-w-xl mx-auto">Professional plans built for real growth. Transparent monthly billing.</p>
+            <p className="text-zinc-500 text-lg max-w-xl mx-auto">Professional yearly plans built for real growth, with monthly equivalents shown clearly.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {[
-              { name: "Starter", price: "$300", desc: "Up to 50 active products", features: ["Up to 50 active products", "Professional storefront", "Real-time order tracking", "Standard support"], cta: "Upgrade", highlight: false },
-              { name: "Professional", price: "$500", desc: "Unlimited products", features: ["Unlimited products", "AI product recommendations", "Advanced sales analytics", "SEO optimization tools"], cta: "Upgrade", highlight: true },
-              { name: "Scale", price: "$1,200", desc: "Built for scaling operations", features: ["Bulk order processing", "Dedicated account manager", "White-label packaging", "Custom API access"], cta: "Upgrade", highlight: false },
-              { name: "Enterprise", price: "$5,000", desc: "For advanced multi-store operations", features: ["Multi-store management", "Full legal compliance suite", "Automated tax management", "Concierge support 24/7"], cta: "Upgrade", highlight: false },
-            ].map((plan, i) => (
-              <div key={i} className={`relative flex flex-col p-8 rounded-2xl border transition-all ${plan.highlight ? "bg-gradient-to-br from-purple-600/20 to-indigo-600/20 border-purple-500/40 shadow-2xl shadow-purple-500/15 scale-105" : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]"}`}>
-                {plan.highlight && (
+            {SUBSCRIPTION_PLANS.map((plan, i) => {
+              const highlight = plan.id === "elite_500";
+              return (
+              <div key={plan.id} className={`relative flex flex-col p-8 rounded-2xl border transition-all ${highlight ? "bg-gradient-to-br from-purple-600/20 to-indigo-600/20 border-purple-500/40 shadow-2xl shadow-purple-500/15 scale-105" : "bg-white/[0.02] border-white/[0.06] hover:border-white/[0.12]"}`}>
+                {highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-[11px] font-bold text-white shadow-lg">
                     Most Popular
                   </div>
@@ -257,27 +255,27 @@ export default function Home() {
                 <div className="mb-6">
                   <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-extrabold text-white">{plan.price}</span>
-                    <span className="text-zinc-500 text-sm">/month</span>
+                    <span className="text-4xl font-extrabold text-white">${plan.price.toLocaleString()}</span>
+                    <span className="text-zinc-500 text-sm">/year</span>
                   </div>
-                  <p className="text-zinc-500 text-sm">{plan.desc}</p>
+                  <p className="text-zinc-500 text-sm">${Number(plan.monthlyEquivalent || Math.round(plan.price / 12)).toLocaleString()}/month equivalent. Paid yearly.</p>
                 </div>
                 <ul className="space-y-3 flex-1 mb-8">
-                  {plan.features.map((f, fi) => (
+                  {plan.features.slice(0, 4).map((f, fi) => (
                     <li key={fi} className="flex items-center gap-2.5 text-sm text-zinc-300">
-                      <Check className={`w-4 h-4 flex-shrink-0 ${plan.highlight ? "text-purple-400" : "text-zinc-600"}`} />
+                      <Check className={`w-4 h-4 flex-shrink-0 ${highlight ? "text-purple-400" : "text-zinc-600"}`} />
                       {f}
                     </li>
                   ))}
                 </ul>
                 <Link href="/dashboard/subscription">
-                  <Button className={`w-full h-12 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${plan.highlight ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-none shadow-lg shadow-purple-500/20" : "bg-white/[0.06] border border-white/[0.10] text-white hover:bg-white/[0.10]"}`}>
-                    {plan.cta}
+                  <Button className={`w-full h-12 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${highlight ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-none shadow-lg shadow-purple-500/20" : "bg-white/[0.06] border border-white/[0.10] text-white hover:bg-white/[0.10]"}`}>
+                    Upgrade
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
               </div>
-            ))}
+            );})}
           </div>
 
           <p className="text-center mt-10 text-zinc-600 text-sm">Choose your plan and complete payment securely from your subscription dashboard.</p>

@@ -76,8 +76,9 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
             await addDoc(collection(db, "subscription_requests"), {
                 userId, userName,
                 planId: plan.id, planName: plan.name, amount: plan.price,
-                billingLabel: plan.billingLabel || "/month",
-                durationDays: plan.durationDays || 30,
+                billingLabel: plan.billingLabel || "/year",
+                monthlyEquivalent: plan.monthlyEquivalent || Math.round(plan.price / 12),
+                durationDays: plan.durationDays || 365,
                 aiCredits: plan.aiCredits || 0,
                 adCredits: plan.adCredits || 0,
                 maxStores: plan.maxStores || 1,
@@ -105,7 +106,7 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-white leading-tight">Subscribe to {plan.name}</p>
-                            <p className="text-xs text-zinc-500">${plan.price.toLocaleString()}{plan.billingLabel || "/month"}</p>
+                            <p className="text-xs text-zinc-500">${plan.price.toLocaleString()}{plan.billingLabel || "/year"}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-white/[0.06] flex items-center justify-center transition-colors">
@@ -160,10 +161,13 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                             <div className="flex items-center justify-between p-4 bg-blue-600/[0.07] border border-blue-500/20 rounded-xl">
                                 <div>
                                     <p className="text-xs text-zinc-400 mb-1">Total due today</p>
-                                    <p className="text-2xl font-bold text-white">${plan.price.toLocaleString()}<span className="text-sm font-normal text-zinc-500 ml-1">{plan.billingLabel || "/mo"}</span></p>
+                                    <p className="text-2xl font-bold text-white">${plan.price.toLocaleString()}<span className="text-sm font-normal text-zinc-500 ml-1">{plan.billingLabel || "/year"}</span></p>
+                                    <p className="mt-1 text-[11px] font-semibold text-zinc-500">
+                                        ${Number(plan.monthlyEquivalent || Math.round(plan.price / 12)).toLocaleString()}/month equivalent
+                                    </p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[11px] text-zinc-500">{(plan.billingLabel || "/month").includes("year") ? "Billed yearly" : "Billed monthly"}</p>
+                                    <p className="text-[11px] text-zinc-500">Billed yearly</p>
                                     <p className="text-[11px] text-zinc-600 mt-0.5">Secure manual review</p>
                                 </div>
                             </div>
@@ -177,7 +181,7 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                     {/* Step 2: Payment method */}
                     {step === 2 && (
                         <div className="space-y-3 animate-in slide-in-from-right-3 duration-300">
-                            <p className="text-sm text-zinc-400 mb-1">How would you like to pay <span className="text-white font-medium">${plan.price.toLocaleString()}</span>?</p>
+                            <p className="text-sm text-zinc-400 mb-1">How would you like to pay <span className="text-white font-medium">${plan.price.toLocaleString()}</span> for the year?</p>
                             {[
                                 { id: "bank",   label: "Bank Transfer",  sub: "SWIFT / SEPA / Local wire",    icon: <Building2 className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/10 border-blue-500/20" },
                                 { id: "paypal", label: "PayPal",         sub: "Pay with your PayPal account", icon: <PayPalLogo size={20} />,                         bg: "bg-white/[0.04] border-white/[0.06]" },

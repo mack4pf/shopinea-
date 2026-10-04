@@ -28,6 +28,14 @@ type AdminReview = {
     createdAt?: any;
 };
 
+type ReviewEdit = {
+    displayName: string;
+    role: string;
+    storeName: string;
+    rating: number;
+    text: string;
+};
+
 const toMillis = (value: any) => {
     if (!value) return 0;
     if (typeof value.toDate === "function") return value.toDate().getTime();
@@ -48,6 +56,7 @@ export default function AdminReviewsPage() {
     const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
     const [search, setSearch] = useState("");
     const [notes, setNotes] = useState<Record<string, string>>({});
+    const [edits, setEdits] = useState<Record<string, ReviewEdit>>({});
 
     const loadReviews = async () => {
         setLoading(true);
@@ -78,6 +87,13 @@ export default function AdminReviewsPage() {
 
             setReviews(nextReviews);
             setNotes(Object.fromEntries(nextReviews.map(review => [review.id, review.adminNote || ""])));
+            setEdits(Object.fromEntries(nextReviews.map(review => [review.id, {
+                displayName: review.displayName,
+                role: review.role,
+                storeName: review.storeName,
+                rating: review.rating,
+                text: review.text,
+            }])));
         } catch (error) {
             console.error("Could not load reviews:", error);
             toast.error("Could not load reviews.");
@@ -110,7 +126,15 @@ export default function AdminReviewsPage() {
     const updateReview = async (reviewId: string, status: "approved" | "rejected") => {
         setSavingId(reviewId);
         try {
+            const edit = edits[reviewId];
             await updateDoc(doc(db, "reviews", reviewId), {
+                ...(edit ? {
+                    displayName: edit.displayName.trim() || "Shoplinea user",
+                    role: edit.role.trim() || "merchant",
+                    storeName: edit.storeName.trim(),
+                    rating: Math.min(5, Math.max(1, Number(edit.rating || 5))),
+                    text: edit.text.trim(),
+                } : {}),
                 approved: status === "approved",
                 status,
                 adminNote: notes[reviewId] || "",
@@ -123,6 +147,36 @@ export default function AdminReviewsPage() {
         } catch (error) {
             console.error("Could not update review:", error);
             toast.error("Could not update review.");
+        } finally {
+            setSavingId(null);
+        }
+    };
+
+    const saveReviewEdits = async (reviewId: string) => {
+        const edit = edits[reviewId];
+        if (!edit) return;
+        if (edit.text.trim().length < 10) {
+            toast.error("Review text is too short.");
+            return;
+        }
+
+        setSavingId(reviewId);
+        try {
+            await updateDoc(doc(db, "reviews", reviewId), {
+                displayName: edit.displayName.trim() || "Shoplinea user",
+                role: edit.role.trim() || "merchant",
+                storeName: edit.storeName.trim(),
+                rating: Math.min(5, Math.max(1, Number(edit.rating || 5))),
+                text: edit.text.trim(),
+                adminNote: notes[reviewId] || "",
+                updatedAt: serverTimestamp(),
+                editedBy: "admin",
+            });
+            await loadReviews();
+            toast.success("Review updated.");
+        } catch (error) {
+            console.error("Could not save review edits:", error);
+            toast.error("Could not save review edits.");
         } finally {
             setSavingId(null);
         }
@@ -191,12 +245,29 @@ export default function AdminReviewsPage() {
                     <div className="divide-y divide-slate-100">
                         {filteredReviews.map(review => (
                             <div key={review.id} className="p-5">
+                                {(() => {
+                                    const edit = edits[review.id] || {
+                                        displayName: review.displayName,
+                                        role: review.role,
+                                        storeName: review.storeName,
+                                        rating: review.rating,
+                                        text: review.text,
+                                    };
+                                    const setEdit = (patch: Partial<ReviewEdit>) => {
+                                        setEdits(previous => ({ ...previous, [review.id]: { ...edit, ...patch } }));
+                                    };
+                                    return (
                                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <h2 className="font-black text-slate-950">{review.displayName}</h2>
+                                            <input
+                                                value={edit.displayName}
+                                                onChange={event => setEdit({ displayName: event.target.value })}
+                                                className="h-10 min-w-[12rem] rounded-xl border border-slate-200 px-3 text-sm font-black text-slate-950 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100"
+                                                placeholder="Display name"
+                                            />
                                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                                                {review.role}
+                                                {edit.role || "merchant"}
                                             </span>
                                             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest ${
                                                 review.status === "approved" ? "bg-emerald-50 text-emerald-700"
@@ -209,13 +280,41 @@ export default function AdminReviewsPage() {
                                                 {review.status}
                                             </span>
                                         </div>
-                                        <p className="mt-1 text-sm text-slate-500">{review.email || "No email"}{review.storeName ? ` - ${review.storeName}` : ""}</p>
-                                        <div className="mt-3 flex gap-0.5">
-                                            {Array.from({ length: 5 }).map((_, index) => (
-                                                <Star key={index} className={`h-4 w-4 ${index < review.rating ? "fill-yellow-400 text-yellow-400" : "text-slate-300"}`} />
+                                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                                            <input
+                                                value={edit.role}
+                                                onChange={event => setEdit({ role: event.target.value })}
+                                                className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100"
+                                                placeholder="Role"
+                                            />
+                                            <input
+                                                value={edit.storeName}
+                                                onChange={event => setEdit({ storeName: event.target.value })}
+                                                className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100"
+                                                placeholder="Store name"
+                                            />
+                                        </div>
+                                        <p className="mt-2 text-sm text-slate-500">{review.email || "No email"}</p>
+                                        <div className="mt-3 flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(value => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    onClick={() => setEdit({ rating: value })}
+                                                    className="rounded-lg border border-slate-200 p-1.5 hover:bg-yellow-50"
+                                                    aria-label={`Set ${value} star rating`}
+                                                >
+                                                    <Star className={`h-4 w-4 ${value <= edit.rating ? "fill-yellow-400 text-yellow-400" : "text-slate-300"}`} />
+                                                </button>
                                             ))}
                                         </div>
-                                        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700">{review.text}</p>
+                                        <textarea
+                                            value={edit.text}
+                                            onChange={event => setEdit({ text: event.target.value })}
+                                            rows={4}
+                                            className="mt-3 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm leading-6 text-slate-700 outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100"
+                                            placeholder="Review text"
+                                        />
                                         <p className="mt-3 text-xs font-semibold text-slate-400">{formatDate(review.createdAt)}</p>
                                     </div>
 
@@ -228,6 +327,13 @@ export default function AdminReviewsPage() {
                                             className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-100"
                                         />
                                         <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => saveReviewEdits(review.id)}
+                                                disabled={savingId === review.id}
+                                                className="col-span-2 inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                                            >
+                                                Save edits
+                                            </button>
                                             <button
                                                 onClick={() => updateReview(review.id, "approved")}
                                                 disabled={savingId === review.id}
@@ -245,6 +351,8 @@ export default function AdminReviewsPage() {
                                         </div>
                                     </div>
                                 </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                     </div>

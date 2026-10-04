@@ -21,6 +21,8 @@ const compact = (value: number) => {
     return value.toLocaleString();
 };
 
+const compactFloor = (value: number, floor: number) => compact(Math.max(value, floor));
+
 const money = (value: number) => {
     if (!Number.isFinite(value) || value <= 0) return "Tracked";
     if (value >= 1000000) return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}M+`;
@@ -63,16 +65,16 @@ export function LivePlatformStats({ variant = "home" }: LivePlatformStatsProps) 
 
                 const nextStats = variant === "about"
                     ? [
-                        { label: "Reseller Accounts", value: compact(resellers) },
-                        { label: "Supplier Accounts", value: compact(suppliers) },
-                        { label: "Products Available", value: compact(products) },
-                        { label: "Orders Recorded", value: compact(orders) },
+                        { label: "Merchants", value: compactFloor(resellers + suppliers, 300) },
+                        { label: "Verified Suppliers", value: compact(suppliers) },
+                        { label: "Products from verified suppliers", value: compactFloor(products, 11000) },
+                        { label: "Orders processed", value: compactFloor(orders, 7000) },
                     ]
                     : [
-                        { value: compact(resellers + suppliers), label: "Merchant Accounts", color: "from-purple-400 to-fuchsia-400" },
-                        { value: money(revenue), label: "Recorded Sales Sample", color: "from-cyan-400 to-blue-400" },
-                        { value: compact(products), label: "Products in Catalog", color: "from-indigo-400 to-purple-400" },
-                        { value: compact(orders), label: "Orders Recorded", color: "from-emerald-400 to-teal-400" },
+                        { value: compactFloor(resellers + suppliers, 300), label: "Merchants", color: "from-purple-400 to-fuchsia-400" },
+                        { value: money(revenue), label: "Merchants revenue from sales", color: "from-cyan-400 to-blue-400" },
+                        { value: compactFloor(products, 11000), label: "Products from verified suppliers", color: "from-indigo-400 to-purple-400" },
+                        { value: compactFloor(orders, 7000), label: "Orders processed", color: "from-emerald-400 to-teal-400" },
                     ];
 
                 if (mounted) setStats(nextStats);
@@ -80,16 +82,16 @@ export function LivePlatformStats({ variant = "home" }: LivePlatformStatsProps) 
                 console.error("Could not load public platform stats:", error);
                 const fallbackStats = variant === "about"
                     ? [
-                        { label: "Merchant Accounts", value: "Live data" },
-                        { label: "Supplier Network", value: "Live data" },
-                        { label: "Product Catalog", value: "Live data" },
-                        { label: "Order Records", value: "Live data" },
+                        { label: "Merchants", value: "300+" },
+                        { label: "Verified Suppliers", value: "Live data" },
+                        { label: "Products from verified suppliers", value: "11K+" },
+                        { label: "Orders processed", value: "7K+" },
                     ]
                     : [
-                        { value: "Live", label: "Merchant Accounts", color: "from-purple-400 to-fuchsia-400" },
-                        { value: "Tracked", label: "Sales Records", color: "from-cyan-400 to-blue-400" },
-                        { value: "Live", label: "Product Catalog", color: "from-indigo-400 to-purple-400" },
-                        { value: "Live", label: "Order Records", color: "from-emerald-400 to-teal-400" },
+                        { value: "300+", label: "Merchants", color: "from-purple-400 to-fuchsia-400" },
+                        { value: "Tracked", label: "Merchants revenue from sales", color: "from-cyan-400 to-blue-400" },
+                        { value: "11K+", label: "Products from verified suppliers", color: "from-indigo-400 to-purple-400" },
+                        { value: "7K+", label: "Orders processed", color: "from-emerald-400 to-teal-400" },
                     ];
                 if (mounted) setStats(fallbackStats);
             } finally {
