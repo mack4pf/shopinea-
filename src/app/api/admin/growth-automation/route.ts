@@ -17,6 +17,31 @@ const nextRunIso = (frequency: string) => {
     date.setHours(date.getHours() + (frequency === "daily" ? 24 : 1));
     return date.toISOString();
 };
+const FIRST_NAMES = [
+    "Liam", "Emma", "Noah", "Olivia", "James", "Sophia", "Oliver", "Ava", "Ethan", "Isabella",
+    "Lucas", "Mia", "Mason", "Charlotte", "Logan", "Amelia", "Aiden", "Harper", "Jack", "Evelyn",
+    "Carter", "Abigail", "Sebastian", "Emily", "Owen", "Ella", "Caleb", "Elizabeth", "Ryan", "Camila",
+    "Nathan", "Luna", "Wyatt", "Sofia", "Luke", "Avery", "Isaiah", "Mila", "Gabriel", "Aria",
+    "Benjamin", "Scarlett", "Elijah", "Penelope", "Julian", "Layla", "Adrian", "Chloe", "Levi", "Victoria",
+];
+const LAST_NAMES = [
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Wilson", "Taylor",
+    "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin", "Thompson", "Moore", "Young", "Allen",
+    "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores", "Green", "Adams", "Nelson",
+    "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts", "Gomez", "Phillips", "Evans",
+    "Turner", "Diaz", "Parker", "Cruz", "Edwards", "Collins", "Reyes", "Stewart", "Morris", "Morales",
+];
+const makeBuyer = (userId: string, orderNumber: number) => {
+    const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    const name = `${first} ${last}`;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "");
+    return {
+        id: `ads-${userId}-${Date.now()}-${orderNumber}`,
+        name,
+        email: `${slug}.${orderNumber}@buyer.shoplinea.local`,
+    };
+};
 
 export async function POST(req: Request) {
     try {
@@ -41,13 +66,18 @@ export async function POST(req: Request) {
             const visits = randomBetween(numberValue(plan.visitsMin || 38), numberValue(plan.visitsMax || 50));
             const sales = randomBetween(numberValue(plan.salesMin || 2), numberValue(plan.salesMax || 5));
             const dateKey = todayKey();
+            const stores = Array.isArray(user.additionalStores) ? user.additionalStores : [];
+            const targetStoreId = plan.targetStoreId || "all";
+            const storeMultiplier = targetStoreId === "all" ? 1 + stores.length : 1;
+            const accountViews = views * storeMultiplier;
+            const accountVisits = visits * storeMultiplier;
             const updates: Record<string, any> = {
-                storeViews: increment(views),
-                impressions: increment(views),
-                storeVisits: increment(visits),
-                "stats.views": increment(views),
-                [`dailyStoreViews.${dateKey}`]: increment(views),
-                [`dailyStoreVisits.${dateKey}`]: increment(visits),
+                storeViews: increment(accountViews),
+                impressions: increment(accountViews),
+                storeVisits: increment(accountVisits),
+                "stats.views": increment(accountViews),
+                [`dailyStoreViews.${dateKey}`]: increment(accountViews),
+                [`dailyStoreVisits.${dateKey}`]: increment(accountVisits),
                 "growthAutomation.lastRunAt": now.toISOString(),
                 "growthAutomation.nextRunAt": nextRunIso(plan.frequency || "hourly"),
                 "growthAutomation.lastRun.views": views,
@@ -56,8 +86,6 @@ export async function POST(req: Request) {
                 updatedAt: new Date().toISOString(),
             };
 
-            const stores = Array.isArray(user.additionalStores) ? user.additionalStores : [];
-            const targetStoreId = plan.targetStoreId || "all";
             if (stores.length > 0) {
                 updates.additionalStores = stores.map((store: any) => {
                     const selected = targetStoreId === "all" || targetStoreId === store?.id || targetStoreId === store?.storeSlug;
@@ -77,6 +105,7 @@ export async function POST(req: Request) {
             const products = Array.isArray(user.storeProducts) ? user.storeProducts : [];
             for (let index = 0; index < sales && products.length > 0; index += 1) {
                 const product = products[index % products.length];
+                const buyer = makeBuyer(user.id, index + 1);
                 const price = numberValue(product?.resellPrice || product?.price || 0);
                 const cost = numberValue(product?.price || 0);
                 await addDoc(collection(db, "orders"), {
@@ -91,9 +120,9 @@ export async function POST(req: Request) {
                     resellerName: user.displayName || user.storeName || "Merchant",
                     storeName: user.storeName || "Store",
                     storeSlug: user.storeSlug || "",
-                    customerId: `ads-buyer-${Date.now()}-${index}`,
-                    customerName: "Ad campaign buyer",
-                    customerEmail: "",
+                    customerId: buyer.id,
+                    customerName: buyer.name,
+                    customerEmail: buyer.email,
                     customerCountry: plan.country || "United States",
                     customerAddress: "Address saved after checkout",
                     trafficSource: "Shoplinea Ads",

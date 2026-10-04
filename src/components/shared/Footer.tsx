@@ -14,6 +14,7 @@ const resourceLinks = [
     { label: "API Reference", href: "/api" },
     { label: "Selling Guides", href: "/guides" },
     { label: "Support Center", href: "/support" },
+    { label: "Trust & Safety", href: "/trust" },
 ];
 
 export function Footer() {

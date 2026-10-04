@@ -495,17 +495,24 @@ export default function UserMatrixPage() {
             const visits = Number(storeBoostVisits) || 0;
             const dateKey = todayAnalyticsKey();
             const updates: Record<string, any> = {};
+            const additionalStores = Array.isArray(selectedUser.additionalStores) ? selectedUser.additionalStores : [];
+            const targetAllStores = boostTargetStoreId === "all";
+            const selectedAdditionalStores = additionalStores.filter((store: any) =>
+                targetAllStores || store?.id === boostTargetStoreId || store?.storeSlug === boostTargetStoreId
+            );
+            const accountStoreMultiplier = targetAllStores ? 1 + additionalStores.length : 1;
+            const accountViews = views * accountStoreMultiplier;
+            const accountVisits = visits * accountStoreMultiplier;
             if (views) {
-                updates.storeViews = increment(views);
-                updates.impressions = increment(views);
-                updates["stats.views"] = increment(views);
-                updates[`dailyStoreViews.${dateKey}`] = increment(views);
+                updates.storeViews = increment(accountViews);
+                updates.impressions = increment(accountViews);
+                updates["stats.views"] = increment(accountViews);
+                updates[`dailyStoreViews.${dateKey}`] = increment(accountViews);
             }
             if (visits) {
-                updates.storeVisits = increment(visits);
-                updates[`dailyStoreVisits.${dateKey}`] = increment(visits);
+                updates.storeVisits = increment(accountVisits);
+                updates[`dailyStoreVisits.${dateKey}`] = increment(accountVisits);
             }
-            const additionalStores = Array.isArray(selectedUser.additionalStores) ? selectedUser.additionalStores : [];
             if (additionalStores.length > 0 && (views > 0 || visits > 0)) {
                 updates.additionalStores = additionalStores.map((store: any) => ({
                     ...store,
@@ -550,7 +557,7 @@ export default function UserMatrixPage() {
                 setSelectedUser(nextUser);
                 setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, ...nextUser } : user));
             }
-            const storeCount = boostTargetStoreId === "all" ? 1 + additionalStores.length : 1;
+            const storeCount = targetAllStores ? 1 + additionalStores.length : Math.max(1, selectedAdditionalStores.length || 1);
             toast.success(`Injected ${views.toLocaleString()} views + ${visits.toLocaleString()} visits across ${storeCount} store(s) and ${prods.length} product(s)!`);
         } catch (err) {
             console.error(err);

@@ -15,6 +15,18 @@ const safeText = (value: unknown, fallback = "") => {
     const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
     return text || fallback;
 };
+const FALLBACK_FIRST_NAMES = ["Olivia", "Emma", "Sophia", "Mia", "Amelia", "Ava", "Luna", "Ella", "Isabella", "Charlotte", "James", "Noah", "Liam", "Lucas", "Ethan", "Mason", "Logan", "Oliver", "Carter", "Aiden"];
+const FALLBACK_LAST_NAMES = ["Davis", "Wilson", "Taylor", "Brown", "Johnson", "Miller", "Anderson", "Thomas", "Moore", "Garcia", "Smith", "Martin", "White", "Harris", "Clark", "Lewis", "Walker", "Hall", "Allen", "Young"];
+const hashText = (value: string) => value.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+const customerDisplayName = (order: any) => {
+    const rawName = safeText(order?.customerName);
+    if (rawName && rawName.toLowerCase() !== "ad campaign buyer" && rawName.toLowerCase() !== "ads campaign buyer") {
+        return rawName;
+    }
+    const seed = safeText(order?.customerId || order?.id || order?.productName || order?.createdAt, "buyer");
+    const hash = hashText(seed);
+    return `${FALLBACK_FIRST_NAMES[hash % FALLBACK_FIRST_NAMES.length]} ${FALLBACK_LAST_NAMES[(hash * 7) % FALLBACK_LAST_NAMES.length]}`;
+};
 
 export default function CustomersPage() {
     const [user, setUser] = useState<any>(null);
@@ -47,7 +59,7 @@ export default function CustomersPage() {
 
                         if (!customerMap[key]) {
                             customerMap[key] = {
-                                name: o.customerName || 'Guest',
+                                name: customerDisplayName(o),
                                 email: o.customerEmail || null,
                                 city: o.customerCity || null,
                                 country: o.customerCountry || null,

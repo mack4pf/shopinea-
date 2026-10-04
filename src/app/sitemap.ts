@@ -11,6 +11,7 @@ const publicRoutes = [
     "/guides",
     "/documentation",
     "/support",
+    "/trust",
     "/privacy",
     "/terms",
     "/marketplace",

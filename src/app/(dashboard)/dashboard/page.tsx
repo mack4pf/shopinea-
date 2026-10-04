@@ -13,12 +13,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useCurrency } from "@/hooks/useCurrency";
 import { formatNumber, formatPercent } from "@/lib/currency";
+import { allStoresForAnalytics, analyticsNumber, orderBelongsToAnalyticsStore, storeTotalsForAnalytics } from "@/lib/store-analytics";
 
-const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
-const numeric = (value: any) => {
-    const next = Number(value || 0);
-    return Number.isFinite(next) ? next : 0;
-};
+const numeric = analyticsNumber;
 const firstName = (value: unknown) => {
     const name = typeof value === "string" ? value.trim() : "";
     return name ? name.split(/\s+/)[0] : "there";
@@ -28,48 +25,11 @@ const getConversionRate = (data: any, totalOrders: number, totalVisitors: number
     if (Number.isFinite(override) && override >= 0) return override;
     return totalOrders > 0 && totalVisitors > 0 ? (totalOrders / totalVisitors) * 100 : 0;
 };
-const allStoresFor = (data: any) => {
-    const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
-    const totalViews = numeric(data?.storeViews || data?.impressions || data?.stats?.views);
-    const totalVisits = numeric(data?.storeVisits || totalViews);
-    const additionalViews = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeViews || store?.impressions), 0);
-    const additionalVisits = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeVisits), 0);
-    const additionalVisitsToday = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]), 0);
-    return [
-        {
-            id: "primary",
-            name: data?.storeName || "Primary store",
-            slug: data?.storeSlug || "",
-            products: Array.isArray(data?.storeProducts) ? data.storeProducts : [],
-            views: Math.max(0, totalViews - additionalViews),
-            visits: Math.max(0, totalVisits - additionalVisits),
-            visitsToday: Math.max(0, numeric(data?.dailyStoreVisits?.[todayAnalyticsKey()]) - additionalVisitsToday),
-        },
-        ...additionalStores.map((store: any) => ({
-            id: store?.id || store?.storeSlug || "store",
-            name: store?.storeName || "Additional store",
-            slug: store?.storeSlug || "",
-            products: Array.isArray(store?.storeProducts) ? store.storeProducts : [],
-            views: numeric(store?.storeViews || store?.impressions),
-            visits: numeric(store?.storeVisits),
-            visitsToday: numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]),
-        })),
-    ];
-};
-const orderBelongsToStore = (order: any, store: any) => {
-    if (order?.storeId && order.storeId === store.id) return true;
-    const productId = String(order?.productId || "");
-    const productName = String(order?.productName || "").toLowerCase();
-    return store.products.some((product: any) =>
-        (productId && String(product?.id || "") === productId) ||
-        (productName && String(product?.name || "").toLowerCase() === productName)
-    );
-};
 const buildStoreBreakdown = (data: any, orders: any[]) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return allStoresFor(data).map((store: any) => {
-        const storeOrders = orders.filter(order => orderBelongsToStore(order, store));
+    return allStoresForAnalytics(data).map((store: any) => {
+        const storeOrders = orders.filter(order => orderBelongsToAnalyticsStore(order, store));
         const todayOrders = storeOrders.filter(order => {
             const createdAt = order?.createdAt?.toDate ? order.createdAt.toDate() : new Date(order?.createdAt || 0);
             return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
@@ -102,13 +62,11 @@ export default function ResellerHome() {
 
                 if (data?.role === "buyer") { router.push("/buyer-orders"); return; }
 
-                const todayKey = todayAnalyticsKey();
-                const storeViews = numeric(data?.storeViews || data?.impressions || data?.stats?.views);
-                const storeVisits = numeric(data?.storeVisits);
+                const storeTotals = storeTotalsForAnalytics(data);
                 // "Today" must only count today's tracked visits — no falling back to
                 // all-time totals, otherwise this card silently shows the all-time number.
-                const visitorsToday = numeric(data?.dailyStoreVisits?.[todayKey]);
-                const totalVisitors = storeVisits || storeViews;
+                const visitorsToday = storeTotals.visitsToday;
+                const totalVisitors = storeTotals.visits || storeTotals.views;
 
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);

@@ -17,66 +17,26 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/hooks/useCurrency";
 import { formatNumber, formatPercent } from "@/lib/currency";
+import { allStoresForAnalytics, analyticsNumber, orderBelongsToAnalyticsStore, storeTotalsForAnalytics } from "@/lib/store-analytics";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement, Filler);
 
-const numeric = (value: any) => {
-    const next = Number(value || 0);
-    return Number.isFinite(next) ? next : 0;
-};
+const numeric = analyticsNumber;
 const safeText = (value: unknown, fallback = "") => {
     const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
     return text || fallback;
 };
-const todayAnalyticsKey = () => new Date().toISOString().slice(0, 10);
 const getConversionRate = (data: any, totalOrders: number, totalVisits: number, impressions: number) => {
     const override = Number(data?.conversionRateOverride);
     if (Number.isFinite(override) && override >= 0) return override;
     const convBase = totalVisits || impressions;
     return convBase > 0 ? (totalOrders / convBase) * 100 : 0;
 };
-const allStoresFor = (data: any) => {
-    const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
-    const totalViews = numeric(data?.storeViews || data?.impressions || data?.stats?.views);
-    const totalVisits = numeric(data?.storeVisits || totalViews);
-    const additionalViews = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeViews || store?.impressions), 0);
-    const additionalVisits = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.storeVisits), 0);
-    const additionalVisitsToday = additionalStores.reduce((sum: number, store: any) => sum + numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]), 0);
-    return [
-        {
-            id: "primary",
-            name: data?.storeName || "Primary store",
-            slug: data?.storeSlug || "",
-            products: Array.isArray(data?.storeProducts) ? data.storeProducts : [],
-            views: Math.max(0, totalViews - additionalViews),
-            visits: Math.max(0, totalVisits - additionalVisits),
-            visitsToday: Math.max(0, numeric(data?.dailyStoreVisits?.[todayAnalyticsKey()]) - additionalVisitsToday),
-        },
-        ...additionalStores.map((store: any) => ({
-            id: store?.id || store?.storeSlug || "store",
-            name: store?.storeName || "Additional store",
-            slug: store?.storeSlug || "",
-            products: Array.isArray(store?.storeProducts) ? store.storeProducts : [],
-            views: numeric(store?.storeViews || store?.impressions),
-            visits: numeric(store?.storeVisits),
-            visitsToday: numeric(store?.dailyStoreVisits?.[todayAnalyticsKey()]),
-        })),
-    ];
-};
-const orderBelongsToStore = (order: any, store: any) => {
-    if (order?.storeId && order.storeId === store.id) return true;
-    const productId = String(order?.productId || "");
-    const productName = String(order?.productName || "").toLowerCase();
-    return store.products.some((product: any) =>
-        (productId && String(product?.id || "") === productId) ||
-        (productName && String(product?.name || "").toLowerCase() === productName)
-    );
-};
 const buildStoreBreakdown = (data: any, orders: any[]) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return allStoresFor(data).map((store: any) => {
-        const storeOrders = orders.filter(order => orderBelongsToStore(order, store));
+    return allStoresForAnalytics(data).map((store: any) => {
+        const storeOrders = orders.filter(order => orderBelongsToAnalyticsStore(order, store));
         const todayOrders = storeOrders.filter(order => {
             const createdAt = order?.createdAt?.toDate ? order.createdAt.toDate() : new Date(order?.createdAt || 0);
             return !Number.isNaN(createdAt.getTime()) && createdAt >= today;
@@ -226,10 +186,11 @@ export default function AnalyticsPage() {
                     setStoreBreakdown(buildStoreBreakdown(uData, orders));
 
                     const totalRev = orders.reduce((acc, curr) => acc + numeric(curr.resellPrice), 0);
-                    const impressions = numeric(uData?.storeViews || uData?.impressions || uData?.stats?.views);
-                    const visits = numeric(uData?.storeVisits || impressions);
+                    const storeTotals = storeTotalsForAnalytics(uData);
+                    const impressions = storeTotals.views;
+                    const visits = storeTotals.visits;
                     // Today's count only — don't fall back to the all-time total.
-                    const visitsToday = numeric(uData?.dailyStoreVisits?.[todayAnalyticsKey()]);
+                    const visitsToday = storeTotals.visitsToday;
                     const convRate = getConversionRate(uData, orders.length, visits, impressions);
                     const avgVal = orders.length > 0 ? totalRev / orders.length : 0;
                     const yesterday = new Date();

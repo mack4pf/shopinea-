@@ -14,6 +14,18 @@ const safeAmount = (value: unknown) => {
     const next = Number(value || 0);
     return Number.isFinite(next) ? next : 0;
 };
+const FALLBACK_FIRST_NAMES = ["Olivia", "Emma", "Sophia", "Mia", "Amelia", "Ava", "Luna", "Ella", "Isabella", "Charlotte", "James", "Noah", "Liam", "Lucas", "Ethan", "Mason", "Logan", "Oliver", "Carter", "Aiden"];
+const FALLBACK_LAST_NAMES = ["Davis", "Wilson", "Taylor", "Brown", "Johnson", "Miller", "Anderson", "Thomas", "Moore", "Garcia", "Smith", "Martin", "White", "Harris", "Clark", "Lewis", "Walker", "Hall", "Allen", "Young"];
+const hashText = (value: string) => value.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+const customerDisplayName = (order: any) => {
+    const rawName = safeText(order?.customerName).trim();
+    if (rawName && rawName.toLowerCase() !== "ad campaign buyer" && rawName.toLowerCase() !== "ads campaign buyer") {
+        return rawName;
+    }
+    const seed = safeText(order?.customerId || order?.id || order?.productName || "buyer");
+    const hash = hashText(seed);
+    return `${FALLBACK_FIRST_NAMES[hash % FALLBACK_FIRST_NAMES.length]} ${FALLBACK_LAST_NAMES[(hash * 7) % FALLBACK_LAST_NAMES.length]}`;
+};
 export default function OrdersPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
@@ -116,7 +128,7 @@ export default function OrdersPage() {
     };
 
     const filteredOrders = orders.filter(o => {
-        const matchesSearch = (o.customerName || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const matchesSearch = customerDisplayName(o).toLowerCase().includes(searchQuery.toLowerCase()) ||
             (o.id || "").toString().toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'all' ||
             o.status === statusFilter ||
@@ -198,7 +210,7 @@ export default function OrdersPage() {
                         to: order.customerEmail,
                         data: {
                             subject: `Order #${orderId.slice(0, 8)} update`,
-                            html: `<p>Hello ${order.customerName || "there"},</p>
+                            html: `<p>Hello ${customerDisplayName(order) || "there"},</p>
                                 <p>Your order for <strong>${order.productName || "your item"}</strong> is now <strong>${getStatusLabel(nextStatus)}</strong>.</p>
                                 ${draft.courier ? `<p><strong>Courier:</strong> ${draft.courier}</p>` : ""}
                                 ${draft.trackingNumber ? `<p><strong>Tracking number:</strong> ${draft.trackingNumber}</p>` : ""}
@@ -340,7 +352,7 @@ export default function OrdersPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-white">#{orderId.slice(0, 8)}</p>
-                                                    <p className="text-xs text-zinc-600">{safeText(order.customerName || 'Customer')}</p>
+                                                    <p className="text-xs text-zinc-600">{customerDisplayName(order)}</p>
                                                 </div>
                                             </div>
                                         </td>
