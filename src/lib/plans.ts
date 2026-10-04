@@ -2,8 +2,8 @@ export const SUBSCRIPTION_PLANS = [
     {
         id: "pro_300",
         name: "Starter",
-        price: 3600,
-        monthlyEquivalent: 300,
+        price: 300,
+        monthlyEquivalent: 25,
         billingLabel: "/year",
         durationDays: 365,
         aiCredits: 0,
@@ -20,8 +20,8 @@ export const SUBSCRIPTION_PLANS = [
     {
         id: "elite_500",
         name: "Professional",
-        price: 6000,
-        monthlyEquivalent: 500,
+        price: 500,
+        monthlyEquivalent: 42,
         billingLabel: "/year",
         durationDays: 365,
         aiCredits: 200,
