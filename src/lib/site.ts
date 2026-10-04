@@ -1,5 +1,5 @@
 export const SITE_DOMAIN = "shoplinea.pro";
-export const SITE_URL = `https://${SITE_DOMAIN}`;
+export const SITE_URL = `https://www.${SITE_DOMAIN}`;
 export const SITE_NAME = "Shoplinea";
 export const SUPPORT_EMAIL = `support@${SITE_DOMAIN}`;
 export const PRIVACY_EMAIL = `privacy@${SITE_DOMAIN}`;
