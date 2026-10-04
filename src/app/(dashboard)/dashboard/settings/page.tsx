@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, serverTimestamp } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
     User, Store, Lock, CreditCard, Camera, Loader2, CheckCircle2,
     Building, ShieldCheck, Plus, Trash2, Building2, Bitcoin, Globe,
-    Smartphone, Wallet
+    Smartphone, Wallet, FileCheck2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,23 @@ export default function SettingsPage() {
                     setKycData(data.identification || {
                         fullName: "", idType: "Government ID",
                         idNumber: "", documentImage: ""
+                    });
+                    setLicenseData({
+                        hasLicense: data.salesLicenseRequest?.hasLicense || "no",
+                        legalName: data.salesLicenseRequest?.legalName || data.displayName || "",
+                        businessName: data.salesLicenseRequest?.businessName || data.storeName || "",
+                        businessType: data.salesLicenseRequest?.businessType || "",
+                        country: data.salesLicenseRequest?.country || data.country || "United States",
+                        state: data.salesLicenseRequest?.state || "",
+                        city: data.salesLicenseRequest?.city || "",
+                        address: data.salesLicenseRequest?.address || "",
+                        postalCode: data.salesLicenseRequest?.postalCode || "",
+                        taxId: data.salesLicenseRequest?.taxId || "",
+                        productCategories: data.salesLicenseRequest?.productCategories || "",
+                        contactEmail: data.salesLicenseRequest?.contactEmail || firebaseUser.email || "",
+                        contactPhone: data.salesLicenseRequest?.contactPhone || data.phoneNumber || "",
+                        existingLicenseNumber: data.salesLicenseRequest?.existingLicenseNumber || "",
+                        notes: data.salesLicenseRequest?.notes || "",
                     });
                 }
             }
@@ -203,6 +220,23 @@ export default function SettingsPage() {
     const [kycData, setKycData] = useState({
         fullName: "", idType: "Government ID", idNumber: "", documentImage: ""
     });
+    const [licenseData, setLicenseData] = useState({
+        hasLicense: "no",
+        legalName: "",
+        businessName: "",
+        businessType: "",
+        country: "",
+        state: "",
+        city: "",
+        address: "",
+        postalCode: "",
+        taxId: "",
+        productCategories: "",
+        contactEmail: "",
+        contactPhone: "",
+        existingLicenseNumber: "",
+        notes: "",
+    });
 
     const handleKYCSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -214,6 +248,34 @@ export default function SettingsPage() {
             toast.success("Verification submitted for review.");
         } catch (err) {
             toast.error("Failed to submit verification.");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleSalesLicenseSubmit = async () => {
+        if (!licenseData.legalName || !licenseData.country || !licenseData.contactEmail || !licenseData.productCategories) {
+            toast.error("Please complete the required sales license fields.");
+            return;
+        }
+
+        setUpdating(true);
+        try {
+            const userRef = doc(db, "users", user.uid);
+            const payload = {
+                ...licenseData,
+                status: "pending",
+                submittedAt: new Date().toISOString(),
+            };
+            await updateDoc(userRef, {
+                salesLicenseStatus: "pending",
+                salesLicenseRequest: payload,
+                salesLicenseSubmittedAt: serverTimestamp(),
+            });
+            setUserData({ ...userData, salesLicenseStatus: "pending", salesLicenseRequest: payload });
+            toast.success("Sales license request submitted. Support will review the country requirements and contact you.");
+        } catch (err) {
+            toast.error("Failed to submit sales license request.");
         } finally {
             setUpdating(false);
         }
@@ -631,6 +693,129 @@ export default function SettingsPage() {
                                         </Button>
                                     </div>
                                 )}
+
+                                <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-5 space-y-5">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                                            <FileCheck2 className="w-5 h-5 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-base font-semibold text-white">Sales License & Operating Compliance</h4>
+                                            <p className="text-sm text-zinc-500 mt-1 leading-6">
+                                                Some countries require resellers to hold a sales license, reseller permit, business registration, tax ID, or similar authorization before operating online. If you do not have the required license for your country, your account access or selling ability may be restricted until the requirement is reviewed.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-100 leading-6">
+                                        If you do not have a sales license, contact Shoplinea support/legal review from this form. License registration is not free and the cost depends on your country, business type, and the required local filing process. Approved documents or instructions will be sent to your email when ready.
+                                    </div>
+
+                                    {userData?.salesLicenseStatus === "pending" && (
+                                        <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-4 text-sm font-medium text-blue-200">
+                                            Your sales license request is pending review.
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Do you already have a sales license?</Label>
+                                            <select
+                                                value={licenseData.hasLicense}
+                                                onChange={(e) => setLicenseData({ ...licenseData, hasLicense: e.target.value })}
+                                                className="w-full h-11 bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 text-sm text-white outline-none focus:border-blue-500/50"
+                                            >
+                                                <option className="bg-zinc-900" value="no">No, I need support</option>
+                                                <option className="bg-zinc-900" value="yes">Yes, I already have one</option>
+                                                <option className="bg-zinc-900" value="not_sure">Not sure</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Existing License Number (if any)</Label>
+                                            <Input value={licenseData.existingLicenseNumber} onChange={(e) => setLicenseData({ ...licenseData, existingLicenseNumber: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Optional" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Legal Full Name *</Label>
+                                            <Input value={licenseData.legalName} onChange={(e) => setLicenseData({ ...licenseData, legalName: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Name used for registration" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Business / Store Name</Label>
+                                            <Input value={licenseData.businessName} onChange={(e) => setLicenseData({ ...licenseData, businessName: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Your store or business name" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Business Type</Label>
+                                            <Input value={licenseData.businessType} onChange={(e) => setLicenseData({ ...licenseData, businessType: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Individual, LLC, sole trader, company..." />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Country *</Label>
+                                            <CountrySelect
+                                                value={licenseData.country}
+                                                onChange={(country) => setLicenseData({ ...licenseData, country })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">State / Region</Label>
+                                            <Input value={licenseData.state} onChange={(e) => setLicenseData({ ...licenseData, state: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="State, province, or region" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">City</Label>
+                                            <Input value={licenseData.city} onChange={(e) => setLicenseData({ ...licenseData, city: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="City" />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Business Address</Label>
+                                            <Input value={licenseData.address} onChange={(e) => setLicenseData({ ...licenseData, address: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Street address" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Postal Code</Label>
+                                            <Input value={licenseData.postalCode} onChange={(e) => setLicenseData({ ...licenseData, postalCode: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Postal code" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Tax ID / VAT / EIN</Label>
+                                            <Input value={licenseData.taxId} onChange={(e) => setLicenseData({ ...licenseData, taxId: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Optional if not available" />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Product Categories You Plan To Sell *</Label>
+                                            <Input value={licenseData.productCategories} onChange={(e) => setLicenseData({ ...licenseData, productCategories: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="Jewelry, wellness, electronics, beauty..." />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Contact Email *</Label>
+                                            <Input value={licenseData.contactEmail} onChange={(e) => setLicenseData({ ...licenseData, contactEmail: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="email@example.com" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Contact Phone</Label>
+                                            <Input value={licenseData.contactPhone} onChange={(e) => setLicenseData({ ...licenseData, contactPhone: e.target.value })}
+                                                className="h-11 bg-white/[0.04] border-white/[0.08] rounded-lg text-sm text-white placeholder:text-zinc-700 focus:border-blue-500/50" placeholder="+1..." />
+                                        </div>
+                                        <div className="md:col-span-2 space-y-2">
+                                            <Label className="text-xs font-medium text-zinc-400">Additional Notes</Label>
+                                            <textarea
+                                                value={licenseData.notes}
+                                                onChange={(e) => setLicenseData({ ...licenseData, notes: e.target.value })}
+                                                rows={4}
+                                                className="w-full resize-none bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-blue-500/50"
+                                                placeholder="Tell support anything important about your country, business type, or license needs."
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <Button type="button" onClick={handleSalesLicenseSubmit}
+                                        disabled={updating || !licenseData.legalName || !licenseData.country || !licenseData.contactEmail || !licenseData.productCategories}
+                                        className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-sm gap-2">
+                                        {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><FileCheck2 className="w-4 h-4" /> Submit Sales License Request</>}
+                                    </Button>
+                                </div>
                             </div>
                         )}
 

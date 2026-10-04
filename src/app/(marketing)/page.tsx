@@ -22,7 +22,7 @@ export default function Home() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-5 py-2 text-[12px] font-semibold text-purple-300 backdrop-blur-md">
             <Bot className="w-3.5 h-3.5" />
-            AI-Powered Dropshipping · The Future of E-Commerce
+            AI-Powered Commerce - One App for Modern Resellers
             <span className="flex h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse" />
           </div>
 
@@ -44,8 +44,12 @@ export default function Home() {
             <span className="text-white/30 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Powered by AI.</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed font-medium">
-            Shopinea is the world&apos;s most intelligent dropshipping platform. Find winning products, automate orders, and build a thriving e-commerce business — without ever touching inventory.
+          <p className="text-lg md:text-xl text-zinc-400 max-w-3xl leading-relaxed font-medium">
+            Shopinea is an AI-powered e-commerce platform for resellers and suppliers. It brings together product sourcing, storefronts, ads, buyer orders, analytics, fulfillment tracking, and support so merchants can run the whole store from one app instead of juggling many tools.
+          </p>
+
+          <p className="rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
+            Mobile apps coming soon to Apple App Store and Google Play
           </p>
 
           {/* CTAs */}

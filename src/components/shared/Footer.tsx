@@ -28,7 +28,10 @@ export function Footer() {
                             <span className="text-white font-extrabold text-xl tracking-tight">shopinea</span>
                         </Link>
                         <p className="text-sm font-medium leading-relaxed max-w-sm text-zinc-500">
-                            The world&apos;s most intelligent AI-powered dropshipping platform. Start your e-commerce business today - no inventory, no limits, just profits.
+                            AI-powered commerce for resellers and suppliers. Source products, launch stores, create ads, track orders, and manage growth from one app.
+                        </p>
+                        <p className="inline-flex rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                            Coming soon to Apple App Store and Google Play
                         </p>
                         <div className="flex space-x-5">
                             <Link href="#" className="p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg hover:text-white hover:bg-white/[0.08] transition-all"><Twitter className="h-4 w-4" /></Link>

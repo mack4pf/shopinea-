@@ -13,6 +13,7 @@ const sections = [
     { title: "Manage payments", icon: CreditCard, text: "Track pending payment, processing, shipped, delivered, failed, and void-no-payment orders through transparent order status pages." },
     { title: "Escrow workflow", icon: ShieldCheck, text: "Customer payments and merchant payouts are reviewed for order accuracy, payment confirmation, and compliance before settlement." },
     { title: "Fulfillment", icon: Truck, text: "Follow order movement from purchase through processing, shipment, and delivery confirmation." },
+    { title: "Sales license review", icon: ShieldCheck, text: "Resellers can submit sales-license and business-compliance details from verification settings when their country requires operating approval." },
 ];
 
 export default function DocumentationPage() {
@@ -26,7 +27,7 @@ export default function DocumentationPage() {
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight md:text-6xl">Run your store with clear, legitimate workflows.</h1>
                     <p className="text-base leading-7 text-zinc-400">
-                        Shopinea gives merchants tools for product sourcing, storefront customization, AI-assisted store requests, payment review, order tracking, and payout compliance.
+                        Shopinea gives merchants tools for product sourcing, storefront customization, AI-assisted store requests, ad creation, payment review, order tracking, and payout compliance from one dashboard. The platform is a modern AI-powered alternative to running a store through many separate commerce apps.
                     </p>
                 </div>
 
@@ -44,7 +45,7 @@ export default function DocumentationPage() {
                     <div className="flex items-start gap-3">
                         <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-300" />
                         <p className="text-sm leading-6 text-emerald-50">
-                            Shopinea is built as a legitimate commerce infrastructure platform. Users must follow the Terms of Service, provide accurate information, and complete required payment, tax, or compliance reviews when applicable.
+                            Shopinea is built as a legitimate commerce infrastructure platform. Users must follow the Terms of Service, provide accurate information, and complete required payment, tax, sales-license, or compliance reviews when applicable. Mobile apps for Apple App Store and Google Play are coming soon.
                         </p>
                     </div>
                 </div>

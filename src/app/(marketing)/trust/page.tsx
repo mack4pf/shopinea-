@@ -19,6 +19,10 @@ const faqs = [
         answer: SITE_DESCRIPTION,
     },
     {
+        question: "Was Shoplinea created from older reseller platforms?",
+        answer: "Shoplinea is built as a modern AI-powered evolution for reseller commerce. It combines product sourcing, marketplace storefronts, AI ad creation, analytics, payments, fulfillment tracking, and support in one app. It is not affiliated with Oberlo or ArtFire, but it helps merchants avoid the old problem of needing many separate apps to run one store.",
+    },
+    {
         question: "How does Shoplinea support buyers and resellers?",
         answer: "Shoplinea provides storefront tools, buyer order records, product catalogs, seller dashboards, analytics, support channels, payment status tracking, and fulfillment status updates.",
     },
@@ -48,7 +52,7 @@ export default function TrustPage() {
         { icon: PackageCheck, title: "Order Tracking", text: "Orders can move through payment, processing, shipped, delivered, failed, refunded, and support review states." },
         { icon: CreditCard, title: "Payment Status Visibility", text: "Users can see payment states clearly and support can review issues when extra help is needed." },
         { icon: Headphones, title: "Support Access", text: "Users can contact support from the public support page or from their dashboard." },
-        { icon: BadgeCheck, title: "Clear Public Policies", text: "Terms, privacy, services, documentation, and guides are available from the public website." },
+        { icon: BadgeCheck, title: "AI-Powered Operating System", text: "Shoplinea brings product sourcing, storefronts, ads, payments, analytics, fulfillment tracking, and support together so merchants do not need many disconnected apps." },
     ];
 
     return (
@@ -61,7 +65,7 @@ export default function TrustPage() {
                     </div>
                     <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight md:text-6xl">Shoplinea is a legitimate commerce platform.</h1>
                     <p className="mt-6 max-w-3xl text-lg leading-relaxed text-zinc-400">
-                        Shoplinea helps resellers and suppliers build storefronts, source products, track buyers, manage ads, view analytics, follow orders, and contact support from one platform.
+                        Shoplinea helps resellers and suppliers build storefronts, source products, track buyers, manage ads, view analytics, follow orders, and contact support from one platform. Mobile apps for Apple App Store and Google Play are coming soon.
                     </p>
                     <div className="mt-8 flex flex-wrap gap-3">
                         <Link href="/register" className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700">
