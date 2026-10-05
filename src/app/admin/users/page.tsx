@@ -2194,7 +2194,7 @@ export default function UserMatrixPage() {
                                 </span>
                             </div>
                             <p className="text-xs text-zinc-500 -mt-1">
-                                Runs step by step from ad activity ranges. Use Vercel Cron to call <span className="font-mono text-zinc-300">/api/admin/growth-automation</span> hourly.
+                                Runs step by step from ad activity ranges. Hourly targets are split into 12 five-minute steps; daily targets are split into 24 hourly steps. Use Vercel Cron to call <span className="font-mono text-zinc-300">/api/admin/growth-automation</span> every 5 minutes for smooth growth.
                             </p>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <label className="flex h-10 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 text-xs font-bold text-zinc-300">
@@ -2210,8 +2210,8 @@ export default function UserMatrixPage() {
                                     onChange={(event) => setGrowthAutomation(prev => ({ ...prev, frequency: event.target.value }))}
                                     className="h-10 rounded-lg border border-white/[0.08] bg-zinc-950 px-3 text-sm text-white outline-none"
                                 >
-                                    <option value="hourly">Every hour</option>
-                                    <option value="daily">Daily</option>
+                                    <option value="hourly">Hourly target</option>
+                                    <option value="daily">Daily target</option>
                                 </select>
                                 <select
                                     value={growthAutomation.targetStoreId}
