@@ -177,7 +177,7 @@ export default function GatewaysPage() {
                         </div>
                         <div>
                             <h2 className="text-sm font-semibold text-white">Card Payments</h2>
-                            <p className="text-xs text-zinc-500">Show credit card as an option for checkout, wallet deposits, and ad wallet funding.</p>
+                            <p className="text-xs text-zinc-500">Show credit card as an option for checkout, balance deposits, and campaign payments.</p>
                         </div>
                     </div>
                     <label className="flex items-center gap-3 text-xs font-semibold text-zinc-300 cursor-pointer select-none">
@@ -223,7 +223,7 @@ export default function GatewaysPage() {
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs text-zinc-500">Cash App Tag</Label>
-                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" placeholder="$shopinea" value={paymentConfig.cashappTag} onChange={(e) => setPaymentConfig({...paymentConfig, cashappTag: e.target.value})} />
+                            <Input className="bg-white/[0.04] border-white/[0.08] h-10 text-white text-sm" placeholder="$Shoplinea" value={paymentConfig.cashappTag} onChange={(e) => setPaymentConfig({...paymentConfig, cashappTag: e.target.value})} />
                         </div>
                     </div>
                 </div>

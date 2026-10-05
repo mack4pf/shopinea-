@@ -99,7 +99,7 @@ export function getFastProductImageUrl(image?: string) {
 }
 
 export function getDefaultStock(seed?: string) {
-    const value = (seed || "shopinea").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
+    const value = (seed || "Shoplinea").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
     return 10 + (value % 41);
 }
 

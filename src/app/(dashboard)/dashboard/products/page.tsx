@@ -72,7 +72,7 @@ export default function ProductsPage() {
     const [customStoreMessages, setCustomStoreMessages] = useState([
         {
             role: "assistant",
-            content: "Hi, I am your Shopinea AI store builder. Tell me the design, colors, sections, products, domain ideas, and feeling you want. Once you submit, our team can review it and start the custom store build.",
+            content: "Hi, I am your Shoplinea AI store builder. Tell me the design, colors, sections, products, domain ideas, and feeling you want. Once you submit, our team can review it and start the custom store build.",
         },
     ]);
     const [storeDraft, setStoreDraft] = useState({ storeName: "", storeTagline: "", themeColor: "#10b981", storeTemplate: "classic", storeLayout: "grid", storeLogo: "" });
@@ -332,7 +332,7 @@ export default function ProductsPage() {
             });
             setCustomStoreMessages(prev => [...prev, {
                 role: "assistant",
-                content: "Perfect. Shopinea AI has accepted your custom-store brief. The store build queue usually completes custom landing pages, domain setup notes, and store layout work within 3 to 24 hours. Our team has received your exact request and will continue the setup.",
+                content: "Perfect. Shoplinea AI has accepted your custom-store brief. The store build queue usually completes custom landing pages, domain setup notes, and store layout work within 3 to 24 hours. Our team has received your exact request and will continue the setup.",
             }]);
             setCustomStorePrompt("");
             toast.success("Custom store request sent.");
@@ -521,7 +521,7 @@ export default function ProductsPage() {
                     <div>
                         <h2 className="text-sm font-semibold text-white">AI custom store builder</h2>
                         <p className="text-xs text-zinc-400 mt-1 max-w-2xl leading-5">
-                            Describe the custom website, landing page, colors, domain, product sections, and brand feeling you want. Subscribed users can submit a build request and Shopinea starts the custom-store workflow within 3 to 24 hours.
+                            Describe the custom website, landing page, colors, domain, product sections, and brand feeling you want. Subscribed users can submit a build request and Shoplinea starts the custom-store workflow within 3 to 24 hours.
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
                             {["AI to run your store", "Custom domain", "Custom landing page", "Guided request review"].map(item => (

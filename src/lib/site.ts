@@ -9,17 +9,16 @@ export const PAYMENTS_EMAIL = `payments@${EMAIL_DOMAIN}`;
 export const LEGAL_EMAIL = `legal@${EMAIL_DOMAIN}`;
 
 export const SITE_DESCRIPTION =
-    "Shoplinea is an AI-powered e-commerce platform for resellers, suppliers, storefronts, product sourcing, AI ad creation, buyer traffic from ads, wallet funding, payments, fulfillment tracking, and marketplace growth tools. Shoplinea helps merchants run the whole store from one app instead of juggling many disconnected tools.";
+    "Shoplinea is an AI-powered e-commerce operations platform for resellers, suppliers, storefronts, product sourcing, campaign planning, payment records, fulfillment tracking, support, and marketplace growth tools. Shoplinea helps merchants manage store operations from one dashboard instead of juggling disconnected tools.";
 
 export const SEO_KEYWORDS = [
     "Shoplinea",
-    "Shopinea",
     "AI ecommerce platform",
     "dropshipping platform",
     "reseller marketplace",
     "supplier marketplace",
     "online store builder",
-    "ad wallet for ecommerce",
+    "ecommerce campaign tools",
     "commerce infrastructure",
     "product sourcing platform",
     "AI ad creator",
@@ -28,7 +27,7 @@ export const SEO_KEYWORDS = [
     "TikTok product ads",
     "Google shopping ads",
     "YouTube ecommerce ads",
-    "buyer traffic from ads",
+    "ecommerce campaign planning",
     "store growth tools",
     "order fulfillment center",
     "Oberlo alternative",

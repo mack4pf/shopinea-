@@ -136,7 +136,7 @@ export default function SupportPage() {
                     <div className="p-4 border-b border-white/[0.06] flex items-center gap-3 shrink-0">
                         <div className="w-9 h-9 rounded-full bg-lime-400 flex items-center justify-center text-slate-950 text-sm font-black">S</div>
                         <div>
-                            <h3 className="text-sm font-semibold text-white">Shopinea Support</h3>
+                            <h3 className="text-sm font-semibold text-white">Shoplinea Support</h3>
                             <div className="flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 <p className="text-[10px] text-emerald-500 font-medium">Online</p>

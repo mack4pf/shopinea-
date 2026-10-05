@@ -257,7 +257,7 @@ export default function StorePage() {
                     <div className="relative h-20 w-20">
                         <div className="absolute inset-0 rounded-3xl bg-blue-500/10 animate-ping" />
                         <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
-                            <Image src="/images/sholinealogo2.png" alt="Shoplinea" width={48} height={48} className="object-contain" priority />
+                            <Image src="/images/shoplinea-logo.png" alt="Shoplinea" width={48} height={48} className="object-contain" priority />
                         </div>
                     </div>
                     <div className="grid w-72 gap-2">
@@ -675,7 +675,7 @@ export default function StorePage() {
 
             <footer className="border-t border-slate-200 p-12 text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
                 <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
-                    <p>&copy; 2026 {storeUser.storeName}. {showPoweredBy ? "Powered by Shopinea." : storeUser.storeFooterNote || "All rights reserved."}</p>
+                    <p>&copy; 2026 {storeUser.storeName}. {showPoweredBy ? "Powered by Shoplinea." : storeUser.storeFooterNote || "All rights reserved."}</p>
                     {storeUser.storeFooterNote && showPoweredBy && <p className="max-w-2xl tracking-[0.12em]">{storeUser.storeFooterNote}</p>}
                     <div className="flex flex-wrap items-center justify-center gap-4 tracking-[0.2em]">
                         {storeUser.storeEmail && <a href={`mailto:${storeUser.storeEmail}`} className="hover:text-slate-900 transition-colors">Email</a>}

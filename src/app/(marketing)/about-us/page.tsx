@@ -23,7 +23,7 @@ export default function AboutUsPage() {
                             of entrepreneurs.
                         </h1>
                         <p className="text-lg text-zinc-400 leading-relaxed max-w-2xl">
-                            shopinea is more than a platform — it&apos;s a launchpad. We believe that starting a business shouldn&apos;t require a fortune.
+                            Shoplinea is more than a platform — it&apos;s a launchpad. We believe that starting a business shouldn&apos;t require a fortune.
                             Our mission is to democratize access to the global supply chain, allowing anyone to build a thriving retail empire.
                         </p>
                     </div>
@@ -121,7 +121,7 @@ export default function AboutUsPage() {
                 <div className="container px-6 max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl md:text-4xl font-bold text-white mb-5">Built for remote workers, by remote workers</h2>
                     <p className="text-lg text-zinc-400 mb-10 leading-relaxed">
-                        We understand the freedom of working from anywhere because that&apos;s how we built shopinea.
+                        We understand the freedom of working from anywhere because that&apos;s how we built Shoplinea.
                         Our team is distributed globally, just like our supply chain.
                     </p>
                     <Link

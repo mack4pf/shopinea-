@@ -28,11 +28,11 @@ export default function Home() {
 
           {/* Headline */}
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[88px] font-extrabold tracking-[-0.03em] leading-[1.0] max-w-5xl">
-            <span className="text-white">Drop. Sell.</span>
+            <span className="text-white">Source. Sell.</span>
             <br />
             <span className="relative inline-block">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400">
-                Profit.
+                Grow.
               </span>
               {/* Underline decoration */}
               <svg className="absolute -bottom-2 left-0 w-full" height="6" viewBox="0 0 300 6" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
@@ -41,11 +41,11 @@ export default function Home() {
               </svg>
             </span>
             <br />
-            <span className="text-white/30 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Powered by AI.</span>
+            <span className="text-white/30 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">Managed with AI.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-zinc-400 max-w-3xl leading-relaxed font-medium">
-            Shopinea is an AI-powered e-commerce platform for resellers and suppliers. It brings together product sourcing, storefronts, ads, buyer orders, analytics, fulfillment tracking, and support so merchants can run the whole store from one app instead of juggling many tools.
+            Shoplinea is an AI-powered e-commerce platform for resellers and suppliers. It brings together product sourcing, storefronts, ads, buyer orders, analytics, fulfillment tracking, and support so merchants can run the whole store from one app instead of juggling many tools.
           </p>
 
           <p className="rounded-full border border-white/[0.08] bg-white/[0.04] px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-400">
@@ -160,7 +160,7 @@ export default function Home() {
               <Zap className="w-3 h-3" /> Simple Process
             </div>
             <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-5">From zero to selling<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">in 3 steps.</span></h2>
-            <p className="text-zinc-500 text-lg max-w-xl mx-auto">No experience needed. No inventory. No shipping headaches. Just profits.</p>
+            <p className="text-zinc-500 text-lg max-w-xl mx-auto">Launch with product records, supplier workflows, order tracking, and analytics in one dashboard.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
@@ -168,9 +168,9 @@ export default function Home() {
             <div className="hidden md:block absolute top-14 left-[calc(16.6%+1rem)] right-[calc(16.6%+1rem)] h-px bg-gradient-to-r from-transparent via-purple-500/40 to-transparent" />
 
             {[
-              { step: "01", icon: Bot, color: "from-purple-500 to-indigo-600", glow: "shadow-purple-500/20", title: "AI Finds Winning Products", desc: "Our AI scans millions of products daily to surface high-margin, trending items you can list immediately." },
+              { step: "01", icon: Bot, color: "from-purple-500 to-indigo-600", glow: "shadow-purple-500/20", title: "AI-Assisted Product Research", desc: "Review catalog items with supplier details, pricing, category signals, and storefront-ready product information." },
               { step: "02", icon: Package, color: "from-indigo-500 to-cyan-600", glow: "shadow-indigo-500/20", title: "Import & Customize", desc: "One click to add products to your store. Set your price, your margins, your brand — total control." },
-              { step: "03", icon: Rocket, color: "from-cyan-500 to-teal-600", glow: "shadow-cyan-500/20", title: "Sell & Auto-Fulfill", desc: "When a customer orders, Shopinea automatically notifies the supplier and ships directly. You just collect profits." },
+              { step: "03", icon: Rocket, color: "from-cyan-500 to-teal-600", glow: "shadow-cyan-500/20", title: "Track Fulfillment", desc: "When a customer orders, Shoplinea records the order, keeps supplier workflow visible, and shows delivery updates in the dashboard." },
             ].map((s, i) => (
               <div key={i} className="relative flex flex-col items-center text-center p-8 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.05] transition-all group">
                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center mb-6 shadow-2xl ${s.glow} group-hover:scale-110 transition-transform`}>
@@ -193,17 +193,17 @@ export default function Home() {
               <Sparkles className="w-3 h-3" /> Everything Included
             </div>
             <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-5">Built different.<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400">Powered by AI.</span></h2>
-            <p className="text-zinc-500 text-lg max-w-xl mx-auto">Every tool you need to run a profitable dropshipping store, baked right in.</p>
+            <p className="text-zinc-500 text-lg max-w-xl mx-auto">Core tools for managing a reseller storefront, products, campaigns, orders, and support from one place.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: Bot, title: "AI Product Research", desc: "Real-time trend analysis and profit scoring powered by machine learning. Find winning products before your competitors.", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
+              { icon: Bot, title: "AI Product Research", desc: "Review product signals, supplier details, suggested descriptions, and pricing guidance before adding items to your store.", color: "text-purple-400", bg: "bg-purple-500/10", border: "border-purple-500/20" },
               { icon: Globe, title: "Supplier Network", desc: "Access approved supplier and product records from the platform catalog. Diverse products, competitive prices, and fulfillment workflows.", color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },
               { icon: Zap, title: "One-Click Import", desc: "Browse the marketplace, click import, and your store is stocked instantly. Product details, photos, and pricing synced automatically.", color: "text-yellow-400", bg: "bg-yellow-500/10", border: "border-yellow-500/20" },
-              { icon: ShieldCheck, title: "Escrow Protection", desc: "Every transaction is secured through our encrypted escrow system. Your money is protected until delivery is confirmed.", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-              { icon: TrendingUp, title: "Smart Analytics", desc: "Deep sales insights, customer behavior patterns, and conversion optimization tips — all in one beautiful dashboard.", color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
-              { icon: Users, title: "Referral & Rewards", desc: "Earn extra income by referring other merchants. Our multi-tier referral program pays you on every sign-up and sale.", color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/20" },
+              { icon: ShieldCheck, title: "Checkout Review", desc: "Payment records, order status, support notes, and delivery updates stay organized for buyer and seller protection.", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+              { icon: TrendingUp, title: "Smart Analytics", desc: "Track sales activity, visits, conversion, product performance, and store comparisons from one dashboard.", color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
+              { icon: Users, title: "Partner Referrals", desc: "Share Shoplinea with other merchants and view eligible referral credits transparently after platform review.", color: "text-pink-400", bg: "bg-pink-500/10", border: "border-pink-500/20" },
             ].map((f, i) => (
               <div key={i} className={`p-7 rounded-2xl bg-white/[0.02] border ${f.border} hover:bg-white/[0.05] transition-all group`}>
                 <div className={`w-12 h-12 rounded-xl ${f.bg} flex items-center justify-center mb-5 border ${f.border} group-hover:scale-110 transition-transform`}>
@@ -304,11 +304,11 @@ export default function Home() {
           <h2 className="text-5xl sm:text-7xl font-extrabold tracking-[-0.03em] text-white mb-6">
             Your e-commerce<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-cyan-400">
-              empire starts now.
+              operation starts here.
             </span>
           </h2>
           <p className="text-lg text-zinc-400 font-medium max-w-xl mb-12 leading-relaxed">
-            Join merchants building real stores with Shopinea&apos;s AI-powered commerce platform.
+            Join merchants building real stores with Shoplinea&apos;s AI-powered commerce platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Link href="/register">
@@ -318,7 +318,7 @@ export default function Home() {
               </Button>
             </Link>
           </div>
-          <p className="mt-8 text-[11px] font-bold text-zinc-700 uppercase tracking-[0.25em]">No credit card required · Set up in under 5 minutes</p>
+          <p className="mt-8 text-[11px] font-bold text-zinc-700 uppercase tracking-[0.25em]">No credit card required · Set up from your dashboard</p>
         </div>
       </section>
     </main>

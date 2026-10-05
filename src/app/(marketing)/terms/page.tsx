@@ -3,19 +3,19 @@ import { FileText, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
     title: "Terms of Service",
-    description: "Shopinea Terms of Service for legitimate dropshipping, reseller stores, suppliers, payments, escrow review, taxes, withdrawals, and compliance.",
+    description: "Shoplinea Terms of Service for legitimate dropshipping, reseller stores, suppliers, payments, escrow review, taxes, withdrawals, and compliance.",
 };
 
 const terms = [
-    ["Acceptance", "By creating an account or using Shopinea, you agree to these Terms of Service and all platform policies."],
-    ["Platform Description", "Shopinea is a legitimate AI-powered e-commerce infrastructure, dropshipping, reseller, supplier, storefront, payment review, and custom store platform. Users remain responsible for truthful listings, lawful sales, and accurate account activity."],
+    ["Acceptance", "By creating an account or using Shoplinea, you agree to these Terms of Service and all platform policies."],
+    ["Platform Description", "Shoplinea is a legitimate AI-powered e-commerce infrastructure, dropshipping, reseller, supplier, storefront, payment review, and custom store platform. Users remain responsible for truthful listings, lawful sales, and accurate account activity."],
     ["Accounts", "You must provide accurate information, protect your login credentials, and comply with platform verification requests."],
     ["Payments and Escrow", "Orders may be reviewed for payment confirmation before fulfillment. Admin may mark unpaid orders as void when no payment is received."],
     ["Withdrawals, Taxes, and Compliance", "Withdrawals may require manual review. Before a withdrawal is completed, users may be asked to clear applicable taxes, product taxes, duties, supplier costs, subscription balances, ad debt, payout route fees, or other lawful compliance requirements connected to their sales or products."],
-    ["Sales License Requirements", "Depending on country, region, products, and business type, resellers may need a sales license, reseller permit, tax registration, VAT number, or similar operating authorization. Users are responsible for lawful operation in their country. Shopinea may request license details or restrict selling access until compliance requirements are reviewed. License support or registration assistance is not free and pricing depends on the country and required filing process."],
+    ["Sales License Requirements", "Depending on country, region, products, and business type, resellers may need a sales license, reseller permit, tax registration, VAT number, or similar operating authorization. Users are responsible for lawful operation in their country. Shoplinea may request license details or restrict selling access until compliance requirements are reviewed. License support or registration assistance is not free and pricing depends on the country and required filing process."],
     ["Prohibited Activity", "Counterfeit products, illegal items, false claims, spam, phishing, payment abuse, review manipulation, and misleading store activity are not allowed."],
-    ["Legitimacy and Public Statements", "Shopinea operates as a legitimate commercial platform. Users agree not to publish false, misleading, defamatory, or bad-faith claims and should contact support for dispute review."],
-    ["Termination", "Shopinea may suspend or terminate accounts that violate these terms, create risk, or engage in fraudulent or abusive conduct."],
+    ["Legitimacy and Public Statements", "Shoplinea operates as a legitimate commercial platform. Users agree not to publish false, misleading, defamatory, or bad-faith claims and should contact support for dispute review."],
+    ["Termination", "Shoplinea may suspend or terminate accounts that violate these terms, create risk, or engage in fraudulent or abusive conduct."],
     ["Changes", "We may update these terms. Continued use after updates means you accept the revised terms."],
     ["Contact", "For questions, contact support@shoplinea.shop."],
 ];
@@ -45,7 +45,7 @@ export default function TermsPage() {
                 <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-6">
                     <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-300" />
                     <p className="text-sm leading-6 text-emerald-50">
-                        These terms are written to support transparent, legitimate commerce activity across Shopinea stores, suppliers, buyers, and resellers.
+                        These terms are written to support transparent, legitimate commerce activity across Shoplinea stores, suppliers, buyers, and resellers.
                     </p>
                 </div>
             </section>

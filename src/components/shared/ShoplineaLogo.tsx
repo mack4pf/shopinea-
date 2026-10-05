@@ -1,16 +1,16 @@
 import React from "react";
 
-interface ShopineaLogoProps {
+interface ShoplineaLogoProps {
     size?: number;
     className?: string;
 }
 
-export function ShopineaLogo({ size = 36, className = "" }: ShopineaLogoProps) {
+export function ShoplineaLogo({ size = 36, className = "" }: ShoplineaLogoProps) {
     return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-            src="/images/sholinealogo2.png"
-            alt="shopinea"
+            src="/images/shoplinea-logo.png"
+            alt="Shoplinea"
             width={size}
             height={size}
             className={`object-contain ${className}`}

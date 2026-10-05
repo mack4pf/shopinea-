@@ -4,7 +4,7 @@ import { LifeBuoy, Mail, MessageSquare, ShieldCheck, Timer } from "lucide-react"
 
 export const metadata: Metadata = {
     title: "Support Center",
-    description: "Shopinea Support Center for account, order, payment, payout, custom store, supplier, and reseller help.",
+    description: "Shoplinea Support Center for account, order, payment, payout, custom store, supplier, and reseller help.",
 };
 
 export default function SupportPage() {
@@ -40,7 +40,7 @@ export default function SupportPage() {
                     <div className="flex items-start gap-3">
                         <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-300" />
                         <p className="text-sm leading-6 text-emerald-50">
-                            Shopinea support reviews platform activity through order records, payment status, support notes, and account compliance history so disputes can be handled professionally.
+                            Shoplinea support reviews platform activity through order records, payment status, support notes, and account compliance history so disputes can be handled professionally.
                         </p>
                     </div>
                 </div>

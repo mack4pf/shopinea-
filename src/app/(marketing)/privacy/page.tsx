@@ -3,12 +3,12 @@ import { Lock, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
     title: "Privacy Policy",
-    description: "Shopinea Privacy Policy for account, order, payment review, storefront, analytics, and support data.",
+    description: "Shoplinea Privacy Policy for account, order, payment review, storefront, analytics, and support data.",
 };
 
 const sections = [
     ["Information We Collect", "We collect account details, contact information, store settings, product activity, order data, payment review information, support messages, and platform usage analytics."],
-    ["How We Use Data", "We use data to operate Shopinea, verify accounts, process orders, review payments, support withdrawals, secure stores, improve product workflows, and provide support."],
+    ["How We Use Data", "We use data to operate Shoplinea, verify accounts, process orders, review payments, support withdrawals, secure stores, improve product workflows, and provide support."],
     ["Sharing", "We share information with service providers, payment processors, logistics partners, cloud infrastructure, and compliance reviewers only as needed to provide the platform."],
     ["Security", "We use technical and administrative safeguards for platform data. Users must protect their login credentials and provide accurate account information."],
     ["Retention", "We retain records as needed for account operation, transaction history, fraud prevention, compliance, tax, and dispute review."],
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
                 <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-6">
                     <ShieldCheck className="mt-0.5 h-5 w-5 text-emerald-300" />
                     <p className="text-sm leading-6 text-emerald-50">
-                        Shopinea uses data to support legitimate commerce workflows, account safety, order transparency, and payment/payout review.
+                        Shoplinea uses data to support legitimate commerce workflows, account safety, order transparency, and payment/payout review.
                     </p>
                 </div>
             </section>

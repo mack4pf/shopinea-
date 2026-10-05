@@ -4,7 +4,7 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const VERIFIED_MAIL_DOMAIN = process.env.RESEND_MAIL_DOMAIN || 'shoplinea.shop';
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || `support@${VERIFIED_MAIL_DOMAIN}`;
 const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || `support@${VERIFIED_MAIL_DOMAIN}`;
-const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Shopinea Support';
+const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Shoplinea Support';
 const defaultFrom = `${DEFAULT_FROM_NAME} <${DEFAULT_FROM_EMAIL}>`;
 const resend = new Resend(RESEND_API_KEY);
 
@@ -12,8 +12,8 @@ function normalizeFromAddress(value?: string) {
     const fromValue = value || defaultFrom;
     return fromValue
         .replace(/@shoplinea\.pro\b/gi, `@${VERIFIED_MAIL_DOMAIN}`)
-        .replace(/@shopinea\.pro\b/gi, `@${VERIFIED_MAIL_DOMAIN}`)
-        .replace(/@shopinea\.shop\b/gi, `@${VERIFIED_MAIL_DOMAIN}`);
+        .replace(/@Shoplinea\.pro\b/gi, `@${VERIFIED_MAIL_DOMAIN}`)
+        .replace(/@Shoplinea\.shop\b/gi, `@${VERIFIED_MAIL_DOMAIN}`);
 }
 
 export async function sendEmail({
@@ -88,7 +88,7 @@ const baseTemplate = (content: string) => `
         </div>
         <div class="footer">
             <p><strong>Shoplinea</strong><br/>
-            This email was sent automatically by Shopinea Support. Reply to ${SUPPORT_EMAIL}.<br/>
+            This email was sent automatically by Shoplinea Support. Reply to ${SUPPORT_EMAIL}.<br/>
             &copy; 2026 Shoplinea.pro. All rights reserved.</p>
         </div>
     </div>

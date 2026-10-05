@@ -121,8 +121,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                         <Link href="/marketplace" className="flex items-center gap-2.5">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src="/images/sholinealogo2.png" alt="shopinea" className="h-9 w-9 object-contain" />
-                            <span className="text-base font-black tracking-tight text-slate-950">shopinea</span>
+                            <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="h-9 w-9 object-contain" />
+                            <span className="text-base font-black tracking-tight text-slate-950">Shoplinea</span>
                         </Link>
 
                         <div className="hidden flex-1 items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 md:flex max-w-xl">
@@ -223,8 +223,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="h-16 flex items-center px-5 border-b border-slate-200 bg-gradient-to-r from-lime-50 to-sky-50 dark:border-slate-800/80 dark:bg-none">
                     <Link href="/" className="flex items-center gap-3.5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/sholinealogo2.png" alt="shopinea" className="w-9 h-9 object-contain" />
-                        <span className="text-[16px] font-extrabold text-slate-950 tracking-tight dark:text-white">shopinea</span>
+                        <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="w-9 h-9 object-contain" />
+                        <span className="text-[16px] font-extrabold text-slate-950 tracking-tight dark:text-white">Shoplinea</span>
                     </Link>
                 </div>
 
@@ -288,8 +288,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </div>
 
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/sholinealogo2.png" alt="shopinea" className="md:hidden w-7 h-7 object-contain" />
-                        <span className="md:hidden text-sm font-extrabold text-slate-950 dark:text-white">shopinea</span>
+                        <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="md:hidden w-7 h-7 object-contain" />
+                        <span className="md:hidden text-sm font-extrabold text-slate-950 dark:text-white">Shoplinea</span>
                     </div>
 
                     <div className="flex items-center gap-3">

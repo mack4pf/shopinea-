@@ -4,7 +4,7 @@ import { ArrowRight, BookMarked, Megaphone, PackageSearch, Store, Wallet } from 
 
 export const metadata: Metadata = {
     title: "Selling Guides",
-    description: "Selling guides for building legitimate Shopinea stores, choosing products, pricing, fulfillment, ads, and payout readiness.",
+    description: "Selling guides for building legitimate Shoplinea stores, choosing products, pricing, fulfillment, ads, and payout readiness.",
 };
 
 const guides = [
@@ -25,7 +25,7 @@ export default function GuidesPage() {
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight md:text-6xl">Practical guides for serious online sellers.</h1>
                     <p className="text-base leading-7 text-zinc-400">
-                        Learn how to set up a legitimate Shopinea store, choose products, launch ads, manage orders, and prepare your account for compliant withdrawals.
+                        Learn how to set up a legitimate Shoplinea store, choose products, launch ads, manage orders, and prepare your account for compliant withdrawals.
                     </p>
                 </div>
 

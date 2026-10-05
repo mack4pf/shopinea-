@@ -52,8 +52,8 @@ export default function LoginPage() {
             <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 bg-gradient-to-br from-lime-50 via-white to-sky-50 dark:bg-white/[0.02] dark:bg-none border-r border-slate-200 dark:border-white/[0.05] p-10">
                 <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-9 h-9 object-contain" />
-                    <span className="text-sm font-bold text-slate-950 dark:text-white tracking-tight">shopinea</span>
+                    <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="w-9 h-9 object-contain" />
+                    <span className="text-sm font-bold text-slate-950 dark:text-white tracking-tight">Shoplinea</span>
                 </div>
                 <div className="space-y-6">
                     <div className="space-y-2">
@@ -76,7 +76,7 @@ export default function LoginPage() {
                         ))}
                     </div>
                 </div>
-                <p className="text-xs text-slate-400 dark:text-zinc-700">© 2026 Shopinea. All rights reserved.</p>
+                <p className="text-xs text-slate-400 dark:text-zinc-700">© 2026 Shoplinea. All rights reserved.</p>
             </div>
 
             {/* Right: form */}
@@ -87,8 +87,8 @@ export default function LoginPage() {
                 {/* Mobile logo */}
                 <div className="flex items-center gap-2 mb-8 lg:hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-8 h-8 object-contain" />
-                    <span className="text-sm font-bold text-slate-950 dark:text-white">shopinea</span>
+                    <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-bold text-slate-950 dark:text-white">Shoplinea</span>
                 </div>
 
                 <div className="w-full max-w-[400px]">

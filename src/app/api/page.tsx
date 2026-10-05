@@ -3,7 +3,7 @@ import { Code2, KeyRound, ShieldCheck, Webhook } from "lucide-react";
 
 export const metadata: Metadata = {
     title: "API Reference",
-    description: "Shopinea API reference for commerce infrastructure, storefronts, products, payment review, and order tracking integrations.",
+    description: "Shoplinea API reference for commerce infrastructure, storefronts, products, payment review, and order tracking integrations.",
 };
 
 const endpoints = [
@@ -24,7 +24,7 @@ export default function ApiReferencePage() {
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight md:text-6xl">Infrastructure endpoints for verified commerce workflows.</h1>
                     <p className="text-base leading-7 text-zinc-400">
-                        Shopinea APIs support product import, checkout review, email notifications, and marketplace data. Access may require approved platform permissions.
+                        Shoplinea APIs support product import, checkout review, email notifications, and marketplace data. Access may require approved platform permissions.
                     </p>
                 </div>
 

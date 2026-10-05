@@ -65,7 +65,7 @@ export default function ServicesPage() {
                         </span>
                     </h1>
                     <p className="max-w-2xl mx-auto text-lg text-zinc-400 leading-relaxed">
-                        Whether you&apos;re a solo entrepreneur or a growing enterprise, shopinea provides the infrastructure you need to scale without limits.
+                        Whether you&apos;re a solo entrepreneur or a growing enterprise, Shoplinea provides the infrastructure you need to scale without limits.
                     </p>
                 </div>
             </section>
@@ -91,7 +91,7 @@ export default function ServicesPage() {
             <section className="py-24 border-t border-white/[0.06]">
                 <div className="container px-6 max-w-3xl mx-auto text-center">
                     <h2 className="text-3xl md:text-4xl font-bold text-white mb-5">Ready to expand your capabilities?</h2>
-                    <p className="text-lg text-zinc-400 mb-10">Join thousands of merchants already using shopinea to grow their business.</p>
+                    <p className="text-lg text-zinc-400 mb-10">Join thousands of merchants already using Shoplinea to grow their business.</p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link href="/register" className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
                             Get Started Today

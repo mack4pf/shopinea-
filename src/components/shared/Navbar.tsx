@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { User, Menu, X, ChevronRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ShopineaLogo } from "@/components/shared/ShopineaLogo";
+import { ShoplineaLogo } from "@/components/shared/ShoplineaLogo";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export function Navbar() {
@@ -51,12 +51,12 @@ export function Navbar() {
                 <div className="max-w-7xl mx-auto px-5 flex items-center justify-between h-12">
                     {/* Logo */}
                     <Link href="/" onClick={close} className="flex items-center gap-2.5">
-                        <ShopineaLogo size={32} />
+                        <ShoplineaLogo size={32} />
                         <span className={cn(
                             "font-extrabold text-[1.15rem] tracking-tight transition-colors",
                             scrolled ? "text-zinc-900" : "text-white"
                         )}>
-                            shopinea
+                            Shoplinea
                         </span>
                     </Link>
 
@@ -148,8 +148,8 @@ export function Navbar() {
                 {/* Drawer header */}
                 <div className="flex items-center justify-between px-5 h-[72px] border-b border-zinc-100 shrink-0">
                     <Link href="/" onClick={close} className="flex items-center gap-2">
-                        <ShopineaLogo size={28} />
-                        <span className="font-extrabold text-base text-zinc-900">shopinea</span>
+                        <ShoplineaLogo size={28} />
+                        <span className="font-extrabold text-base text-zinc-900">Shoplinea</span>
                     </Link>
                     <div className="flex items-center gap-2">
                         <ThemeToggle className="h-9 w-9" />

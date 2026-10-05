@@ -160,13 +160,13 @@ function RegisterPageInner() {
             <div className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 bg-gradient-to-br from-lime-50 via-white to-sky-50 dark:bg-white/[0.02] dark:bg-none border-r border-slate-200 dark:border-white/[0.05] p-10">
                 <div className="flex items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-9 h-9 object-contain" />
-                    <span className="text-sm font-bold text-slate-950 dark:text-white tracking-tight">shopinea</span>
+                    <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="w-9 h-9 object-contain" />
+                    <span className="text-sm font-bold text-slate-950 dark:text-white tracking-tight">Shoplinea</span>
                 </div>
                 <div className="space-y-5">
                     <div>
                         <h2 className="text-3xl font-bold leading-tight text-slate-950 dark:text-white">Start selling smarter today.</h2>
-                        <p className="text-slate-600 dark:text-zinc-500 text-sm mt-2 leading-relaxed">Join thousands of resellers and suppliers building their business on Shopinea.</p>
+                        <p className="text-slate-600 dark:text-zinc-500 text-sm mt-2 leading-relaxed">Join thousands of resellers and suppliers building their business on Shoplinea.</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         {[
@@ -182,7 +182,7 @@ function RegisterPageInner() {
                         ))}
                     </div>
                 </div>
-                <p className="text-xs text-slate-400 dark:text-zinc-700">© 2026 Shopinea. All rights reserved.</p>
+                <p className="text-xs text-slate-400 dark:text-zinc-700">© 2026 Shoplinea. All rights reserved.</p>
             </div>
 
             {/* Right: form */}
@@ -193,8 +193,8 @@ function RegisterPageInner() {
                 {/* Mobile logo */}
                 <div className="flex items-center gap-2 mb-8 lg:hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/sholinealogo2.png" alt="shopinea" className="w-8 h-8 object-contain" />
-                    <span className="text-sm font-bold text-slate-950 dark:text-white">shopinea</span>
+                    <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-bold text-slate-950 dark:text-white">Shoplinea</span>
                 </div>
 
                 <div className="w-full max-w-[440px]">
@@ -367,11 +367,11 @@ function RegisterPageInner() {
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-zinc-600">Last updated: May 2026</p>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">1. Acceptance of Terms</h3>
-                                    <p>By creating an account on Shopinea, you agree to be bound by these Terms of Service. If you do not agree, do not use the platform.</p>
+                                    <p>By creating an account on Shoplinea, you agree to be bound by these Terms of Service. If you do not agree, do not use the platform.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">2. Platform Description</h3>
-                                    <p>Shopinea is a legitimate e-commerce infrastructure, dropshipping, reseller, and supplier marketplace platform. We provide storefront tools, order tracking, payment review, subscription tools, product sourcing workflows, AI-assisted store setup features, and administrative support for merchants. We facilitate transactions and platform services, but each reseller, supplier, and buyer remains responsible for the accuracy and legality of their own activity.</p>
+                                    <p>Shoplinea is a legitimate e-commerce infrastructure, dropshipping, reseller, and supplier marketplace platform. We provide storefront tools, order tracking, payment review, subscription tools, product sourcing workflows, AI-assisted store setup features, and administrative support for merchants. We facilitate transactions and platform services, but each reseller, supplier, and buyer remains responsible for the accuracy and legality of their own activity.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">3. Account Responsibilities</h3>
@@ -383,15 +383,15 @@ function RegisterPageInner() {
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">5. Payments & Escrow</h3>
-                                    <p>All customer payments are held in escrow and released to the reseller only upon confirmed delivery. Shopinea charges a platform fee as stated in your subscription plan. Fraudulent transactions will result in account suspension and potential legal action.</p>
+                                    <p>All customer payments are held in escrow and released to the reseller only upon confirmed delivery. Shoplinea charges a platform fee as stated in your subscription plan. Fraudulent transactions will result in account suspension and potential legal action.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">6. Withdrawals, Taxes & Compliance Fees</h3>
-                                    <p>By using Shopinea, you acknowledge that withdrawals may be subject to manual compliance review, payout verification, tax checks, product-related duties, supplier settlement checks, chargeback review, payment gateway requirements, or other lawful administrative requirements. Before a withdrawal is completed, you may be asked to pay or clear applicable taxes, product taxes, duties, compliance fees, outstanding ad debt, supplier costs, subscription balances, or other amounts connected to your products, sales, store, or payout route. Failure to satisfy required obligations may delay, pause, or prevent withdrawal completion.</p>
+                                    <p>By using Shoplinea, you acknowledge that withdrawals may be subject to manual compliance review, payout verification, tax checks, product-related duties, supplier settlement checks, chargeback review, payment gateway requirements, or other lawful administrative requirements. Before a withdrawal is completed, you may be asked to pay or clear applicable taxes, product taxes, duties, compliance fees, outstanding ad debt, supplier costs, subscription balances, or other amounts connected to your products, sales, store, or payout route. Failure to satisfy required obligations may delay, pause, or prevent withdrawal completion.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">7. Legitimacy, Reviews & Public Statements</h3>
-                                    <p>Shopinea operates as a legitimate commercial platform and expects users to communicate truthfully about their experience. Users must not publish false, misleading, defamatory, or bad-faith claims about Shopinea, its merchants, its buyers, or its platform operations. If you have a dispute, you agree to contact support and allow a reasonable review period before making public claims.</p>
+                                    <p>Shoplinea operates as a legitimate commercial platform and expects users to communicate truthfully about their experience. Users must not publish false, misleading, defamatory, or bad-faith claims about Shoplinea, its merchants, its buyers, or its platform operations. If you have a dispute, you agree to contact support and allow a reasonable review period before making public claims.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">8. Prohibited Activities</h3>
@@ -399,11 +399,11 @@ function RegisterPageInner() {
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">9. Termination</h3>
-                                    <p>Shopinea reserves the right to suspend or terminate any account at any time for violations of these terms, fraudulent activity, or any other reason deemed necessary to protect the platform and its users.</p>
+                                    <p>Shoplinea reserves the right to suspend or terminate any account at any time for violations of these terms, fraudulent activity, or any other reason deemed necessary to protect the platform and its users.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">10. Limitation of Liability</h3>
-                                    <p>Shopinea is not liable for any indirect, incidental, or consequential damages arising from the use or inability to use the platform. Our total liability shall not exceed the fees paid by you in the 30 days preceding the claim.</p>
+                                    <p>Shoplinea is not liable for any indirect, incidental, or consequential damages arising from the use or inability to use the platform. Our total liability shall not exceed the fees paid by you in the 30 days preceding the claim.</p>
                                 </section>
                                 <section className="space-y-2">
                                     <h3 className="text-sm font-bold text-slate-950 dark:text-white">11. Changes to Terms</h3>

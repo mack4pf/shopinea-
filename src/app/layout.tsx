@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/images/sholinealogo2.png",
+        url: "/images/shoplinea-logo.png",
         width: 512,
         height: 512,
         alt: `${SITE_NAME} logo`,
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Shoplinea | AI Commerce Platform",
     description: SITE_DESCRIPTION,
-    images: ["/images/sholinealogo2.png"],
+    images: ["/images/shoplinea-logo.png"],
   },
   robots: {
     index: true,
@@ -87,7 +87,7 @@ export default function RootLayout({
     "@type": "Organization",
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/images/sholinealogo2.png`,
+    logo: `${SITE_URL}/images/shoplinea-logo.png`,
     email: SUPPORT_EMAIL,
     contactPoint: [
       { "@type": "ContactPoint", contactType: "customer support", email: SUPPORT_EMAIL, areaServed: "Worldwide", availableLanguage: ["en"] },

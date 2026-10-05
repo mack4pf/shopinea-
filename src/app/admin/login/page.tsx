@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
                         <Shield className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-950 dark:text-white">Admin sign in</h1>
-                    <p className="text-slate-500 dark:text-zinc-500 text-sm">Restricted to Shopinea admin accounts</p>
+                    <p className="text-slate-500 dark:text-zinc-500 text-sm">Restricted to Shoplinea admin accounts</p>
                 </div>
 
                 <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-8 rounded-3xl shadow-xl">

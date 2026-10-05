@@ -70,7 +70,7 @@ export default function ReferralsPage() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-white">Referrals</h1>
-                <p className="text-sm text-zinc-500 mt-1">Invite others and earn commissions on their sales.</p>
+                <p className="text-sm text-zinc-500 mt-1">Invite others and track eligible referral credits after review.</p>
             </div>
 
             {/* Referral Link */}
@@ -92,7 +92,7 @@ export default function ReferralsPage() {
                 {[
                     { label: "Total Referrals", value: referrals.length, icon: Users, iconColor: "text-blue-500", iconBg: "bg-blue-500/10" },
                     { label: "Active Sellers", value: referrals.filter(r => r.role === 'reseller').length, icon: Zap, iconColor: "text-emerald-500", iconBg: "bg-emerald-500/10" },
-                    { label: "Earnings", value: `${currencySymbol}${safeNumber(userData?.referralEarnings).toLocaleString()}`, icon: DollarSign, iconColor: "text-violet-500", iconBg: "bg-violet-500/10" },
+                    { label: "Credits", value: `${currencySymbol}${safeNumber(userData?.referralEarnings).toLocaleString()}`, icon: DollarSign, iconColor: "text-violet-500", iconBg: "bg-violet-500/10" },
                 ].map((card, i) => (
                     <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
                         <div className="flex items-center justify-between mb-3">
@@ -119,7 +119,7 @@ export default function ReferralsPage() {
                                     <th className="py-3 px-5">Member</th>
                                     <th className="py-3 px-4">Joined</th>
                                     <th className="py-3 px-4">Orders</th>
-                                    <th className="py-3 px-4">Your Earnings</th>
+                                    <th className="py-3 px-4">Your Credits</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/[0.04]">
@@ -165,18 +165,18 @@ export default function ReferralsPage() {
                     </div>
                 </div>
 
-                {/* Commission info */}
+                {/* Referral credit info */}
                 <div className="space-y-4">
                     <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
                         <div className="flex items-center gap-2 mb-4">
                             <Target className="w-4 h-4 text-amber-400" />
-                            <h3 className="text-sm font-semibold text-zinc-300">Commission Rates</h3>
+                            <h3 className="text-sm font-semibold text-zinc-300">Referral Credits</h3>
                         </div>
                         <div className="space-y-3">
                             <div className="flex justify-between items-center p-3 bg-white/[0.03] rounded-lg">
                                 <div>
-                                    <p className="text-sm font-medium text-white">Per Sale Commission</p>
-                                    <p className="text-xs text-zinc-600">5% of every sale your referrals make</p>
+                                    <p className="text-sm font-medium text-white">Eligible Sale Credit</p>
+                                    <p className="text-xs text-zinc-600">Up to 5% after review</p>
                                 </div>
                                 <span className="text-lg font-bold text-blue-400">5%</span>
                             </div>
@@ -185,7 +185,7 @@ export default function ReferralsPage() {
                     <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-5">
                         <h4 className="text-sm font-semibold text-zinc-300 mb-2">How it works</h4>
                         <p className="text-xs text-zinc-500 leading-relaxed">
-                            You earn <strong className="text-white">5%</strong> of the sale price from every successful order placed by people you refer. Earnings are automatically credited to your wallet the moment a sale is recorded.
+                            Eligible referral credits can be added after a referred merchant has completed reviewed activity on the platform. Credits are shown in your dashboard once approved.
                         </p>
                     </div>
                 </div>

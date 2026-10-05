@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Facebook, Twitter, Instagram, Linkedin, Globe, ShieldCheck } from "lucide-react";
-import { ShopineaLogo } from "@/components/shared/ShopineaLogo";
+import { BookOpen, Globe, Headphones, ShieldCheck } from "lucide-react";
+import { ShoplineaLogo } from "@/components/shared/ShoplineaLogo";
 
 const platformLinks = [
     { label: "Global Marketplace", href: "/marketplace" },
@@ -33,8 +33,8 @@ export function Footer() {
                 <div className="grid gap-12 lg:grid-cols-5">
                     <div className="lg:col-span-2 space-y-8">
                         <Link href="/" className="flex items-center gap-2.5">
-                            <ShopineaLogo size={34} />
-                            <span className="text-white font-extrabold text-xl tracking-tight">shopinea</span>
+                            <ShoplineaLogo size={34} />
+                            <span className="text-white font-extrabold text-xl tracking-tight">Shoplinea</span>
                         </Link>
                         <p className="text-sm font-medium leading-relaxed max-w-sm text-zinc-500">
                             AI-powered commerce for resellers and suppliers. Source products, launch stores, create ads, track orders, and manage growth from one app.
@@ -42,11 +42,16 @@ export function Footer() {
                         <p className="inline-flex rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                             Coming soon to Apple App Store and Google Play
                         </p>
-                        <div className="flex space-x-5">
-                            <Link href="#" className="p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg hover:text-white hover:bg-white/[0.08] transition-all"><Twitter className="h-4 w-4" /></Link>
-                            <Link href="#" className="p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg hover:text-white hover:bg-white/[0.08] transition-all"><Facebook className="h-4 w-4" /></Link>
-                            <Link href="#" className="p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg hover:text-white hover:bg-white/[0.08] transition-all"><Instagram className="h-4 w-4" /></Link>
-                            <Link href="#" className="p-2 bg-white/[0.03] border border-white/[0.06] rounded-lg hover:text-white hover:bg-white/[0.08] transition-all"><Linkedin className="h-4 w-4" /></Link>
+                        <div className="flex flex-wrap gap-2">
+                            <Link href="/trust" className="inline-flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-zinc-500 transition-all hover:bg-white/[0.08] hover:text-white">
+                                <ShieldCheck className="h-3.5 w-3.5" /> Trust
+                            </Link>
+                            <Link href="/documentation" className="inline-flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-zinc-500 transition-all hover:bg-white/[0.08] hover:text-white">
+                                <BookOpen className="h-3.5 w-3.5" /> Docs
+                            </Link>
+                            <Link href="/support" className="inline-flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-zinc-500 transition-all hover:bg-white/[0.08] hover:text-white">
+                                <Headphones className="h-3.5 w-3.5" /> Support
+                            </Link>
                         </div>
                     </div>
 
@@ -102,7 +107,7 @@ export function Footer() {
 
                 <div className="mt-24 pt-8 border-t border-white/[0.04] flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em]">
-                        &copy; {new Date().getFullYear()} Shopinea. All rights reserved.
+                        &copy; {new Date().getFullYear()} Shoplinea. All rights reserved.
                     </p>
                     <div className="flex flex-wrap justify-center gap-5">
                         {policyLinks.slice(0, 3).map(link => (

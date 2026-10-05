@@ -4,7 +4,7 @@ import { BookOpen, CheckCircle2, CreditCard, Package, ShieldCheck, Store, Truck 
 
 export const metadata: Metadata = {
     title: "Documentation",
-    description: "Shopinea documentation for legitimate AI-powered dropshipping, store setup, order tracking, escrow review, subscriptions, and custom storefront workflows.",
+    description: "Shoplinea documentation for legitimate AI-powered dropshipping, store setup, order tracking, escrow review, subscriptions, and custom storefront workflows.",
 };
 
 const sections = [
@@ -27,11 +27,11 @@ export default function DocumentationPage() {
                 <div className="max-w-3xl space-y-5">
                     <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-blue-300">
                         <BookOpen className="h-4 w-4" />
-                        Shopinea Documentation
+                        Shoplinea Documentation
                     </div>
                     <h1 className="text-4xl font-bold tracking-tight md:text-6xl">Run your store with clear, legitimate workflows.</h1>
                     <p className="text-base leading-7 text-zinc-400">
-                        Shopinea gives merchants tools for product sourcing, storefront customization, AI-assisted store requests, ad creation, payment review, order tracking, and payout compliance from one dashboard. The platform is a modern AI-powered alternative to running a store through many separate commerce apps.
+                        Shoplinea gives merchants tools for product sourcing, storefront customization, AI-assisted store requests, ad creation, payment review, order tracking, and payout compliance from one dashboard. The platform is a modern AI-powered alternative to running a store through many separate commerce apps.
                     </p>
                 </div>
 
@@ -49,7 +49,7 @@ export default function DocumentationPage() {
                     <div className="flex items-start gap-3">
                         <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-300" />
                         <p className="text-sm leading-6 text-emerald-50">
-                            Shopinea is built as a legitimate commerce infrastructure platform. Users must follow the Terms of Service, provide accurate information, and complete required payment, tax, sales-license, or compliance reviews when applicable. Mobile apps for Apple App Store and Google Play are coming soon.
+                            Shoplinea is built as a legitimate commerce infrastructure platform. Users must follow the Terms of Service, provide accurate information, and complete required payment, tax, sales-license, or compliance reviews when applicable. Mobile apps for Apple App Store and Google Play are coming soon.
                         </p>
                     </div>
                 </div>

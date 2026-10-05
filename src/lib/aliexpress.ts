@@ -110,7 +110,7 @@ export async function searchAliexpressProducts(options: AliexpressSearchOptions)
         method: "aliexpress.affiliate.product.query",
         page_no: String(options.page || 1),
         page_size: String(Math.min(Math.max(options.pageSize || 12, 1), 50)),
-        partner_id: "shopinea",
+        partner_id: "shoplinea",
         sign_method: "hmac",
         sort: options.sort || "LAST_VOLUME_DESC",
         target_currency: options.targetCurrency || "USD",

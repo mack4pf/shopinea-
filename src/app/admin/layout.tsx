@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -47,9 +47,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="px-5 py-5 border-b border-slate-200 bg-gradient-to-br from-lime-100 via-white to-sky-100">
                     <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/sholinealogo2.png" alt="shopinea" className="w-8 h-8 object-contain" />
+                        <img src="/images/shoplinea-logo.png" alt="Shoplinea" className="w-8 h-8 object-contain" />
                         <div>
-                            <p className="text-sm font-extrabold text-slate-950 leading-none">shopinea</p>
+                            <p className="text-sm font-extrabold text-slate-950 leading-none">Shoplinea</p>
                             <p className="text-[10px] text-slate-500 mt-0.5">Admin Panel</p>
                         </div>
                     </div>
