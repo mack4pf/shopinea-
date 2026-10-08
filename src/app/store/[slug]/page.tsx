@@ -32,6 +32,15 @@ import { cn } from "@/lib/utils";
 import { getDefaultStock } from "@/lib/catalog";
 import { useCurrency } from "@/hooks/useCurrency";
 
+const normalizeStoreSlug = (value: unknown) => String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\.shoplinea\.pro.*$/, "")
+    .replace(/^www\.shoplinea\.pro\/store\//, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 const TEMPLATE_STYLES: Record<string, { page: string; hero: string; card: string; section: string; label: string }> = {
     classic: {
         page: "bg-[#f4f7fb] text-slate-900",
@@ -157,9 +166,10 @@ export default function StorePage() {
     useEffect(() => {
         const fetchStore = async () => {
             try {
+                const requestedSlug = normalizeStoreSlug(Array.isArray(slug) ? slug[0] : slug);
                 let q = query(
                     collection(db, "users"),
-                    where("storeSlug", "==", slug),
+                    where("storeSlug", "==", requestedSlug),
                     limit(1)
                 );
                 let querySnapshot = await getDocs(q);
@@ -168,13 +178,43 @@ export default function StorePage() {
                 if (querySnapshot.empty) {
                     q = query(
                         collection(db, "users"),
-                        where("additionalStoreSlugs", "array-contains", slug),
+                        where("additionalStoreSlugs", "array-contains", requestedSlug),
                         limit(1)
                     );
                     querySnapshot = await getDocs(q);
                     if (!querySnapshot.empty) {
                         const extraStores = querySnapshot.docs[0].data().additionalStores || [];
-                        additionalStore = extraStores.find((store: any) => store.storeSlug === slug);
+                        additionalStore = extraStores.find((store: any) => normalizeStoreSlug(store.storeSlug || store.storeName || store.id) === requestedSlug);
+                    }
+                }
+
+                if (querySnapshot.empty && requestedSlug) {
+                    const userDoc = await getDoc(doc(db, "users", requestedSlug));
+                    if (userDoc.exists()) {
+                        querySnapshot = { empty: false, docs: [userDoc] } as any;
+                    }
+                }
+
+                if (querySnapshot.empty) {
+                    const recentUsers = await getDocs(query(collection(db, "users"), limit(250)));
+                    const matchedDoc = recentUsers.docs.find((candidate) => {
+                        const data = candidate.data();
+                        const primaryMatches = [
+                            data.storeSlug,
+                            data.storeName,
+                            data.businessName,
+                            data.displayName,
+                            candidate.id,
+                        ].some((value) => normalizeStoreSlug(value) === requestedSlug);
+                        if (primaryMatches) return true;
+                        const extraStores = Array.isArray(data.additionalStores) ? data.additionalStores : [];
+                        return extraStores.some((store: any) => normalizeStoreSlug(store.storeSlug || store.storeName || store.id) === requestedSlug);
+                    });
+
+                    if (matchedDoc) {
+                        const extraStores = matchedDoc.data().additionalStores || [];
+                        additionalStore = extraStores.find((store: any) => normalizeStoreSlug(store.storeSlug || store.storeName || store.id) === requestedSlug) || null;
+                        querySnapshot = { empty: false, docs: [matchedDoc] } as any;
                     }
                 }
 
@@ -188,7 +228,7 @@ export default function StorePage() {
 
                     // Record a real visit — once per browser session per store, so
                     // navigating between product pages doesn't inflate the count.
-                    const visitedKey = `storeVisit:${uDoc.id}:${slug}`;
+                    const visitedKey = `storeVisit:${uDoc.id}:${requestedSlug}`;
                     const alreadyCounted = typeof window !== "undefined" && sessionStorage.getItem(visitedKey);
                     const todayKey = new Date().toISOString().slice(0, 10);
                     const visitUpdates: Record<string, any> = {
@@ -205,7 +245,7 @@ export default function StorePage() {
                     if (additionalStore) {
                         const extraStores = Array.isArray(ownerData.additionalStores) ? ownerData.additionalStores : [];
                         visitUpdates.additionalStores = extraStores.map((store: any) => {
-                            if (store.id !== additionalStore.id && store.storeSlug !== slug) return store;
+                            if (store.id !== additionalStore.id && normalizeStoreSlug(store.storeSlug || store.storeName || store.id) !== requestedSlug) return store;
                             return {
                                 ...store,
                                 storeViews: Number(store.storeViews || store.impressions || 0) + 1,

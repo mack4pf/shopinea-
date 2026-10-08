@@ -43,3 +43,8 @@ export function getStoreSubdomainUrl(storeSlug?: string | null) {
     const slug = String(storeSlug || "").trim().toLowerCase();
     return slug ? `https://${slug}.${SITE_DOMAIN}` : SITE_URL;
 }
+
+export function getStorePathUrl(storeSlug?: string | null) {
+    const slug = String(storeSlug || "").trim().toLowerCase();
+    return slug ? `${SITE_URL}/store/${slug}` : SITE_URL;
+}

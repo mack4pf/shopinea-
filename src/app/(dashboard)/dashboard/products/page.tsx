@@ -16,7 +16,7 @@ import { getDefaultStock, STORE_LAYOUTS, STORE_TEMPLATES, STORE_THEME_COLORS } f
 import { Modal } from "@/components/ui/modal";
 import { useCurrency } from "@/hooks/useCurrency";
 import { safeNumber } from "@/lib/currency";
-import { getStoreSubdomainUrl } from "@/lib/site";
+import { getStorePathUrl, getStoreSubdomainUrl } from "@/lib/site";
 
 const slugify = (value: unknown) => String(value || "store")
     .toLowerCase()
@@ -366,6 +366,9 @@ export default function ProductsPage() {
         ...additionalStores,
     ];
     const activeStore = allStores.find((store: any) => store.id === activeStoreId) || allStores[0];
+    const activeStoreSlug = activeStore?.storeSlug || userData?.storeSlug || slugify(activeStore?.storeName || userData?.storeName || user?.uid || "store");
+    const activeSubdomainUrl = getStoreSubdomainUrl(activeStoreSlug);
+    const activePathUrl = getStorePathUrl(activeStoreSlug);
     const products = Array.isArray(activeStore?.storeProducts) ? activeStore.storeProducts : [];
     const maxStores = getEffectiveMaxStores(userData);
     const canCreateStore = hasMultiStorePlan(userData) && allStores.length < maxStores;
@@ -409,11 +412,25 @@ export default function ProductsPage() {
                         </button>
                     )}
                     <button
-                        onClick={() => window.open(getStoreSubdomainUrl(activeStore?.storeSlug || userData?.storeSlug), '_blank')}
+                        onClick={() => window.open(activeSubdomainUrl, '_blank')}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
                     >
                         <ExternalLink className="w-4 h-4" />
                         View Store
+                    </button>
+                    <button
+                        onClick={() => copyToClipboard(activeSubdomainUrl)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
+                    >
+                        <Copy className="w-4 h-4" />
+                        Copy Subdomain
+                    </button>
+                    <button
+                        onClick={() => copyToClipboard(activePathUrl)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-white/[0.06] border border-white/[0.08] text-zinc-300 hover:bg-white/[0.1] transition-colors"
+                    >
+                        <Copy className="w-4 h-4" />
+                        Copy Store URL
                     </button>
                     <button
                         onClick={() => {
