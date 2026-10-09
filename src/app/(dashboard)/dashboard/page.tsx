@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase/config";
-import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, orderBy, limit, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
     ShoppingCart, TrendingUp, CheckCircle2, Circle,
@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useCurrency } from "@/hooks/useCurrency";
 import { formatNumber, formatPercent } from "@/lib/currency";
 import { allStoresForAnalytics, analyticsNumber, orderBelongsToAnalyticsStore, storeTotalsForAnalytics } from "@/lib/store-analytics";
+import { getStoreSubdomainUrl, makeLegacyStoreSlug, normalizeStoreSlug } from "@/lib/site";
 
 const numeric = analyticsNumber;
 const firstName = (value: unknown) => {
@@ -41,6 +42,17 @@ const buildStoreBreakdown = (data: any, orders: any[]) => {
     });
 };
 
+const ensurePrimaryStoreSlug = async (userId: string, data: any) => {
+    const existing = normalizeStoreSlug(data?.storeSlug);
+    if (existing) return { ...data, storeSlug: existing };
+    const storeSlug = makeLegacyStoreSlug(userId, data?.storeName || data?.businessName || data?.displayName, "store");
+    await updateDoc(doc(db, "users", userId), {
+        storeSlug,
+        updatedAt: new Date().toISOString(),
+    });
+    return { ...data, storeSlug };
+};
+
 export default function ResellerHome() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
@@ -57,7 +69,8 @@ export default function ResellerHome() {
                 if (firebaseUser) {
                 setUser(firebaseUser);
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-                const data = userDoc.exists() ? userDoc.data() : {};
+                const rawData = userDoc.exists() ? userDoc.data() : {};
+                const data = await ensurePrimaryStoreSlug(firebaseUser.uid, rawData);
                 setUserData(data);
 
                 if (data?.role === "buyer") { router.push("/buyer-orders"); return; }
@@ -135,7 +148,7 @@ export default function ResellerHome() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                     <button
-                        onClick={() => router.push('/dashboard/products')}
+                        onClick={() => window.open(getStoreSubdomainUrl(userData?.storeSlug || makeLegacyStoreSlug(user?.uid, userData?.storeName || userData?.displayName, "store")), "_blank")}
                         className="flex items-center gap-2 h-9 px-4 rounded-lg bg-white/[0.04] border border-white/[0.08] text-sm font-medium text-zinc-300 hover:bg-white/[0.08] transition-colors"
                     >
                         <Eye className="w-3.5 h-3.5" />

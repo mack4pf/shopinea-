@@ -39,12 +39,29 @@ export const SEO_KEYWORDS = [
     "reseller compliance support",
 ];
 
+export function normalizeStoreSlug(value?: unknown) {
+    return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//, "")
+        .replace(/\.shoplinea\.pro.*$/, "")
+        .replace(/^www\.shoplinea\.pro\/store\//, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+export function makeLegacyStoreSlug(ownerId?: string | null, storeName?: string | null, fallback = "store") {
+    const base = normalizeStoreSlug(storeName) || normalizeStoreSlug(fallback) || "store";
+    const owner = normalizeStoreSlug(ownerId).slice(0, 12);
+    return owner ? `${base}-${owner}` : base;
+}
+
 export function getStoreSubdomainUrl(storeSlug?: string | null) {
-    const slug = String(storeSlug || "").trim().toLowerCase();
+    const slug = normalizeStoreSlug(storeSlug);
     return slug ? `https://${slug}.${SITE_DOMAIN}` : SITE_URL;
 }
 
 export function getStorePathUrl(storeSlug?: string | null) {
-    const slug = String(storeSlug || "").trim().toLowerCase();
+    const slug = normalizeStoreSlug(storeSlug);
     return slug ? `${SITE_URL}/store/${slug}` : SITE_URL;
 }

@@ -31,15 +31,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getDefaultStock } from "@/lib/catalog";
 import { useCurrency } from "@/hooks/useCurrency";
-
-const normalizeStoreSlug = (value: unknown) => String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/\.shoplinea\.pro.*$/, "")
-    .replace(/^www\.shoplinea\.pro\/store\//, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+import { makeLegacyStoreSlug, normalizeStoreSlug } from "@/lib/site";
 
 const TEMPLATE_STYLES: Record<string, { page: string; hero: string; card: string; section: string; label: string }> = {
     classic: {
@@ -201,6 +193,7 @@ export default function StorePage() {
                         const data = candidate.data();
                         const primaryMatches = [
                             data.storeSlug,
+                            makeLegacyStoreSlug(candidate.id, data.storeName || data.businessName || data.displayName),
                             data.storeName,
                             data.businessName,
                             data.displayName,
@@ -208,12 +201,22 @@ export default function StorePage() {
                         ].some((value) => normalizeStoreSlug(value) === requestedSlug);
                         if (primaryMatches) return true;
                         const extraStores = Array.isArray(data.additionalStores) ? data.additionalStores : [];
-                        return extraStores.some((store: any) => normalizeStoreSlug(store.storeSlug || store.storeName || store.id) === requestedSlug);
+                        return extraStores.some((store: any) => [
+                            store.storeSlug,
+                            makeLegacyStoreSlug(candidate.id, store.storeName || store.id, store.id),
+                            store.storeName,
+                            store.id,
+                        ].some((value) => normalizeStoreSlug(value) === requestedSlug));
                     });
 
                     if (matchedDoc) {
                         const extraStores = matchedDoc.data().additionalStores || [];
-                        additionalStore = extraStores.find((store: any) => normalizeStoreSlug(store.storeSlug || store.storeName || store.id) === requestedSlug) || null;
+                        additionalStore = extraStores.find((store: any) => [
+                            store.storeSlug,
+                            makeLegacyStoreSlug(matchedDoc.id, store.storeName || store.id, store.id),
+                            store.storeName,
+                            store.id,
+                        ].some((value) => normalizeStoreSlug(value) === requestedSlug)) || null;
                         querySnapshot = { empty: false, docs: [matchedDoc] } as any;
                     }
                 }
@@ -245,7 +248,13 @@ export default function StorePage() {
                     if (additionalStore) {
                         const extraStores = Array.isArray(ownerData.additionalStores) ? ownerData.additionalStores : [];
                         visitUpdates.additionalStores = extraStores.map((store: any) => {
-                            if (store.id !== additionalStore.id && normalizeStoreSlug(store.storeSlug || store.storeName || store.id) !== requestedSlug) return store;
+                            const storeMatchesRequest = [
+                                store.storeSlug,
+                                makeLegacyStoreSlug(uDoc.id, store.storeName || store.id, store.id),
+                                store.storeName,
+                                store.id,
+                            ].some((value) => normalizeStoreSlug(value) === requestedSlug);
+                            if (store.id !== additionalStore.id && !storeMatchesRequest) return store;
                             return {
                                 ...store,
                                 storeViews: Number(store.storeViews || store.impressions || 0) + 1,

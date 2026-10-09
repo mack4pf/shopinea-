@@ -3,10 +3,42 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/config";
 import { ExternalLink, Loader2, Megaphone, Package, Palette, Plus, Store } from "lucide-react";
-import { getStoreSubdomainUrl } from "@/lib/site";
+import { getStoreSubdomainUrl, makeLegacyStoreSlug, normalizeStoreSlug } from "@/lib/site";
+
+const hydrateStoreSlugs = (data: any, userId: string) => {
+    const used = new Set<string>();
+    const primarySlug = normalizeStoreSlug(data?.storeSlug) || makeLegacyStoreSlug(userId, data?.storeName || data?.businessName || data?.displayName, "store");
+    used.add(primarySlug);
+    let changed = primarySlug !== normalizeStoreSlug(data?.storeSlug);
+    const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
+    const nextAdditionalStores = additionalStores.map((store: any, index: number) => {
+        let slug = normalizeStoreSlug(store?.storeSlug);
+        if (!slug) {
+            const base = makeLegacyStoreSlug(userId, store?.storeName || store?.id, `store-${index + 2}`);
+            slug = base;
+            let suffix = 2;
+            while (used.has(slug)) {
+                slug = `${base}-${suffix}`;
+                suffix += 1;
+            }
+            changed = true;
+        }
+        used.add(slug);
+        return { ...store, storeSlug: slug };
+    });
+    return {
+        changed,
+        data: {
+            ...data,
+            storeSlug: primarySlug,
+            additionalStores: nextAdditionalStores,
+            additionalStoreSlugs: nextAdditionalStores.map((store: any) => store.storeSlug).filter(Boolean),
+        },
+    };
+};
 
 export default function StoresPage() {
     const [userData, setUserData] = useState<any>(null);
@@ -19,8 +51,19 @@ export default function StoresPage() {
                 return;
             }
 
-            const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-            setUserData(userDoc.exists() ? userDoc.data() : {});
+            const userRef = doc(db, "users", firebaseUser.uid);
+            const userDoc = await getDoc(userRef);
+            const rawData = userDoc.exists() ? userDoc.data() : {};
+            const { changed, data } = hydrateStoreSlugs(rawData, firebaseUser.uid);
+            if (changed) {
+                await updateDoc(userRef, {
+                    storeSlug: data.storeSlug,
+                    additionalStores: data.additionalStores,
+                    additionalStoreSlugs: data.additionalStoreSlugs,
+                    updatedAt: new Date().toISOString(),
+                });
+            }
+            setUserData(data);
             setLoading(false);
         });
         return () => unsubscribe();

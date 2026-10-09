@@ -16,7 +16,7 @@ import { getDefaultStock, STORE_LAYOUTS, STORE_TEMPLATES, STORE_THEME_COLORS } f
 import { Modal } from "@/components/ui/modal";
 import { useCurrency } from "@/hooks/useCurrency";
 import { safeNumber } from "@/lib/currency";
-import { getStorePathUrl, getStoreSubdomainUrl } from "@/lib/site";
+import { makeLegacyStoreSlug, getStorePathUrl, getStoreSubdomainUrl, normalizeStoreSlug } from "@/lib/site";
 
 const slugify = (value: unknown) => String(value || "store")
     .toLowerCase()
@@ -33,6 +33,40 @@ const uniqueStoreSlug = (name: string, usedSlugs: string[]) => {
         index += 1;
     }
     return slug;
+};
+
+const hydrateLegacyStoreSlugs = (data: any, userId: string) => {
+    const used = new Set<string>();
+    const primarySlug = normalizeStoreSlug(data?.storeSlug) || makeLegacyStoreSlug(userId, data?.storeName || data?.businessName || data?.displayName, "store");
+    used.add(primarySlug);
+
+    let changed = primarySlug !== normalizeStoreSlug(data?.storeSlug);
+    const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
+    const nextAdditionalStores = additionalStores.map((store: any, index: number) => {
+        let nextSlug = normalizeStoreSlug(store?.storeSlug);
+        if (!nextSlug) {
+            const baseName = store?.storeName || store?.id || `store-${index + 2}`;
+            nextSlug = makeLegacyStoreSlug(userId, baseName, `store-${index + 2}`);
+            let suffix = 2;
+            while (used.has(nextSlug)) {
+                nextSlug = `${makeLegacyStoreSlug(userId, baseName, `store-${index + 2}`)}-${suffix}`;
+                suffix += 1;
+            }
+            changed = true;
+        }
+        used.add(nextSlug);
+        return { ...store, storeSlug: nextSlug };
+    });
+
+    return {
+        changed,
+        data: {
+            ...data,
+            storeSlug: primarySlug,
+            additionalStores: nextAdditionalStores,
+            additionalStoreSlugs: nextAdditionalStores.map((store: any) => store.storeSlug).filter(Boolean),
+        },
+    };
 };
 
 const getPlanStoreLimit = (userData: any) => {
@@ -94,7 +128,16 @@ export default function ProductsPage() {
                 setUser(firebaseUser);
                 const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
                 if (userDoc.exists()) {
-                    const data = userDoc.data();
+                    const rawData = userDoc.data();
+                    const { changed, data } = hydrateLegacyStoreSlugs(rawData, firebaseUser.uid);
+                    if (changed) {
+                        await updateDoc(doc(db, "users", firebaseUser.uid), {
+                            storeSlug: data.storeSlug,
+                            additionalStores: data.additionalStores,
+                            additionalStoreSlugs: data.additionalStoreSlugs,
+                            updatedAt: new Date().toISOString(),
+                        });
+                    }
                     setUserData(data);
                     setStoreDraft({
                         storeName: data.storeName || "",
@@ -366,7 +409,7 @@ export default function ProductsPage() {
         ...additionalStores,
     ];
     const activeStore = allStores.find((store: any) => store.id === activeStoreId) || allStores[0];
-    const activeStoreSlug = activeStore?.storeSlug || userData?.storeSlug || slugify(activeStore?.storeName || userData?.storeName || user?.uid || "store");
+    const activeStoreSlug = activeStore?.storeSlug || userData?.storeSlug || makeLegacyStoreSlug(user?.uid, activeStore?.storeName || userData?.storeName, "store");
     const activeSubdomainUrl = getStoreSubdomainUrl(activeStoreSlug);
     const activePathUrl = getStorePathUrl(activeStoreSlug);
     const products = Array.isArray(activeStore?.storeProducts) ? activeStore.storeProducts : [];
@@ -703,7 +746,7 @@ export default function ProductsPage() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => window.open(getStoreSubdomainUrl(store.storeSlug), "_blank")}
+                                            onClick={() => window.open(getStoreSubdomainUrl(store.storeSlug || makeLegacyStoreSlug(user?.uid, store.storeName || store.id, store.id)), "_blank")}
                                             className="h-8 w-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-zinc-400 hover:text-white flex items-center justify-center"
                                             aria-label={`Open ${store.storeName || "store"}`}
                                         >
@@ -783,7 +826,7 @@ export default function ProductsPage() {
                                     </div>
                                     <div className="absolute top-3 right-3">
                                         <button
-                                            onClick={() => copyToClipboard(`${getStoreSubdomainUrl(activeStore?.storeSlug || userData?.storeSlug)}/product/${productId}`)}
+                                            onClick={() => copyToClipboard(`${activeSubdomainUrl}/product/${productId}`)}
                                             className="w-8 h-8 bg-black/40 backdrop-blur-md rounded-lg flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
                                         >
                                             <Copy className="w-3.5 h-3.5" />
@@ -835,7 +878,7 @@ export default function ProductsPage() {
                                             <Megaphone className="w-3.5 h-3.5" /> Promote
                                         </button>
                                         <button
-                                            onClick={() => window.open(getStoreSubdomainUrl(activeStore?.storeSlug || userData?.storeSlug), '_blank')}
+                                            onClick={() => window.open(activeSubdomainUrl, '_blank')}
                                             className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-white/[0.04] text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.08] transition-colors"
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Preview

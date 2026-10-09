@@ -17,7 +17,7 @@ import { Modal } from "@/components/ui/modal";
 import { CountrySelect } from "@/components/ui/country-select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { SITE_DOMAIN } from "@/lib/site";
+import { makeLegacyStoreSlug, normalizeStoreSlug, SITE_DOMAIN } from "@/lib/site";
 
 const safeText = (value: unknown, fallback = "") => {
     const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
@@ -129,6 +129,7 @@ export default function SettingsPage() {
         setUpdating(true);
         try {
             const userRef = doc(db, "users", user.uid);
+            const safeStoreSlug = normalizeStoreSlug(formData.storeSlug) || makeLegacyStoreSlug(user.uid, formData.storeName || formData.displayName, "store");
             await updateDoc(userRef, {
                 displayName: formData.displayName,
                 phoneNumber: formData.phone,
@@ -137,7 +138,7 @@ export default function SettingsPage() {
                 currency: formData.currency,
                 currencySymbol: formData.currencySymbol,
                 storeName: formData.storeName,
-                storeSlug: formData.storeSlug,
+                storeSlug: safeStoreSlug,
                 storeTagline: formData.storeTagline,
                 themeColor: formData.themeColor,
                 storeTemplate: formData.storeTemplate,
