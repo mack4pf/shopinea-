@@ -12,9 +12,10 @@ const hydrateStoreSlugs = (data: any, userId: string) => {
     const used = new Set<string>();
     const primarySlug = normalizeStoreSlug(data?.storeSlug) || makeLegacyStoreSlug(userId, data?.storeName || data?.businessName || data?.displayName, "store");
     used.add(primarySlug);
-    let changed = primarySlug !== normalizeStoreSlug(data?.storeSlug);
+    let changed = String(data?.storeSlug || "") !== primarySlug;
     const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
     const nextAdditionalStores = additionalStores.map((store: any, index: number) => {
+        const rawSlug = String(store?.storeSlug || "");
         let slug = normalizeStoreSlug(store?.storeSlug);
         if (!slug) {
             const base = makeLegacyStoreSlug(userId, store?.storeName || store?.id, `store-${index + 2}`);
@@ -26,6 +27,7 @@ const hydrateStoreSlugs = (data: any, userId: string) => {
             }
             changed = true;
         }
+        if (rawSlug !== slug) changed = true;
         used.add(slug);
         return { ...store, storeSlug: slug };
     });

@@ -40,9 +40,10 @@ const hydrateLegacyStoreSlugs = (data: any, userId: string) => {
     const primarySlug = normalizeStoreSlug(data?.storeSlug) || makeLegacyStoreSlug(userId, data?.storeName || data?.businessName || data?.displayName, "store");
     used.add(primarySlug);
 
-    let changed = primarySlug !== normalizeStoreSlug(data?.storeSlug);
+    let changed = String(data?.storeSlug || "") !== primarySlug;
     const additionalStores = Array.isArray(data?.additionalStores) ? data.additionalStores : [];
     const nextAdditionalStores = additionalStores.map((store: any, index: number) => {
+        const rawSlug = String(store?.storeSlug || "");
         let nextSlug = normalizeStoreSlug(store?.storeSlug);
         if (!nextSlug) {
             const baseName = store?.storeName || store?.id || `store-${index + 2}`;
@@ -54,6 +55,7 @@ const hydrateLegacyStoreSlugs = (data: any, userId: string) => {
             }
             changed = true;
         }
+        if (rawSlug !== nextSlug) changed = true;
         used.add(nextSlug);
         return { ...store, storeSlug: nextSlug };
     });

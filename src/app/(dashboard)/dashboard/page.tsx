@@ -43,9 +43,10 @@ const buildStoreBreakdown = (data: any, orders: any[]) => {
 };
 
 const ensurePrimaryStoreSlug = async (userId: string, data: any) => {
+    const rawSlug = String(data?.storeSlug || "");
     const existing = normalizeStoreSlug(data?.storeSlug);
-    if (existing) return { ...data, storeSlug: existing };
-    const storeSlug = makeLegacyStoreSlug(userId, data?.storeName || data?.businessName || data?.displayName, "store");
+    const storeSlug = existing || makeLegacyStoreSlug(userId, data?.storeName || data?.businessName || data?.displayName, "store");
+    if (rawSlug === storeSlug) return { ...data, storeSlug };
     await updateDoc(doc(db, "users", userId), {
         storeSlug,
         updatedAt: new Date().toISOString(),
