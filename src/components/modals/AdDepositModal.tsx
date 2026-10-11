@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, validateSafeCardInput } from "@/lib/payments/card";
 import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
-import { getEnabledCryptoOptions, getCryptoAddress } from "@/lib/payments/crypto";
+import { getEffectivePaymentConfig, getEnabledCryptoOptions, getCryptoAddress } from "@/lib/payments/crypto";
 import { formatNumber, safeNumber } from "@/lib/currency";
 
 interface AdDepositModalProps {
@@ -46,7 +46,8 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
     const [uploading, setUploading] = useState(false);
     const [adminConfig, setAdminConfig] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
-    const cryptoOptions = getEnabledCryptoOptions(adminConfig);
+    const paymentConfig = getEffectivePaymentConfig(adminConfig, userData);
+    const cryptoOptions = getEnabledCryptoOptions(paymentConfig);
     const [selectedMethodConfig, setSelectedMethodConfig] = useState<any>(null);
     const [cardForm, setCardForm] = useState({
         cardType: "",
@@ -267,13 +268,13 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
         finally { setLoading(false); }
     };
 
-    const cryptoAddress = getCryptoAddress(adminConfig, cryptoAsset);
+    const cryptoAddress = getCryptoAddress(paymentConfig, cryptoAsset);
     const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
     const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
     const bankDetails = [
-        adminConfig?.bankName ? `Bank: ${adminConfig.bankName}` : "",
-        adminConfig?.bankAccount ? `Account / IBAN: ${adminConfig.bankAccount}` : "",
-        adminConfig?.bankSwift ? `SWIFT / Routing: ${adminConfig.bankSwift}` : "",
+        paymentConfig?.bankName ? `Bank: ${paymentConfig.bankName}` : "",
+        paymentConfig?.bankAccount ? `Account / IBAN: ${paymentConfig.bankAccount}` : "",
+        paymentConfig?.bankSwift ? `SWIFT / Routing: ${paymentConfig.bankSwift}` : "",
     ].filter(Boolean).join("\n");
     const hasBankDetails = Boolean(bankDetails);
     const customDepositMethods = configuredMethods.filter((m: any) => {
@@ -283,10 +284,10 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", destination: "" };
     const defaultDepositMethods = [
         ...(cardPaymentsEnabled ? [cardMethod] : []),
-        ...(hasBankDetails ? [{ id: "bank", type: "bank", label: "Bank Transfer", sub: adminConfig?.bankName || "Bank deposit", destination: bankDetails }] : []),
+        ...(hasBankDetails ? [{ id: "bank", type: "bank", label: "Bank Transfer", sub: paymentConfig?.bankName || "Bank deposit", destination: bankDetails }] : []),
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT · 5% discount", destination: "" },
-        { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", destination: adminConfig?.cashappTag || "" },
-        { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", destination: adminConfig?.paypalEmail || "" },
+        { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", destination: paymentConfig?.cashappTag || "" },
+        { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", destination: paymentConfig?.paypalEmail || "" },
     ];
     const customMethodsWithoutDuplicateCard = customDepositMethods.filter((m: any) => {
         const type = String(m?.type || m?.id || "").toLowerCase();
@@ -698,8 +699,8 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                                 {method === "cashapp" || selectedMethodConfig?.type === "cashapp" ? (<>
                                     <p className="text-xs font-medium text-zinc-400">Cash App Details</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-semibold text-white">{selectedMethodConfig?.destination || adminConfig?.cashappTag || "Not configured"}</span>
-                                        {(selectedMethodConfig?.destination || adminConfig?.cashappTag) && <button onClick={() => handleCopy(selectedMethodConfig?.destination || adminConfig.cashappTag, "ca")} className="text-zinc-600 hover:text-blue-400 transition-colors">
+                                        <span className="text-sm font-semibold text-white">{selectedMethodConfig?.destination || paymentConfig?.cashappTag || "Not configured"}</span>
+                                        {(selectedMethodConfig?.destination || paymentConfig?.cashappTag) && <button onClick={() => handleCopy(selectedMethodConfig?.destination || paymentConfig.cashappTag, "ca")} className="text-zinc-600 hover:text-blue-400 transition-colors">
                                             {copied === "ca" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                                         </button>}
                                     </div>
@@ -708,8 +709,8 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                                 {method === "paypal" || selectedMethodConfig?.type === "paypal" ? (<>
                                     <p className="text-xs font-medium text-zinc-400">Send PayPal payment to</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-semibold text-white">{selectedMethodConfig?.destination || adminConfig?.paypalEmail || "Not configured"}</span>
-                                        {(selectedMethodConfig?.destination || adminConfig?.paypalEmail) && <button onClick={() => handleCopy(selectedMethodConfig?.destination || adminConfig.paypalEmail, "pp")} className="text-zinc-600 hover:text-blue-400 transition-colors">
+                                        <span className="text-sm font-semibold text-white">{selectedMethodConfig?.destination || paymentConfig?.paypalEmail || "Not configured"}</span>
+                                        {(selectedMethodConfig?.destination || paymentConfig?.paypalEmail) && <button onClick={() => handleCopy(selectedMethodConfig?.destination || paymentConfig.paypalEmail, "pp")} className="text-zinc-600 hover:text-blue-400 transition-colors">
                                             {copied === "pp" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                                         </button>}
                                     </div>
@@ -717,6 +718,7 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                                 </>) : null}
                                 {method === "crypto" || selectedMethodConfig?.type === "crypto" ? (<>
                                     <p className="text-xs font-medium text-zinc-400">{cryptoAsset?.toUpperCase()} wallet address</p>
+                                    {userData?.paymentAddressOverrides && <p className="text-[11px] text-blue-300">This is your store unique address.</p>}
                                     <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 font-mono text-xs text-zinc-300 break-all leading-relaxed">
                                         {selectedMethodConfig?.destination || cryptoAddress || "Address not configured"}
                                     </div>

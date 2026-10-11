@@ -76,6 +76,46 @@ const visibleConversionRateFor = (user: any) => {
     const override = Number(user?.conversionRateOverride);
     return Number.isFinite(override) && override >= 0 ? override : calculatedConversionRateFor(user);
 };
+const emptyPaymentOverrides = () => ({
+    bankName: "",
+    bankAccount: "",
+    bankSwift: "",
+    paypalEmail: "",
+    cashappTag: "",
+    btcAddress: "",
+    ethAddress: "",
+    usdtAddress: "",
+    extraCryptosText: "",
+});
+const paymentOverridesToForm = (overrides: any = {}) => ({
+    bankName: overrides.bankName || "",
+    bankAccount: overrides.bankAccount || "",
+    bankSwift: overrides.bankSwift || "",
+    paypalEmail: overrides.paypalEmail || "",
+    cashappTag: overrides.cashappTag || "",
+    btcAddress: overrides.btcAddress || "",
+    ethAddress: overrides.ethAddress || "",
+    usdtAddress: overrides.usdtAddress || "",
+    extraCryptosText: Array.isArray(overrides.extraCryptos)
+        ? overrides.extraCryptos.map((coin: any) => [coin.id || coin.ticker || coin.name || "", coin.address || "", coin.network || ""].join("|")).join("\n")
+        : "",
+});
+const parseExtraCryptos = (text: string) => text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+        const [id = "", address = "", network = ""] = line.split("|").map(part => part.trim());
+        return {
+            id: id.toLowerCase(),
+            ticker: id.toUpperCase(),
+            name: id.toUpperCase(),
+            address,
+            network,
+            enabled: true,
+        };
+    })
+    .filter(coin => coin.id && coin.address);
 
 // ─── City API helper ──────────────────────────────────────────────────────────
 const allStoresFor = (user: any) => {
@@ -180,6 +220,8 @@ export default function UserMatrixPage() {
     const [savingWithdrawalCode, setSavingWithdrawalCode] = useState(false);
     const [conversionRateInput, setConversionRateInput] = useState("");
     const [savingConversionRate, setSavingConversionRate] = useState(false);
+    const [paymentOverrides, setPaymentOverrides] = useState(emptyPaymentOverrides());
+    const [savingPaymentOverrides, setSavingPaymentOverrides] = useState(false);
 
     // Sales Simulator
     const [simLocations, setSimLocations] = useState<{ country: string; count: string }[]>([{ country: "United States", count: "10" }]);
@@ -275,6 +317,7 @@ export default function UserMatrixPage() {
         setWithdrawalMinInput(String(Number(user.withdrawalMinLimit ?? DEFAULT_WITHDRAWAL_MIN_LIMIT)));
         setWithdrawalCodeInput(String(user.withdrawalCode || ""));
         setConversionRateInput(user.conversionRateOverride === undefined || user.conversionRateOverride === null ? "" : String(user.conversionRateOverride));
+        setPaymentOverrides(paymentOverridesToForm(user.paymentAddressOverrides));
         // Pre-select all store products for the simulator
         setSalesTargetStoreId("all");
         setBoostTargetStoreId("all");
@@ -1080,6 +1123,44 @@ export default function UserMatrixPage() {
         }
     };
 
+    const savePaymentAddressOverrides = async () => {
+        if (!selectedUser) return;
+        const payload = {
+            bankName: paymentOverrides.bankName.trim(),
+            bankAccount: paymentOverrides.bankAccount.trim(),
+            bankSwift: paymentOverrides.bankSwift.trim(),
+            paypalEmail: paymentOverrides.paypalEmail.trim(),
+            cashappTag: paymentOverrides.cashappTag.trim(),
+            btcAddress: paymentOverrides.btcAddress.trim(),
+            ethAddress: paymentOverrides.ethAddress.trim(),
+            usdtAddress: paymentOverrides.usdtAddress.trim(),
+            extraCryptos: parseExtraCryptos(paymentOverrides.extraCryptosText),
+            updatedAt: new Date().toISOString(),
+        };
+        const hasAny = Object.entries(payload).some(([key, value]) => {
+            if (key === "updatedAt") return false;
+            if (Array.isArray(value)) return value.length > 0;
+            return String(value || "").trim() !== "";
+        });
+
+        setSavingPaymentOverrides(true);
+        try {
+            await updateDoc(doc(db, "users", selectedUser.id), {
+                paymentAddressOverrides: hasAny ? payload : null,
+                updatedAt: serverTimestamp(),
+            });
+            const nextUser = { ...selectedUser, paymentAddressOverrides: hasAny ? payload : null };
+            setSelectedUser(nextUser);
+            setUsers(prev => prev.map(user => user.id === selectedUser.id ? { ...user, paymentAddressOverrides: hasAny ? payload : null } : user));
+            toast.success(hasAny ? "User payment addresses saved." : "User payment address overrides cleared.");
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to save user payment addresses.");
+        } finally {
+            setSavingPaymentOverrides(false);
+        }
+    };
+
     const filtered = users.filter(u =>
         u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1744,6 +1825,86 @@ export default function UserMatrixPage() {
                                     Use Support Chat or email to share the verification instructions with the user after finance review.
                                 </p>
                             </div>
+                        </div>
+
+                        <div className="bg-cyan-500/[0.04] border border-cyan-500/15 p-5 rounded-xl space-y-4">
+                            <div className="flex items-center gap-2">
+                                <Wallet className="w-4 h-4 text-cyan-300" />
+                                <h3 className="text-sm font-semibold text-white">User Payment Addresses</h3>
+                                <span className="ml-auto text-[10px] text-cyan-200/70">Overrides global deposit settings</span>
+                            </div>
+                            <p className="text-xs text-zinc-500 -mt-2">
+                                Leave a field empty to keep using the normal global address from Payment Gateways.
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {[
+                                    ["btcAddress", "Bitcoin address"],
+                                    ["ethAddress", "Ethereum address"],
+                                    ["usdtAddress", "USDT address"],
+                                ].map(([field, label]) => (
+                                    <div key={field} className="space-y-1">
+                                        <Label className="text-xs text-zinc-400 font-medium">{label}</Label>
+                                        <Input
+                                            value={(paymentOverrides as any)[field]}
+                                            onChange={(event) => setPaymentOverrides(prev => ({ ...prev, [field]: event.target.value }))}
+                                            placeholder="Use global if blank"
+                                            className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm font-mono"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">PayPal email</Label>
+                                    <Input
+                                        value={paymentOverrides.paypalEmail}
+                                        onChange={(event) => setPaymentOverrides(prev => ({ ...prev, paypalEmail: event.target.value }))}
+                                        placeholder="Use global if blank"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Cash App tag</Label>
+                                    <Input
+                                        value={paymentOverrides.cashappTag}
+                                        onChange={(event) => setPaymentOverrides(prev => ({ ...prev, cashappTag: event.target.value }))}
+                                        placeholder="Use global if blank"
+                                        className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Bank name</Label>
+                                    <Input value={paymentOverrides.bankName} onChange={(event) => setPaymentOverrides(prev => ({ ...prev, bankName: event.target.value }))} placeholder="Use global if blank" className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm" />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">Account / IBAN</Label>
+                                    <Input value={paymentOverrides.bankAccount} onChange={(event) => setPaymentOverrides(prev => ({ ...prev, bankAccount: event.target.value }))} placeholder="Use global if blank" className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm" />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-zinc-400 font-medium">SWIFT / Routing</Label>
+                                    <Input value={paymentOverrides.bankSwift} onChange={(event) => setPaymentOverrides(prev => ({ ...prev, bankSwift: event.target.value }))} placeholder="Use global if blank" className="h-10 bg-white/[0.04] border-white/[0.08] text-white text-sm" />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-xs text-zinc-400 font-medium">Extra crypto overrides</Label>
+                                <textarea
+                                    value={paymentOverrides.extraCryptosText}
+                                    onChange={(event) => setPaymentOverrides(prev => ({ ...prev, extraCryptosText: event.target.value }))}
+                                    placeholder={"coin-id|address|network\nsol|SOL-address|Solana"}
+                                    className="w-full h-20 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-sm p-3 outline-none focus:border-cyan-500/40 transition-colors resize-none font-mono"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={savePaymentAddressOverrides}
+                                disabled={savingPaymentOverrides}
+                                className="w-full h-10 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                            >
+                                {savingPaymentOverrides ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                                Save User Payment Addresses
+                            </button>
                         </div>
 
                         <div className="bg-blue-500/[0.04] border border-blue-500/15 p-5 rounded-xl space-y-4">

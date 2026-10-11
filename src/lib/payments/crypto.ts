@@ -11,6 +11,41 @@ export type CryptoOption = {
 
 const normalizeCryptoId = (value: string) => String(value || "").trim().toLowerCase();
 
+export function getEffectivePaymentConfig(adminConfig: any, userData?: any) {
+  const overrides = userData?.paymentAddressOverrides || userData?.paymentOverrides || {};
+  const merged: any = {
+    ...(adminConfig || {}),
+    ...Object.fromEntries(
+      Object.entries(overrides).filter(([, value]) => {
+        if (Array.isArray(value)) return value.length > 0;
+        return value !== undefined && value !== null && String(value).trim() !== "";
+      })
+    ),
+  };
+
+  const adminExtras = Array.isArray(adminConfig?.extraCryptos) ? adminConfig.extraCryptos : [];
+  const userExtras = Array.isArray(overrides?.extraCryptos) ? overrides.extraCryptos : [];
+  if (adminExtras.length || userExtras.length) {
+    const extrasById = new Map<string, any>();
+    adminExtras.forEach((coin: any) => {
+      const id = normalizeCryptoId(coin?.id || coin?.ticker || coin?.name || "");
+      if (id) extrasById.set(id, { ...coin, id });
+    });
+    userExtras.forEach((coin: any) => {
+      const id = normalizeCryptoId(coin?.id || coin?.ticker || coin?.name || "");
+      if (!id) return;
+      extrasById.set(id, {
+        ...(extrasById.get(id) || {}),
+        ...coin,
+        id,
+      });
+    });
+    merged.extraCryptos = Array.from(extrasById.values());
+  }
+
+  return merged;
+}
+
 export function getEnabledCryptoOptions(adminConfig: any): CryptoOption[] {
   const defaults: CryptoOption[] = [
     {

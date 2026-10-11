@@ -16,7 +16,7 @@ import { getDefaultStock } from "@/lib/catalog";
 import { useCurrency } from "@/hooks/useCurrency";
 import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, validateSafeCardInput } from "@/lib/payments/card";
 import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
-import { getEnabledCryptoOptions } from "@/lib/payments/crypto";
+import { getEffectivePaymentConfig, getEnabledCryptoOptions } from "@/lib/payments/crypto";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { getStoreSubdomainUrl } from "@/lib/site";
 
@@ -44,7 +44,8 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
     const [cardErrorMessage, setCardErrorMessage] = useState("");
     const [adminConfig, setAdminConfig] = useState<any>(null);
     const [cryptoAsset, setCryptoAsset] = useState<"btc" | "eth" | "usdt" | string | null>(null);
-    const cryptoOptions = getEnabledCryptoOptions(adminConfig);
+    const paymentConfig = getEffectivePaymentConfig(adminConfig, storeUser);
+    const cryptoOptions = getEnabledCryptoOptions(paymentConfig);
     const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
 
     const productName = product?.name || product?.productName || "Selected Product";
@@ -806,6 +807,7 @@ export default function CheckoutModal({ isOpen, onClose, product, storeUser, sto
                                                 <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md">{selectedCoin?.ticker}</span>
                                                 <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Wallet Address</p>
                                             </div>
+                                            {storeUser?.paymentAddressOverrides && <p className="text-[11px] text-blue-300">This is your store unique address.</p>}
                                             <p className="text-sm font-bold text-white">Send {selectedCoin?.ticker} to:</p>
                                             <div className="flex gap-2">
                                                 <Input readOnly value={walletAddress} className="h-10 bg-zinc-900 border-none rounded-lg text-xs font-mono" />

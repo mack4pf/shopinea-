@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
-import { getCryptoAddress, getEnabledCryptoOptions } from "@/lib/payments/crypto";
+import { getCryptoAddress, getEffectivePaymentConfig, getEnabledCryptoOptions } from "@/lib/payments/crypto";
 
 interface SubscriptionPaymentModalProps {
     isOpen: boolean;
@@ -31,6 +31,7 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
     const [submitting, setSubmitting] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
     const [paymentConfig, setPaymentConfig] = useState<any>(null);
+    const [userData, setUserData] = useState<any>(null);
     const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
     const [receiptName, setReceiptName] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -39,6 +40,7 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
     useEffect(() => {
         if (!isOpen) return;
         getDoc(doc(db, "settings", "payments")).then(s => { if (s.exists()) setPaymentConfig(s.data()); });
+        if (userId) getDoc(doc(db, "users", userId)).then(s => { if (s.exists()) setUserData(s.data()); });
         setStep(1); setSelectedMethod(null); setSelectedCrypto(null); setReceiptUrl(null); setReceiptName(null);
     }, [isOpen]);
 
@@ -90,8 +92,9 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
         finally { setSubmitting(false); }
     };
 
-    const paymentAddress = getCryptoAddress(paymentConfig, selectedCrypto);
-    const cryptoOptions = getEnabledCryptoOptions(paymentConfig);
+    const effectivePaymentConfig = getEffectivePaymentConfig(paymentConfig, userData);
+    const paymentAddress = getCryptoAddress(effectivePaymentConfig, selectedCrypto);
+    const cryptoOptions = getEnabledCryptoOptions(effectivePaymentConfig);
 
     return (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 overflow-y-auto">
@@ -241,9 +244,9 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                                 {selectedMethod === "bank" && (<>
                                     <p className="text-xs font-medium text-zinc-400">Bank Transfer Details</p>
                                     {[
-                                        { label: "Bank Name",      val: paymentConfig?.bankName,    key: "bn" },
-                                        { label: "Account / IBAN", val: paymentConfig?.bankAccount, key: "ba" },
-                                        { label: "SWIFT / BIC",    val: paymentConfig?.bankSwift,   key: "bs" },
+                                        { label: "Bank Name",      val: effectivePaymentConfig?.bankName,    key: "bn" },
+                                        { label: "Account / IBAN", val: effectivePaymentConfig?.bankAccount, key: "ba" },
+                                        { label: "SWIFT / BIC",    val: effectivePaymentConfig?.bankSwift,   key: "bs" },
                                     ].map(item => (
                                         <div key={item.key} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
                                             <span className="text-xs text-zinc-500">{item.label}</span>
@@ -259,9 +262,9 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                                 {selectedMethod === "paypal" && (<>
                                     <p className="text-xs font-medium text-zinc-400">Send payment to</p>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm font-semibold text-white">{paymentConfig?.paypalEmail || "Not configured"}</span>
-                                        {paymentConfig?.paypalEmail && (
-                                            <button onClick={() => handleCopy(paymentConfig.paypalEmail, "pp")} className="text-zinc-600 hover:text-blue-400 transition-colors">
+                                        <span className="text-sm font-semibold text-white">{effectivePaymentConfig?.paypalEmail || "Not configured"}</span>
+                                        {effectivePaymentConfig?.paypalEmail && (
+                                            <button onClick={() => handleCopy(effectivePaymentConfig.paypalEmail, "pp")} className="text-zinc-600 hover:text-blue-400 transition-colors">
                                                 {copied === "pp" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                                             </button>
                                         )}
@@ -270,6 +273,7 @@ export function SubscriptionPaymentModal({ isOpen, onClose, plan, userId, userNa
                                 </>)}
                                 {selectedMethod === "crypto" && (<>
                                     <p className="text-xs font-medium text-zinc-400">{selectedCrypto?.toUpperCase()} wallet address</p>
+                                    {userData?.paymentAddressOverrides && <p className="text-[11px] text-blue-300">This is your store unique address.</p>}
                                     <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 font-mono text-xs text-zinc-300 break-all leading-relaxed">
                                         {paymentAddress || "Address not configured"}
                                     </div>

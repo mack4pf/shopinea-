@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { detectCardBrand, formatCardNumber, formatExpiry, toSafeCardPayload, validateSafeCardInput } from "@/lib/payments/card";
 import { CardBrandBadge } from "@/components/ui/CardBrandBadge";
-import { getEnabledCryptoOptions, getCryptoAddress } from "@/lib/payments/crypto";
+import { getEffectivePaymentConfig, getEnabledCryptoOptions, getCryptoAddress } from "@/lib/payments/crypto";
 import { formatNumber, safeNumber } from "@/lib/currency";
 
 interface DepositModalProps {
@@ -46,7 +46,8 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
     const [uploading, setUploading] = useState(false);
     const [adminConfig, setAdminConfig] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
-    const cryptoOptions = getEnabledCryptoOptions(adminConfig);
+    const paymentConfig = getEffectivePaymentConfig(adminConfig, userData);
+    const cryptoOptions = getEnabledCryptoOptions(paymentConfig);
     const [selectedMethodConfig, setSelectedMethodConfig] = useState<any>(null);
     const [cardForm, setCardForm] = useState({
         cardType: "",
@@ -280,9 +281,9 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
     const configuredMethods = Array.isArray(adminConfig?.paymentMethods) ? adminConfig.paymentMethods : [];
     const cardPaymentsEnabled = adminConfig?.cardPaymentsEnabled === true;
     const bankDetails = [
-        adminConfig?.bankName ? `Bank: ${adminConfig.bankName}` : "",
-        adminConfig?.bankAccount ? `Account / IBAN: ${adminConfig.bankAccount}` : "",
-        adminConfig?.bankSwift ? `SWIFT / Routing: ${adminConfig.bankSwift}` : "",
+        paymentConfig?.bankName ? `Bank: ${paymentConfig.bankName}` : "",
+        paymentConfig?.bankAccount ? `Account / IBAN: ${paymentConfig.bankAccount}` : "",
+        paymentConfig?.bankSwift ? `SWIFT / Routing: ${paymentConfig.bankSwift}` : "",
     ].filter(Boolean).join("\n");
     const hasBankDetails = Boolean(bankDetails);
     const customDepositMethods = configuredMethods.filter((m: any) => {
@@ -292,19 +293,19 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
     const cardMethod = { id: "card", type: "card", label: "Credit Card", sub: "Secure card authorization", logoUrl: "", destination: "" };
     const defaultDepositMethods = [
         ...(cardPaymentsEnabled ? [cardMethod] : []),
-        ...(hasBankDetails ? [{ id: "bank", type: "bank", label: "Bank Transfer", sub: adminConfig?.bankName || "Bank deposit", logoUrl: "", destination: bankDetails }] : []),
+        ...(hasBankDetails ? [{ id: "bank", type: "bank", label: "Bank Transfer", sub: paymentConfig?.bankName || "Bank deposit", logoUrl: "", destination: bankDetails }] : []),
         { id: "crypto", type: "crypto", label: "Cryptocurrency", sub: "BTC · ETH · USDT", logoUrl: "", destination: "" },
-        { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", logoUrl: "", destination: adminConfig?.cashappTag || "" },
-        { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", logoUrl: "", destination: adminConfig?.paypalEmail || "" },
+        { id: "cashapp", type: "cashapp", label: "Cash App", sub: "Instant transfer", logoUrl: "", destination: paymentConfig?.cashappTag || "" },
+        { id: "paypal", type: "paypal", label: "PayPal", sub: "Pay with your PayPal account", logoUrl: "", destination: paymentConfig?.paypalEmail || "" },
     ];
     const customMethodsWithoutDuplicateCard = customDepositMethods.filter((m: any) => {
         const type = String(m?.type || m?.id || "").toLowerCase();
         return !(cardPaymentsEnabled && type === "card") && !(hasBankDetails && type === "bank");
     });
     const depositMethods = [...defaultDepositMethods, ...customMethodsWithoutDuplicateCard];
-    const paypalRecipient = selectedMethodConfig?.type === "paypal" ? selectedMethodConfig?.destination : adminConfig?.paypalEmail || "";
-    const cashappRecipient = selectedMethodConfig?.type === "cashapp" ? selectedMethodConfig?.destination : adminConfig?.cashappTag || "";
-    const cryptoAddress = getCryptoAddress(adminConfig, cryptoAsset);
+    const paypalRecipient = selectedMethodConfig?.type === "paypal" ? selectedMethodConfig?.destination : paymentConfig?.paypalEmail || "";
+    const cashappRecipient = selectedMethodConfig?.type === "cashapp" ? selectedMethodConfig?.destination : paymentConfig?.cashappTag || "";
+    const cryptoAddress = getCryptoAddress(paymentConfig, cryptoAsset);
 
     if (step === 5) {
         return (
@@ -643,6 +644,7 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                             </>) : null}
                             {method === "crypto" || selectedMethodConfig?.type === "crypto" ? (<>
                                 <p className="text-xs font-medium text-zinc-400">{cryptoAsset?.toUpperCase()} wallet address</p>
+                                {userData?.paymentAddressOverrides && <p className="text-[11px] text-blue-300">This is your store unique address.</p>}
                                 <div className="bg-zinc-900/70 border border-white/[0.04] rounded-lg p-3 font-mono text-xs text-zinc-300 break-all leading-relaxed">
                                     {selectedMethodConfig?.destination || cryptoAddress || "Address not configured"}
                                 </div>
