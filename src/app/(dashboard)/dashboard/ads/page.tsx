@@ -37,8 +37,11 @@ interface Campaign {
     productName: string | string[];
     targetType: 'store' | 'products';
     status: string;
-    impressions: number;
-    clicks: number;
+    impressions?: number;
+    clicks?: number;
+    views?: number;
+    visits?: number;
+    conversions?: number;
     spend: number;
     platform: string;
     startDate: string;
@@ -50,6 +53,19 @@ interface Campaign {
     createdAt?: any;
     approvedAt?: any;
 }
+
+const metricValue = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+};
+
+const campaignViews = (campaign: Campaign) => metricValue(campaign.views) || metricValue(campaign.impressions);
+const campaignVisits = (campaign: Campaign) => metricValue(campaign.visits) || metricValue(campaign.clicks);
+const campaignConversions = (campaign: Campaign) => metricValue(campaign.conversions);
+const campaignConversionRate = (campaign: Campaign) => {
+    const visits = campaignVisits(campaign);
+    return visits > 0 ? (campaignConversions(campaign) / visits) * 100 : 0;
+};
 
 export default function AdsPage() {
     const [user, setUser] = useState<any>(null);
@@ -265,7 +281,7 @@ export default function AdsPage() {
                 platform: selectedPlatform, totalBudget: budgetNum, dailyBudget: dailySpend,
                 startDate, endDate,
                 startTime: scheduleMode === 'later' ? startTime : new Date().toTimeString().slice(0, 5),
-                scheduleMode, status: "reviewing", impressions: 0, clicks: 0, spend: 0,
+                scheduleMode, status: "reviewing", conversions: 0, impressions: 0, clicks: 0, spend: 0,
                 destinationUrl: campaignStoreUrl || getStoreSubdomainUrl(userData?.storeSlug),
                 adContent,
                 aiPrepared: true,
@@ -358,9 +374,11 @@ export default function AdsPage() {
 
             {/* ── Ad Performance Analytics ── */}
             {campaigns.length > 0 && (() => {
-                const totalImpressions = campaigns.reduce((s, c) => s + (c.impressions || 0), 0);
-                const totalClicks = campaigns.reduce((s, c) => s + (c.clicks || 0), 0);
+                const totalImpressions = campaigns.reduce((s, c) => s + campaignViews(c), 0);
+                const totalClicks = campaigns.reduce((s, c) => s + campaignVisits(c), 0);
+                const totalConversions = campaigns.reduce((s, c) => s + campaignConversions(c), 0);
                 const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
+                const conversionRate = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(2) : "0.00";
                 const totalSpend = campaigns.reduce((s, c) => s + (c.totalBudget || 0), 0);
                 const activeCamps = campaigns.filter(c => c.status === 'active');
                 const reach = Math.round(totalImpressions * 0.68); // estimated unique reach
@@ -370,8 +388,8 @@ export default function AdsPage() {
                 campaigns.forEach(c => {
                     const p = (c.platform || 'other').toLowerCase();
                     if (!platformMap[p]) platformMap[p] = { impressions: 0, clicks: 0 };
-                    platformMap[p].impressions += c.impressions || 0;
-                    platformMap[p].clicks += c.clicks || 0;
+                    platformMap[p].impressions += campaignViews(c);
+                    platformMap[p].clicks += campaignVisits(c);
                 });
                 const platforms = Object.entries(platformMap).sort((a, b) => b[1].impressions - a[1].impressions);
 
@@ -434,7 +452,7 @@ export default function AdsPage() {
                     labels: dayLabels,
                     datasets: [
                         {
-                            label: "Impressions",
+                            label: "Views",
                             data: dailyImpr,
                             borderColor: "rgba(99,102,241,0.9)",
                             backgroundColor: "rgba(99,102,241,0.08)",
@@ -446,7 +464,7 @@ export default function AdsPage() {
                             yAxisID: 'y',
                         },
                         {
-                            label: "Clicks",
+                            label: "Visits",
                             data: dailyClicks,
                             borderColor: "rgba(34,197,94,0.9)",
                             backgroundColor: "rgba(34,197,94,0.04)",
@@ -559,11 +577,12 @@ export default function AdsPage() {
                         </div>
 
                         {/* KPI row */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                             {[
-                                { label: "Impressions", value: totalImpressions.toLocaleString(), sub: "Total ad views", icon: Eye, color: "text-indigo-400", bg: "bg-indigo-500/10", trend: imprTrend },
-                                { label: "Link Clicks", value: totalClicks.toLocaleString(), sub: "Outbound clicks", icon: MousePointerClick, color: "text-blue-400", bg: "bg-blue-500/10", trend: clicksTrend },
+                                { label: "Views", value: totalImpressions.toLocaleString(), sub: "Total ad views", icon: Eye, color: "text-indigo-400", bg: "bg-indigo-500/10", trend: imprTrend },
+                                { label: "Visits", value: totalClicks.toLocaleString(), sub: "Store visits from ads", icon: MousePointerClick, color: "text-blue-400", bg: "bg-blue-500/10", trend: clicksTrend },
                                 { label: "CTR", value: `${ctr}%`, sub: "Click-through rate", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", trend: ctrTrend },
+                                { label: "Conversions", value: totalConversions.toLocaleString(), sub: `${conversionRate}% of visits`, icon: ShoppingCart, color: "text-lime-400", bg: "bg-lime-500/10", trend: totalConversions > 0 ? "Live" : "—" },
                                 { label: "Reach", value: reach.toLocaleString(), sub: "Estimated unique", icon: Users, color: "text-amber-400", bg: "bg-amber-500/10", trend: reachTrend },
                             ].map(({ label, value, sub, icon: Icon, color, bg, trend }) => (
                                 <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-2">
@@ -680,7 +699,7 @@ export default function AdsPage() {
             {/* Campaigns Table */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden">
                 <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-zinc-300">Your Campaigns</h3>
+                    <h3 className="text-sm font-semibold text-zinc-300">Campaign History</h3>
                     <span className="text-xs text-zinc-600">{campaigns.length} campaign{campaigns.length !== 1 ? 's' : ''}</span>
                 </div>
 
@@ -703,8 +722,10 @@ export default function AdsPage() {
                                     <tr className="border-b border-white/[0.04] text-xs font-medium text-zinc-500">
                                         <th className="py-3 px-5">Campaign</th>
                                         <th className="py-3 px-4">Budget</th>
-                                        <th className="py-3 px-4">Impressions</th>
-                                        <th className="py-3 px-4">Clicks</th>
+                                        <th className="py-3 px-4">Views</th>
+                                        <th className="py-3 px-4">Visits</th>
+                                        <th className="py-3 px-4">Conversions</th>
+                                        <th className="py-3 px-4">Conversion</th>
                                         <th className="py-3 px-4">Billing</th>
                                         <th className="py-3 px-4 text-center">Status</th>
                                     </tr>
@@ -733,10 +754,16 @@ export default function AdsPage() {
                                                     <p className="text-sm font-medium text-white">{currency.money(camp.dailyBudget || 0)}/day</p>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-sm text-zinc-300">{(camp.impressions || 0).toLocaleString()}</p>
+                                                    <p className="text-sm text-zinc-300">{campaignViews(camp).toLocaleString()}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-sm text-zinc-300">{(camp.clicks || 0).toLocaleString()}</p>
+                                                    <p className="text-sm text-zinc-300">{campaignVisits(camp).toLocaleString()}</p>
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <p className="text-sm font-medium text-emerald-400">{campaignConversions(camp).toLocaleString()}</p>
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <p className="text-sm text-zinc-300">{campaignConversionRate(camp).toFixed(2)}%</p>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <span className={cn("text-[11px] font-medium px-2 py-1 rounded-md",
@@ -783,10 +810,11 @@ export default function AdsPage() {
                                                 {displayStatus}
                                             </span>
                                         </div>
-                                        <div className="grid grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                             <div><p className="text-[10px] text-zinc-600">Budget</p><p className="text-xs font-medium text-white">{currency.money(camp.dailyBudget || 0)}/d</p></div>
-                                            <div><p className="text-[10px] text-zinc-600">Impressions</p><p className="text-xs font-medium text-white">{(camp.impressions || 0).toLocaleString()}</p></div>
-                                            <div><p className="text-[10px] text-zinc-600">Clicks</p><p className="text-xs font-medium text-white">{(camp.clicks || 0).toLocaleString()}</p></div>
+                                            <div><p className="text-[10px] text-zinc-600">Views</p><p className="text-xs font-medium text-white">{campaignViews(camp).toLocaleString()}</p></div>
+                                            <div><p className="text-[10px] text-zinc-600">Visits</p><p className="text-xs font-medium text-white">{campaignVisits(camp).toLocaleString()}</p></div>
+                                            <div><p className="text-[10px] text-zinc-600">Conversions</p><p className="text-xs font-medium text-emerald-400">{campaignConversions(camp).toLocaleString()} <span className="text-zinc-500">({campaignConversionRate(camp).toFixed(2)}%)</span></p></div>
                                         </div>
                                     </div>
                                 );

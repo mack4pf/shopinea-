@@ -177,11 +177,13 @@ export default function AdCommandPage() {
         }
     };
 
-    const handleBoost = async (campId: string, impressions: number, clicks: number, countryText: string) => {
+    const handleBoost = async (campId: string, views: number, visits: number, conversions: number, countryText: string) => {
         try {
             const updates: any = {};
-            if (impressions > 0) updates.impressions = increment(impressions);
-            if (clicks > 0) updates.clicks = increment(clicks);
+            if (views > 0) updates.impressions = increment(views);
+            if (visits > 0) updates.clicks = increment(visits);
+            if (conversions > 0) updates.conversions = increment(conversions);
+            updates.performanceUpdatedAt = serverTimestamp();
             
             // Add countries if supplied
             if (countryText.trim()) {
@@ -190,7 +192,7 @@ export default function AdCommandPage() {
 
             if (Object.keys(updates).length > 0) {
                 await updateDoc(doc(db, "campaigns", campId), updates);
-                toast.success("Campaign performance injected.");
+                toast.success("Views, visits, and conversions updated.");
                 fetchData();
             }
         } catch (err) {
@@ -449,25 +451,35 @@ export default function AdCommandPage() {
                                                     const form = e.target as any;
                                                     handleBoost(
                                                         c.id, 
-                                                        parseInt(form.impressions.value || '0'), 
-                                                        parseInt(form.clicks.value || '0'),
+                                                        parseInt(form.views.value || '0'),
+                                                        parseInt(form.visits.value || '0'),
+                                                        parseInt(form.conversions.value || '0'),
                                                         form.countries.value || ''
                                                     );
                                                     form.reset();
                                                 }}
                                                 className="space-y-3"
                                             >
-                                                <div className="grid grid-cols-2 gap-2">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                                     <input 
                                                         type="number" 
-                                                        name="impressions"
-                                                        placeholder="+ Impressions" 
+                                                        name="views"
+                                                        min="0"
+                                                        placeholder="+ Views"
                                                         className="w-full h-9 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 focus:border-indigo-500/40 transition-colors placeholder:text-zinc-600"
                                                     />
                                                     <input 
                                                         type="number" 
-                                                        name="clicks"
-                                                        placeholder="+ Clicks" 
+                                                        name="visits"
+                                                        min="0"
+                                                        placeholder="+ Visits"
+                                                        className="w-full h-9 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 focus:border-indigo-500/40 transition-colors placeholder:text-zinc-600"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        name="conversions"
+                                                        min="0"
+                                                        placeholder="+ Conversions"
                                                         className="w-full h-9 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white px-3 focus:border-indigo-500/40 transition-colors placeholder:text-zinc-600"
                                                     />
                                                 </div>
