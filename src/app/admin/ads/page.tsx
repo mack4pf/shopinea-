@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db, auth } from "@/lib/firebase/config";
-import { collection, query, getDocs, orderBy, updateDoc, doc, increment, where, serverTimestamp, getDoc, arrayUnion, deleteDoc } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, updateDoc, doc, increment, where, serverTimestamp, getDoc, arrayUnion, deleteDoc, runTransaction } from "firebase/firestore";
 import { 
     Megaphone, 
     Zap, 
@@ -179,23 +179,37 @@ export default function AdCommandPage() {
 
     const handleBoost = async (campId: string, views: number, visits: number, conversions: number, countryText: string) => {
         try {
-            const updates: any = {};
-            if (views > 0) updates.impressions = increment(views);
-            if (visits > 0) updates.clicks = increment(visits);
-            if (conversions > 0) updates.conversions = increment(conversions);
-            updates.performanceUpdatedAt = serverTimestamp();
-            
-            // Add countries if supplied
-            if (countryText.trim()) {
-                updates.countryReach = arrayUnion(...countryText.split(',').map((c: string) => c.trim().toUpperCase()));
-            }
+            const campaignRef = doc(db, "campaigns", campId);
+            const countries = countryText.split(',').map((country) => country.trim().toUpperCase()).filter(Boolean);
 
-            if (Object.keys(updates).length > 0) {
-                await updateDoc(doc(db, "campaigns", campId), updates);
-                toast.success("Views, visits, and conversions updated.");
-                fetchData();
-            }
+            await runTransaction(db, async (transaction) => {
+                const snapshot = await transaction.get(campaignRef);
+                if (!snapshot.exists()) throw new Error("Campaign not found");
+
+                const campaign = snapshot.data();
+                const currentViews = Math.max(Number(campaign.views || 0), Number(campaign.impressions || 0));
+                const currentVisits = Math.max(Number(campaign.visits || 0), Number(campaign.clicks || 0));
+                const currentConversions = Number(campaign.conversions || 0);
+                const nextViews = currentViews + Math.max(0, views);
+                const nextVisits = currentVisits + Math.max(0, visits);
+                const nextConversions = currentConversions + Math.max(0, conversions);
+
+                const updates: Record<string, unknown> = {
+                    views: nextViews,
+                    impressions: nextViews,
+                    visits: nextVisits,
+                    clicks: nextVisits,
+                    conversions: nextConversions,
+                    performanceUpdatedAt: serverTimestamp(),
+                };
+                if (countries.length > 0) updates.countryReach = arrayUnion(...countries);
+                transaction.update(campaignRef, updates);
+            });
+
+            toast.success("Views/impressions and visits/clicks are synchronized.");
+            fetchData();
         } catch (err) {
+            console.error(err);
             toast.error("Failed to inject performance.");
         }
     };

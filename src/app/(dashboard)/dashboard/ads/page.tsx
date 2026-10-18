@@ -59,8 +59,8 @@ const metricValue = (value: unknown) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 };
 
-const campaignViews = (campaign: Campaign) => metricValue(campaign.views) || metricValue(campaign.impressions);
-const campaignVisits = (campaign: Campaign) => metricValue(campaign.visits) || metricValue(campaign.clicks);
+const campaignViews = (campaign: Campaign) => Math.max(metricValue(campaign.views), metricValue(campaign.impressions));
+const campaignVisits = (campaign: Campaign) => Math.max(metricValue(campaign.visits), metricValue(campaign.clicks));
 const campaignConversions = (campaign: Campaign) => metricValue(campaign.conversions);
 const campaignConversionRate = (campaign: Campaign) => {
     const visits = campaignVisits(campaign);
@@ -281,7 +281,7 @@ export default function AdsPage() {
                 platform: selectedPlatform, totalBudget: budgetNum, dailyBudget: dailySpend,
                 startDate, endDate,
                 startTime: scheduleMode === 'later' ? startTime : new Date().toTimeString().slice(0, 5),
-                scheduleMode, status: "reviewing", conversions: 0, impressions: 0, clicks: 0, spend: 0,
+                scheduleMode, status: "reviewing", views: 0, impressions: 0, visits: 0, clicks: 0, conversions: 0, spend: 0,
                 destinationUrl: campaignStoreUrl || getStoreSubdomainUrl(userData?.storeSlug),
                 adContent,
                 aiPrepared: true,
