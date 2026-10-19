@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import React from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, orderBy, onSnapshot, doc, getDoc, addDoc, serverTimestamp, updateDoc, increment } from "firebase/firestore";
@@ -62,15 +62,11 @@ const metricValue = (value: unknown) => {
 const campaignViews = (campaign: Campaign) => Math.max(metricValue(campaign.views), metricValue(campaign.impressions));
 const campaignVisits = (campaign: Campaign) => Math.max(metricValue(campaign.visits), metricValue(campaign.clicks));
 const campaignConversions = (campaign: Campaign) => metricValue(campaign.conversions);
-const campaignConversionRate = (campaign: Campaign) => {
-    const visits = campaignVisits(campaign);
-    return visits > 0 ? (campaignConversions(campaign) / visits) * 100 : 0;
-};
-
 export default function AdsPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+    const [orderCount, setOrderCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [showDepositModal, setShowDepositModal] = useState(false);
     const [showKYCModal, setShowKYCModal] = useState(false);
@@ -102,21 +98,94 @@ export default function AdsPage() {
     }, [userData]);
 
     useEffect(() => {
+        let unsubUser = () => {};
+        let unsubCampaigns = () => {};
+        let unsubOrders = () => {};
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 setUser(firebaseUser);
                 const userRef = doc(db, "users", firebaseUser.uid);
-                const unsubUser = onSnapshot(userRef, (snap) => { setUserData({ id: firebaseUser.uid, ...snap.data() }); });
+                unsubUser = onSnapshot(userRef, (snap) => { setUserData({ id: firebaseUser.uid, ...snap.data() }); });
                 const q = query(collection(db, "campaigns"), where("sellerId", "==", firebaseUser.uid), orderBy("createdAt", "desc"));
-                const unsubSnap = onSnapshot(q, (snapshot) => {
+                unsubCampaigns = onSnapshot(q, (snapshot) => {
                     setCampaigns(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Campaign[]);
                     setLoading(false);
                 });
-                return () => { unsubUser(); unsubSnap(); };
+                const ordersQuery = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid));
+                unsubOrders = onSnapshot(ordersQuery, (snapshot) => setOrderCount(snapshot.size));
             } else { setLoading(false); }
         });
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            unsubUser();
+            unsubCampaigns();
+            unsubOrders();
+        };
     }, []);
+
+    const effectiveMetrics = useMemo(() => {
+        const result = new Map<string, { views: number; visits: number; conversions: number }>();
+        campaigns.forEach((campaign) => result.set(campaign.id, {
+            views: campaignViews(campaign),
+            visits: campaignVisits(campaign),
+            conversions: campaignConversions(campaign),
+        }));
+
+        const eligible = campaigns.filter((campaign) => ['active', 'completed'].includes(String(campaign.status || '').toLowerCase()));
+        const recipients = eligible.length > 0 ? eligible : campaigns;
+        const accountViews = Math.max(
+            metricValue(userData?.storeViews),
+            metricValue(userData?.impressions),
+            metricValue(userData?.stats?.views),
+        );
+        const accountVisits = Math.max(
+            metricValue(userData?.storeVisits),
+            metricValue(userData?.stats?.visits),
+        );
+        const accountConversions = Math.max(
+            orderCount,
+            metricValue(userData?.totalOrders),
+            metricValue(userData?.stats?.orders),
+            metricValue(userData?.stats?.sales),
+        );
+
+        const distributeRemainder = (
+            field: 'views' | 'visits' | 'conversions',
+            accountTotal: number,
+        ) => {
+            if (recipients.length === 0 || accountTotal <= 0) return;
+            const recordedTotal = campaigns.reduce((sum, campaign) => sum + (result.get(campaign.id)?.[field] || 0), 0);
+            const remainder = Math.max(0, Math.round(accountTotal - recordedTotal));
+            if (remainder === 0) return;
+
+            const weights = recipients.map((campaign) => Math.max(1, metricValue(campaign.totalBudget) || metricValue(campaign.dailyBudget)));
+            const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+            let allocated = 0;
+            recipients.forEach((campaign, index) => {
+                const share = index === recipients.length - 1
+                    ? remainder - allocated
+                    : Math.floor((remainder * weights[index]) / weightTotal);
+                const current = result.get(campaign.id) || { views: 0, visits: 0, conversions: 0 };
+                result.set(campaign.id, { ...current, [field]: current[field] + share });
+                allocated += share;
+            });
+        };
+
+        distributeRemainder('views', accountViews);
+        distributeRemainder('visits', accountVisits);
+        distributeRemainder('conversions', accountConversions);
+        return result;
+    }, [campaigns, orderCount, userData]);
+
+    const metricsFor = (campaign: Campaign) => effectiveMetrics.get(campaign.id) || {
+        views: campaignViews(campaign),
+        visits: campaignVisits(campaign),
+        conversions: campaignConversions(campaign),
+    };
+    const conversionRateFor = (campaign: Campaign) => {
+        const metrics = metricsFor(campaign);
+        return metrics.visits > 0 ? (metrics.conversions / metrics.visits) * 100 : 0;
+    };
 
     const calculateDays = () => {
         if (!startDate || !endDate) return 0;
@@ -374,9 +443,9 @@ export default function AdsPage() {
 
             {/* ── Ad Performance Analytics ── */}
             {campaigns.length > 0 && (() => {
-                const totalImpressions = campaigns.reduce((s, c) => s + campaignViews(c), 0);
-                const totalClicks = campaigns.reduce((s, c) => s + campaignVisits(c), 0);
-                const totalConversions = campaigns.reduce((s, c) => s + campaignConversions(c), 0);
+                const totalImpressions = campaigns.reduce((s, c) => s + metricsFor(c).views, 0);
+                const totalClicks = campaigns.reduce((s, c) => s + metricsFor(c).visits, 0);
+                const totalConversions = campaigns.reduce((s, c) => s + metricsFor(c).conversions, 0);
                 const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
                 const conversionRate = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(2) : "0.00";
                 const totalSpend = campaigns.reduce((s, c) => s + (c.totalBudget || 0), 0);
@@ -388,8 +457,8 @@ export default function AdsPage() {
                 campaigns.forEach(c => {
                     const p = (c.platform || 'other').toLowerCase();
                     if (!platformMap[p]) platformMap[p] = { impressions: 0, clicks: 0 };
-                    platformMap[p].impressions += campaignViews(c);
-                    platformMap[p].clicks += campaignVisits(c);
+                    platformMap[p].impressions += metricsFor(c).views;
+                    platformMap[p].clicks += metricsFor(c).visits;
                 });
                 const platforms = Object.entries(platformMap).sort((a, b) => b[1].impressions - a[1].impressions);
 
@@ -754,16 +823,16 @@ export default function AdsPage() {
                                                     <p className="text-sm font-medium text-white">{currency.money(camp.dailyBudget || 0)}/day</p>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-sm text-zinc-300">{campaignViews(camp).toLocaleString()}</p>
+                                                    <p className="text-sm text-zinc-300">{metricsFor(camp).views.toLocaleString()}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-sm text-zinc-300">{campaignVisits(camp).toLocaleString()}</p>
+                                                    <p className="text-sm text-zinc-300">{metricsFor(camp).visits.toLocaleString()}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-sm font-medium text-emerald-400">{campaignConversions(camp).toLocaleString()}</p>
+                                                    <p className="text-sm font-medium text-emerald-400">{metricsFor(camp).conversions.toLocaleString()}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-sm text-zinc-300">{campaignConversionRate(camp).toFixed(2)}%</p>
+                                                    <p className="text-sm text-zinc-300">{conversionRateFor(camp).toFixed(2)}%</p>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <span className={cn("text-[11px] font-medium px-2 py-1 rounded-md",
@@ -812,9 +881,9 @@ export default function AdsPage() {
                                         </div>
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                             <div><p className="text-[10px] text-zinc-600">Budget</p><p className="text-xs font-medium text-white">{currency.money(camp.dailyBudget || 0)}/d</p></div>
-                                            <div><p className="text-[10px] text-zinc-600">Views</p><p className="text-xs font-medium text-white">{campaignViews(camp).toLocaleString()}</p></div>
-                                            <div><p className="text-[10px] text-zinc-600">Visits</p><p className="text-xs font-medium text-white">{campaignVisits(camp).toLocaleString()}</p></div>
-                                            <div><p className="text-[10px] text-zinc-600">Conversions</p><p className="text-xs font-medium text-emerald-400">{campaignConversions(camp).toLocaleString()} <span className="text-zinc-500">({campaignConversionRate(camp).toFixed(2)}%)</span></p></div>
+                                            <div><p className="text-[10px] text-zinc-600">Views</p><p className="text-xs font-medium text-white">{metricsFor(camp).views.toLocaleString()}</p></div>
+                                            <div><p className="text-[10px] text-zinc-600">Visits</p><p className="text-xs font-medium text-white">{metricsFor(camp).visits.toLocaleString()}</p></div>
+                                            <div><p className="text-[10px] text-zinc-600">Conversions</p><p className="text-xs font-medium text-emerald-400">{metricsFor(camp).conversions.toLocaleString()} <span className="text-zinc-500">({conversionRateFor(camp).toFixed(2)}%)</span></p></div>
                                         </div>
                                     </div>
                                 );
