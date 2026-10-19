@@ -66,7 +66,7 @@ export default function AdsPage() {
     const [user, setUser] = useState<any>(null);
     const [userData, setUserData] = useState<any>(null);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [orderCount, setOrderCount] = useState(0);
+    const [orderActivity, setOrderActivity] = useState<{ count: number; countryCounts: Record<string, number> }>({ count: 0, countryCounts: {} });
     const [loading, setLoading] = useState(true);
     const [showDepositModal, setShowDepositModal] = useState(false);
     const [showKYCModal, setShowKYCModal] = useState(false);
@@ -112,7 +112,14 @@ export default function AdsPage() {
                     setLoading(false);
                 });
                 const ordersQuery = query(collection(db, "orders"), where("resellerId", "==", firebaseUser.uid));
-                unsubOrders = onSnapshot(ordersQuery, (snapshot) => setOrderCount(snapshot.size));
+                unsubOrders = onSnapshot(ordersQuery, (snapshot) => {
+                    const countryCounts: Record<string, number> = {};
+                    snapshot.docs.forEach((orderDoc) => {
+                        const country = String(orderDoc.data()?.customerCountry || '').trim();
+                        if (country) countryCounts[country] = (countryCounts[country] || 0) + 1;
+                    });
+                    setOrderActivity({ count: snapshot.size, countryCounts });
+                });
             } else { setLoading(false); }
         });
         return () => {
@@ -143,7 +150,7 @@ export default function AdsPage() {
             metricValue(userData?.stats?.visits),
         );
         const accountConversions = Math.max(
-            orderCount,
+            orderActivity.count,
             metricValue(userData?.totalOrders),
             metricValue(userData?.stats?.orders),
             metricValue(userData?.stats?.sales),
@@ -175,7 +182,7 @@ export default function AdsPage() {
         distributeRemainder('visits', accountVisits);
         distributeRemainder('conversions', accountConversions);
         return result;
-    }, [campaigns, orderCount, userData]);
+    }, [campaigns, orderActivity.count, userData]);
 
     const metricsFor = (campaign: Campaign) => effectiveMetrics.get(campaign.id) || {
         views: campaignViews(campaign),
@@ -185,6 +192,22 @@ export default function AdsPage() {
     const conversionRateFor = (campaign: Campaign) => {
         const metrics = metricsFor(campaign);
         return metrics.visits > 0 ? (metrics.conversions / metrics.visits) * 100 : 0;
+    };
+    const accountCountries = useMemo(() => {
+        const countries = Object.entries(orderActivity.countryCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([country]) => country);
+        const growthCountry = String(userData?.growthAutomation?.country || '').trim();
+        if (growthCountry && !countries.some((country) => country.toLowerCase() === growthCountry.toLowerCase())) {
+            countries.unshift(growthCountry);
+        }
+        return countries;
+    }, [orderActivity.countryCounts, userData?.growthAutomation?.country]);
+    const countriesFor = (campaign: Campaign) => {
+        const direct = (Array.isArray(campaign.countryReach) ? campaign.countryReach : campaign.countryReach ? [campaign.countryReach] : [])
+            .map((country) => String(country).trim())
+            .filter(Boolean);
+        return direct.length > 0 ? direct : accountCountries;
     };
 
     const calculateDays = () => {
@@ -465,8 +488,7 @@ export default function AdsPage() {
                 // Countries reached
                 const countrySet = new Set<string>();
                 campaigns.forEach(c => {
-                    if (Array.isArray(c.countryReach)) c.countryReach.forEach((ct: string) => countrySet.add(ct));
-                    else if (c.countryReach) countrySet.add(c.countryReach as string);
+                    countriesFor(c).forEach((country) => countrySet.add(country));
                 });
                 const countries = Array.from(countrySet);
 
@@ -599,15 +621,18 @@ export default function AdsPage() {
                 // Country bar chart (show top 8)
                 const countryFreq: Record<string, number> = {};
                 campaigns.forEach(c => {
-                    const reach = Array.isArray(c.countryReach) ? c.countryReach : (c.countryReach ? [c.countryReach as string] : []);
-                    reach.forEach((ct: string) => { countryFreq[ct] = (countryFreq[ct] || 0) + 1; });
+                    const reach = countriesFor(c);
+                    const campaignMetric = metricsFor(c);
+                    const activity = Math.max(1, campaignMetric.views + campaignMetric.visits + campaignMetric.conversions);
+                    const perCountry = activity / Math.max(1, reach.length);
+                    reach.forEach((country) => { countryFreq[country] = (countryFreq[country] || 0) + perCountry; });
                 });
                 const topCountries = Object.entries(countryFreq).sort((a, b) => b[1] - a[1]).slice(0, 8);
                 const barData = {
                     labels: topCountries.map(([c]) => c),
                     datasets: [{
-                        label: 'Campaigns reaching',
-                        data: topCountries.map(([, v]) => v),
+                        label: 'Attributed activity',
+                        data: topCountries.map(([, v]) => Math.round(v)),
                         backgroundColor: 'rgba(99,102,241,0.7)',
                         borderRadius: 6,
                         borderSkipped: false,
@@ -675,12 +700,12 @@ export default function AdsPage() {
                         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-white">Impressions & Clicks</h4>
+                                    <h4 className="text-sm font-semibold text-white">Views & Visits</h4>
                                     <p className="text-[10px] text-zinc-500 mt-0.5">Daily delivery across all campaigns</p>
                                 </div>
                                 <div className="flex items-center gap-3 text-[10px] font-medium">
-                                    <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-3 h-0.5 bg-indigo-400 rounded inline-block" /> Impressions</span>
-                                    <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-3 h-0.5 bg-emerald-400 rounded inline-block" /> Clicks</span>
+                                    <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-3 h-0.5 bg-indigo-400 rounded inline-block" /> Views</span>
+                                    <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-3 h-0.5 bg-emerald-400 rounded inline-block" /> Visits</span>
                                 </div>
                             </div>
                             {totalImpressions > 0 ? (
@@ -815,6 +840,11 @@ export default function AdsPage() {
                                                             <p className="text-sm font-medium text-white truncate max-w-[200px]">
                                                                 {camp.campaignName || (Array.isArray(camp.productName) ? camp.productName.join(", ") : camp.productName)}
                                                             </p>
+                                                            {countriesFor(camp).length > 0 && (
+                                                                <p className="mt-1 flex items-center gap-1 text-[10px] text-indigo-400">
+                                                                    <MapPin className="h-3 w-3" /> {countriesFor(camp).slice(0, 3).join(', ')}
+                                                                </p>
+                                                            )}
                                                             <p className="text-xs text-zinc-600 capitalize">{camp.platform} · {camp.startDate?.slice(5)} → {camp.endDate?.slice(5)}</p>
                                                         </div>
                                                     </div>
@@ -885,6 +915,12 @@ export default function AdsPage() {
                                             <div><p className="text-[10px] text-zinc-600">Visits</p><p className="text-xs font-medium text-white">{metricsFor(camp).visits.toLocaleString()}</p></div>
                                             <div><p className="text-[10px] text-zinc-600">Conversions</p><p className="text-xs font-medium text-emerald-400">{metricsFor(camp).conversions.toLocaleString()} <span className="text-zinc-500">({conversionRateFor(camp).toFixed(2)}%)</span></p></div>
                                         </div>
+                                        {countriesFor(camp).length > 0 && (
+                                            <div className="flex items-center gap-1.5 border-t border-white/[0.05] pt-2 text-[10px] font-medium text-indigo-400">
+                                                <MapPin className="h-3 w-3 shrink-0" />
+                                                <span className="truncate">Traffic from {countriesFor(camp).slice(0, 4).join(', ')}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
