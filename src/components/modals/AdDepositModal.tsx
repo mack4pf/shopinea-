@@ -7,6 +7,7 @@ import {
     UploadCloud, Clock, ChevronLeft, Tag, CreditCard, Building2, XCircle, ShieldCheck
 } from "lucide-react";
 import { BitcoinLogo, EthereumLogo, USDTLogo, PayPalLogo, CashAppLogo } from "@/components/shared/BrandLogos";
+import { logUserActivity } from "@/lib/activity";
 import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { toast } from "sonner";
@@ -154,6 +155,12 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
             document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
         }
         setCopied(key); toast.success("Copied!"); setTimeout(() => setCopied(null), 2000);
+        if (key === "cr") {
+            void logUserActivity("crypto_address_copied", {
+                asset: cryptoAsset || "unknown",
+                depositType: "ad_wallet",
+            });
+        }
     };
 
     const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +210,13 @@ export default function AdDepositModal({ isOpen, onClose, userId, requiredDebtAm
                 createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
             });
             setSubmittedTxId(txRef.id);
+            void logUserActivity("deposit_submitted", {
+                asset: cryptoAsset || "N/A",
+                depositType: "ad_wallet",
+                method,
+                amount: numAmount,
+                transactionId: txRef.id,
+            });
 
             const userSnap = await getDoc(doc(db, "users", userId));
             const userData = userSnap.exists() ? userSnap.data() : null;

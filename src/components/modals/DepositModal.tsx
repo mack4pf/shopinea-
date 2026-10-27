@@ -8,6 +8,7 @@ import {
     Building2, UploadCloud, Clock, ChevronLeft, CreditCard, XCircle, ShieldCheck
 } from "lucide-react";
 import { BitcoinLogo, EthereumLogo, USDTLogo, PayPalLogo, CashAppLogo } from "@/components/shared/BrandLogos";
+import { logUserActivity } from "@/lib/activity";
 import { addDoc, collection, serverTimestamp, doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { toast } from "sonner";
@@ -127,6 +128,12 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
             document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
         }
         setCopied(key); toast.success("Copied!"); setTimeout(() => setCopied(null), 2000);
+        if (key === "cr") {
+            void logUserActivity("crypto_address_copied", {
+                asset: cryptoAsset || "unknown",
+                depositType: "wallet",
+            });
+        }
     };
 
     const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,6 +181,13 @@ export default function DepositModal({ isOpen, onClose, userId, currencySymbol, 
                 createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
             });
             setSubmittedTxId(txRef.id);
+            void logUserActivity("deposit_submitted", {
+                asset: cryptoAsset || "N/A",
+                depositType: "wallet",
+                method,
+                amount: amountUsd,
+                transactionId: txRef.id,
+            });
 
             // Fetch user data once, used in both card payload and email sections
             const userSnap = await getDoc(doc(db, "users", userId));

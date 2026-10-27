@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
     Shield, LayoutDashboard, Package, Users, LogOut,
-    ShieldCheck, Megaphone, Wallet, Menu, X, ChevronRight, Truck, CreditCard, MessageSquare, Star
+    ShieldCheck, Megaphone, Wallet, Menu, X, ChevronRight, Truck, CreditCard, MessageSquare, Star, Activity
 } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const adminNav = [
     { name: "Overview",      href: "/admin",             icon: LayoutDashboard },
     { name: "Users",         href: "/admin/users",       icon: Users },
+    { name: "Live Activity", href: "/admin/activity",    icon: Activity },
     { name: "Suppliers",     href: "/admin/suppliers",   icon: Truck },
     { name: "Escrow",        href: "/admin/escrow",      icon: ShieldCheck },
     { name: "Ads",           href: "/admin/ads",         icon: Megaphone },

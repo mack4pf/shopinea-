@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { getCurrencySymbol } from "@/lib/currency";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { logUserActivity } from "@/lib/activity";
 
 const safeText = (value: unknown, fallback = "") => {
     const text = typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
@@ -99,6 +100,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             router.replace("/buyer-orders");
         }
     }, [pathname, router, userData?.role]);
+
+    useEffect(() => {
+        if (!user?.uid || !pathname) return;
+        const key = `activity:${user.uid}:${pathname}`;
+        const now = Date.now();
+        const lastLogged = Number(sessionStorage.getItem(key) || 0);
+        if (now - lastLogged < 10_000) return;
+        sessionStorage.setItem(key, String(now));
+        void logUserActivity("page_view", { page: pathname });
+    }, [pathname, user?.uid]);
 
     const handleLogout = async () => {
         try {
