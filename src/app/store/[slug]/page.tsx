@@ -224,8 +224,39 @@ export default function StorePage() {
                 if (!querySnapshot.empty) {
                     const uDoc = querySnapshot.docs[0];
                     const ownerData = uDoc.data();
+                    // Account-level data is shared, but storefront presentation must not
+                    // leak from the primary store into an additional store.
+                    const isolatedStoreDefaults = {
+                        storeName: "",
+                        storeTagline: "",
+                        storeHeroTitle: "",
+                        storeHeroSubtitle: "",
+                        storePrimaryCta: "",
+                        storeAnnouncement: "",
+                        storePromoText: "",
+                        storeShippingText: "",
+                        storeReturnText: "",
+                        storeSupportText: "",
+                        storeDeliveryEstimate: "",
+                        storeHeroImage: "",
+                        storeLogo: "",
+                        storeProducts: [],
+                        productViews: {},
+                        themeColor: "#10b981",
+                        storeTemplate: "classic",
+                        storeLayout: "grid",
+                        showSearch: true,
+                        showTopSellers: true,
+                        showViews: true,
+                        showSales: true,
+                        showStock: true,
+                        showHeroProducts: true,
+                        showTrustBadges: true,
+                        showCategoryPills: true,
+                        showPoweredBy: true,
+                    };
                     const uData = additionalStore
-                        ? { uid: uDoc.id, ...ownerData, ...additionalStore, additionalStoreId: additionalStore.id }
+                        ? { uid: uDoc.id, ...ownerData, ...isolatedStoreDefaults, ...additionalStore, additionalStoreId: additionalStore.id }
                         : { uid: uDoc.id, ...ownerData } as any;
                     setStoreUser(uData);
 

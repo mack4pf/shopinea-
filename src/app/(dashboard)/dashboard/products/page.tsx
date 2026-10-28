@@ -230,7 +230,7 @@ export default function ProductsPage() {
                 id: `store-${Date.now()}`,
                 storeName: requestedName,
                 storeSlug: uniqueStoreSlug(requestedName, usedSlugs),
-                storeTagline: userData?.storeTagline || "Premium sourced products, fast shipping.",
+                storeTagline: "Premium sourced products, fast shipping.",
                 themeColor: userData?.themeColor || "#10b981",
                 storeTemplate: userData?.storeTemplate || "classic",
                 storeLayout: userData?.storeLayout || "grid",
