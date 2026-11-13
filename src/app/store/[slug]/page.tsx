@@ -20,6 +20,8 @@ import {
     Flame,
     BadgePercent,
     HeartHandshake,
+    X,
+    Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InquiryModal from "@/components/modals/InquiryModal";
@@ -32,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { getDefaultStock } from "@/lib/catalog";
 import { useCurrency } from "@/hooks/useCurrency";
 import { makeLegacyStoreSlug, normalizeStoreSlug } from "@/lib/site";
+import { toast } from "sonner";
 
 const TEMPLATE_STYLES: Record<string, { page: string; hero: string; card: string; section: string; label: string }> = {
     classic: {
@@ -134,9 +137,19 @@ const STORE_PRODUCT_GRID: Record<string, string> = {
     editorial: "grid grid-cols-1 lg:grid-cols-2 gap-8",
 };
 
+type CartProduct = {
+    id: string;
+    name?: string;
+    productName?: string;
+    image?: string;
+    price?: number;
+    resellPrice?: number;
+};
+
 export default function StorePage() {
     const { slug } = useParams();
     const router = useRouter();
+    const cartStorageKey = `shoplinea-cart:${normalizeStoreSlug(Array.isArray(slug) ? slug[0] : slug) || "store"}`;
     const [storeUser, setStoreUser] = useState<any>(null);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -148,7 +161,41 @@ export default function StorePage() {
     // Modal State
     const [inquiryProduct, setInquiryProduct] = useState<any>(null);
     const [checkoutProduct, setCheckoutProduct] = useState<any>(null);
+    const [cartItems, setCartItems] = useState<CartProduct[]>(() => {
+        if (typeof window === "undefined") return [];
+        try {
+            const saved = window.localStorage.getItem(cartStorageKey);
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+    const [cartOpen, setCartOpen] = useState(false);
     const currency = useCurrency(storeUser);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        window.localStorage.setItem(cartStorageKey, JSON.stringify(cartItems));
+    }, [cartItems, cartStorageKey]);
+
+    const addToCart = (product: CartProduct) => {
+        if (cartItems.some(item => item.id === product.id)) {
+            setCartOpen(true);
+            toast.info("This product is already in your cart");
+            return;
+        }
+        setCartItems(current => [...current, product]);
+        toast.success("Added to cart");
+    };
+
+    const removeFromCart = (productId: string) => {
+        setCartItems(current => current.filter(item => item.id !== productId));
+    };
+
+    const checkoutFromCart = (product: CartProduct) => {
+        setCheckoutProduct(product);
+        setCartOpen(false);
+    };
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (u) => setUser(u));
@@ -461,6 +508,19 @@ export default function StorePage() {
                     )}
 
                     <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setCartOpen(true)}
+                            aria-label={`Open cart with ${cartItems.length} items`}
+                            className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-100"
+                        >
+                            <ShoppingCart className="h-4 w-4" />
+                            {cartItems.length > 0 && (
+                                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-950 px-1 text-[10px] font-black text-white">
+                                    {cartItems.length}
+                                </span>
+                            )}
+                        </button>
                         <Link href="/buyer-orders">
                             <Button variant="ghost" className="rounded-lg h-10 px-4 gap-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs font-bold uppercase tracking-tight">
                                 <Package className="w-4 h-4" />
@@ -709,6 +769,8 @@ export default function StorePage() {
                                     showStock={showStock}
                                     onInquiry={() => { handleProductView(product); setInquiryProduct(product); }}
                                     onBuyNow={() => { handleProductView(product); setCheckoutProduct(product); }}
+                                    onAddToCart={() => addToCart(product)}
+                                    inCart={cartItems.some(item => item.id === product.id)}
                                 />
                             ))
                         )}
@@ -732,6 +794,62 @@ export default function StorePage() {
                     ))}
                 </section>
             </main>
+
+            {cartOpen && (
+                <div className="fixed inset-0 z-[90]">
+                    <button aria-label="Close cart" onClick={() => setCartOpen(false)} className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" />
+                    <aside className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                            <div>
+                                <h2 className="text-lg font-black text-slate-950">Your cart</h2>
+                                <p className="text-xs font-semibold text-slate-500">{cartItems.length} {cartItems.length === 1 ? "item" : "items"} from {storeUser.storeName}</p>
+                            </div>
+                            <button type="button" onClick={() => setCartOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close cart">
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-5 py-4">
+                            {cartItems.length === 0 ? (
+                                <div className="flex h-full flex-col items-center justify-center text-center">
+                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400"><ShoppingCart className="h-6 w-6" /></div>
+                                    <h3 className="mt-4 text-base font-black text-slate-950">Your cart is empty</h3>
+                                    <p className="mt-1 text-sm text-slate-500">Add products to keep them here while you browse.</p>
+                                    <Button onClick={() => setCartOpen(false)} className="mt-5 h-10 rounded-lg bg-slate-950 px-5 text-xs font-bold text-white">Continue shopping</Button>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-100">
+                                    {cartItems.map(item => (
+                                        <div key={item.id} className="grid grid-cols-[72px_1fr_auto] gap-3 py-4">
+                                            <div className="relative h-[72px] overflow-hidden rounded-lg bg-slate-100">
+                                                {item.image ? <Image src={item.image} alt={item.name || "Cart product"} fill className="object-cover" /> : <ShoppingBag className="absolute inset-0 m-auto h-6 w-6 text-slate-300" />}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="line-clamp-2 text-sm font-black leading-5 text-slate-900">{item.name || item.productName || "Product"}</p>
+                                                <p className="mt-1 text-sm font-bold text-slate-700">{currency.money(item.resellPrice ?? item.price ?? 0)}</p>
+                                                <button type="button" onClick={() => checkoutFromCart(item)} className="mt-2 text-xs font-black text-sky-700 hover:text-sky-900">Checkout this item</button>
+                                            </div>
+                                            <button type="button" onClick={() => removeFromCart(item.id)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600" aria-label={`Remove ${item.name || "product"} from cart`}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {cartItems.length > 0 && (
+                            <div className="border-t border-slate-200 bg-slate-50 px-5 py-4">
+                                <div className="flex items-center justify-between text-sm"><span className="font-semibold text-slate-500">Cart total</span><span className="text-lg font-black text-slate-950">{currency.money(cartItems.reduce((sum, item) => sum + Number(item.resellPrice ?? item.price ?? 0), 0))}</span></div>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">Checkout is completed securely one product at a time.</p>
+                                <Button onClick={() => checkoutFromCart(cartItems[0])} className="mt-3 h-11 w-full rounded-lg bg-slate-950 text-sm font-black text-white hover:bg-slate-800">
+                                    Checkout first item
+                                </Button>
+                            </div>
+                        )}
+                    </aside>
+                </div>
+            )}
 
             {/* Modals */}
             <InquiryModal
@@ -776,7 +894,7 @@ export default function StorePage() {
     );
 }
 
-function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount = 0, cardRadius = "rounded-2xl", layout = "grid", formattedPrice, showViews = true, showSales = true, showStock = true }: { product: any; onInquiry: () => void; onBuyNow: () => void; salesCount?: number; viewCount?: number; cardRadius?: string; layout?: string; formattedPrice: string; showViews?: boolean; showSales?: boolean; showStock?: boolean }) {
+function ProductCard({ product, onInquiry, onBuyNow, onAddToCart, inCart = false, salesCount = 0, viewCount = 0, cardRadius = "rounded-2xl", layout = "grid", formattedPrice, showViews = true, showSales = true, showStock = true }: { product: any; onInquiry: () => void; onBuyNow: () => void; onAddToCart: () => void; inCart?: boolean; salesCount?: number; viewCount?: number; cardRadius?: string; layout?: string; formattedPrice: string; showViews?: boolean; showSales?: boolean; showStock?: boolean }) {
     const [imageLoaded, setImageLoaded] = useState(false);
     const stock = Number(product.stock ?? getDefaultStock(product.id || product.name));
     const inStock = stock > 0;
@@ -863,13 +981,16 @@ function ProductCard({ product, onInquiry, onBuyNow, salesCount = 0, viewCount =
                         Buy Now
                     </Button>
                     <Button
-                        onClick={onInquiry}
+                        onClick={onAddToCart}
+                        disabled={!inStock || inCart}
                         variant="outline"
-                        className="h-10 rounded-lg border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                        className="h-10 rounded-lg border-slate-300 text-xs font-bold text-slate-800 hover:bg-slate-100 disabled:opacity-60"
                     >
-                        Enquiry
+                        <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                        {inCart ? "In cart" : "Add to cart"}
                     </Button>
                 </div>
+                <button type="button" onClick={onInquiry} className="mt-2 h-8 text-xs font-bold text-slate-500 hover:text-slate-950">View details or ask a question</button>
             </div>
         </div>
     );
